@@ -1,30 +1,24 @@
 import { NextResponse } from 'next/server'
-import prisma from '@/lib/db'
+// import prisma from '@/lib/db' // DB disabled for local dev
 import { generateTicketCode } from '@/lib/validators'
+import { mockEvents, mockTickets } from '@/lib/mockData'
 
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
-    
-    const where = userId ? { userId } : {}
-    
-    const tickets = await prisma.ticket.findMany({
-      where,
-      include: {
-        event: true,
-        user: {
-          select: {
-            id: true,
-            nom: true,
-            prenom: true,
-            email: true,
-          },
-        },
-      },
-      orderBy: { datePurchase: 'desc' },
-    })
-    
+
+    // const where = userId ? { userId } : {}
+    // const tickets = await prisma.ticket.findMany({
+    //   where,
+    //   include: { event: true, user: { select: { ... } } },
+    //   orderBy: { datePurchase: 'desc' },
+    // })
+
+    const tickets = mockTickets
+      .filter((t) => !userId || t.userId === userId)
+      .sort((a, b) => new Date(b.datePurchase) - new Date(a.datePurchase))
+
     return NextResponse.json(tickets)
   } catch (error) {
     console.error('Erreur GET tickets:', error)
@@ -46,10 +40,8 @@ export async function POST(request) {
       )
     }
 
-    // Vérifier si l'événement existe et a des places disponibles
-    const event = await prisma.event.findUnique({
-      where: { id: eventId },
-    })
+    // const event = await prisma.event.findUnique({ where: { id: eventId } })
+    const event = mockEvents.find((e) => e.id === eventId)
 
     if (!event) {
       return NextResponse.json(
@@ -65,40 +57,28 @@ export async function POST(request) {
       )
     }
 
-    // Générer le code unique du ticket
-    let code = generateTicketCode()
-    let codeExists = true
-    
-    // S'assurer que le code est unique
-    while (codeExists) {
-      const existing = await prisma.ticket.findUnique({
-        where: { code },
-      })
-      if (!existing) {
-        codeExists = false
-      } else {
-        code = generateTicketCode()
-      }
+    // let code = generateTicketCode()
+    // while (await prisma.ticket.findUnique({ where: { code } })) {
+    //   code = generateTicketCode()
+    // }
+    //
+    // const ticket = await prisma.ticket.create({ ... })
+    // await prisma.event.update({ ... })
+
+    const ticket = {
+      id: `ticket-${Date.now()}`,
+      code: generateTicketCode(),
+      userId,
+      eventId,
+      pricePaid: event.price,
+      status: 'pending',
+      datePurchase: new Date().toISOString(),
+      event,
+      user: { id: userId, nom: 'Utilisateur', prenom: 'Test', email: 'user@dice.com' },
     }
 
-    // Créer le ticket
-    const ticket = await prisma.ticket.create({
-      data: {
-        code,
-        userId,
-        eventId,
-        pricePaid: event.price,
-        status: 'pending',
-      },
-    })
-
-    // Mettre à jour les places disponibles
-    await prisma.event.update({
-      where: { id: eventId },
-      data: {
-        availableSeats: event.availableSeats - 1,
-      },
-    })
+    event.availableSeats -= 1
+    mockTickets.push(ticket)
 
     return NextResponse.json(ticket, { status: 201 })
   } catch (error) {

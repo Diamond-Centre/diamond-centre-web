@@ -1,6 +1,7 @@
 import axios from 'axios'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'
+// URL relative : fonctionne sur n'importe quel port sans config DB/JWT
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api'
 
 const api = axios.create({
   baseURL: API_URL,
@@ -10,7 +11,7 @@ const api = axios.create({
   timeout: 10000,
 })
 
-// Intercepteur pour ajouter le token
+// Intercepteur token (désactivé en mode local mock — pas de vérification JWT côté serveur)
 api.interceptors.request.use(
   (config) => {
     if (typeof window !== 'undefined') {
@@ -26,17 +27,17 @@ api.interceptors.request.use(
   }
 )
 
-// Intercepteur pour gérer les erreurs
+// Intercepteur erreurs — redirection 401 désactivée en mode local (pas de JWT réel)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
-        window.location.href = '/auth/login'
-      }
-    }
+    // if (error.response?.status === 401) {
+    //   if (typeof window !== 'undefined') {
+    //     localStorage.removeItem('token')
+    //     localStorage.removeItem('user')
+    //     window.location.href = '/auth/login'
+    //   }
+    // }
     return Promise.reject(error)
   }
 )
