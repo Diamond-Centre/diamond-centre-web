@@ -1,3 +1,7 @@
+// --- MONGOOSE MODEL DISABLED FOR LOCAL DEV (not used — app uses Prisma/mock data) ---
+// Ce fichier n'est pas importé dans l'application.
+
+/*
 import mongoose from 'mongoose'
 
 const EventSchema = new mongoose.Schema({
@@ -61,3 +65,6 @@ const EventSchema = new mongoose.Schema({
 }, { timestamps: true })
 
 export default mongoose.models.Event || mongoose.model('Event', EventSchema)
+*/
+
+export default null

@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
-import prisma from '@/lib/db'
-import bcrypt from 'bcryptjs'
-import jwt from 'jsonwebtoken'
+// import prisma from '@/lib/db' // DB disabled for local dev
+// import bcrypt from 'bcryptjs' // JWT/DB disabled for local dev
+// import jwt from 'jsonwebtoken' // JWT disabled for local dev
+import { findMockUserByEmail, MOCK_TOKEN } from '@/lib/mockData'
 
 export async function POST(request) {
   try {
@@ -14,10 +15,33 @@ export async function POST(request) {
       )
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email },
-    })
+    // const user = await prisma.user.findUnique({
+    //   where: { email },
+    // })
+    //
+    // if (!user) {
+    //   return NextResponse.json(
+    //     { error: 'Identifiants invalides' },
+    //     { status: 401 }
+    //   )
+    // }
+    //
+    // const isPasswordValid = await bcrypt.compare(password, user.password)
+    //
+    // if (!isPasswordValid) {
+    //   return NextResponse.json(
+    //     { error: 'Identifiants invalides' },
+    //     { status: 401 }
+    //   )
+    // }
+    //
+    // const token = jwt.sign(
+    //   { userId: user.id, email: user.email, role: user.role },
+    //   process.env.JWT_SECRET,
+    //   { expiresIn: '7d' }
+    // )
 
+    const user = findMockUserByEmail(email)
     if (!user) {
       return NextResponse.json(
         { error: 'Identifiants invalides' },
@@ -25,26 +49,12 @@ export async function POST(request) {
       )
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password)
-
-    if (!isPasswordValid) {
-      return NextResponse.json(
-        { error: 'Identifiants invalides' },
-        { status: 401 }
-      )
-    }
-
-    const token = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    )
-
-    const { password: _, ...userWithoutPassword } = user
+    // En mode local : accepter n'importe quel mot de passe pour les comptes mock
+    // Comptes de test : admin@dice.com / user@dice.com (mot de passe libre)
 
     return NextResponse.json({
-      user: userWithoutPassword,
-      token,
+      user,
+      token: MOCK_TOKEN,
     })
   } catch (error) {
     console.error('Erreur login:', error)
