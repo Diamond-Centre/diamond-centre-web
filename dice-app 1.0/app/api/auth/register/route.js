@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server'
-import prisma from '@/lib/db'
-import bcrypt from 'bcryptjs'
-import jwt from 'jsonwebtoken'
+// import prisma from '@/lib/db' // DB disabled for local dev
+// import bcrypt from 'bcryptjs' // JWT/DB disabled for local dev
+// import jwt from 'jsonwebtoken' // JWT disabled for local dev
+import { findMockUserByEmail, MOCK_TOKEN } from '@/lib/mockData'
 
 export async function POST(request) {
   try {
     const { nom, prenom, email, telephone, sexe, password } = await request.json()
 
-    // Validation
     if (!nom || !prenom || !email || !telephone || !sexe || !password) {
       return NextResponse.json(
         { error: 'Tous les champs sont requis' },
@@ -15,46 +15,59 @@ export async function POST(request) {
       )
     }
 
-    // Vérifier si l'utilisateur existe déjà
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    })
+    // const existingUser = await prisma.user.findUnique({
+    //   where: { email },
+    // })
+    //
+    // if (existingUser) {
+    //   return NextResponse.json(
+    //     { error: 'Un compte avec cet email existe déjà' },
+    //     { status: 409 }
+    //   )
+    // }
+    //
+    // const hashedPassword = await bcrypt.hash(password, 10)
+    //
+    // const user = await prisma.user.create({
+    //   data: {
+    //     nom,
+    //     prenom,
+    //     email,
+    //     telephone,
+    //     sexe,
+    //     password: hashedPassword,
+    //     role: 'user',
+    //   },
+    // })
+    //
+    // const token = jwt.sign(
+    //   { userId: user.id, email: user.email, role: user.role },
+    //   process.env.JWT_SECRET,
+    //   { expiresIn: '7d' }
+    // )
 
-    if (existingUser) {
+    if (findMockUserByEmail(email)) {
       return NextResponse.json(
         { error: 'Un compte avec cet email existe déjà' },
         { status: 409 }
       )
     }
 
-    // Hasher le mot de passe
-    const hashedPassword = await bcrypt.hash(password, 10)
-
-    // Créer l'utilisateur
-    const user = await prisma.user.create({
-      data: {
-        nom,
-        prenom,
-        email,
-        telephone,
-        sexe,
-        password: hashedPassword,
-        role: 'user',
-      },
-    })
-
-    // Générer le token JWT
-    const token = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    )
-
-    const { password: _, ...userWithoutPassword } = user
+    const user = {
+      id: `user-${Date.now()}`,
+      nom,
+      prenom,
+      email,
+      telephone,
+      sexe,
+      role: 'user',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
 
     return NextResponse.json({
-      user: userWithoutPassword,
-      token,
+      user,
+      token: MOCK_TOKEN,
     }, { status: 201 })
   } catch (error) {
     console.error('Erreur register:', error)

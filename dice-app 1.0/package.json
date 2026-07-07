@@ -7,10 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "db:seed": "node scripts/seed.js",
-    "db:push": "prisma db push",
-    "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate deploy"
+    "_db:seed": "node scripts/seed.js",
+    "_db:push": "prisma db push",
+    "_db:generate": "prisma generate",
+    "_db:migrate": "prisma migrate deploy"
   },
   "dependencies": {
     "next": "14.0.4",
