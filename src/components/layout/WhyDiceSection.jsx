@@ -1,10 +1,18 @@
 /**
+<<<<<<< HEAD
  * Section "Pourquoi Dice" avec sponsors officiels
+=======
+ * Section "Pourquoi Dice" avec glassmorphisme bleu Diamond Centre
+ * et effet aquarium au survol
+>>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
  */
 'use client'
 
 import Link from 'next/link'
+<<<<<<< HEAD
 import Image from 'next/image'
+=======
+>>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
 import { motion } from 'framer-motion'
 import { FaArrowRight, FaUsers, FaVideo, FaHeadset } from 'react-icons/fa'
 import { GiDiamondRing } from 'react-icons/gi'
@@ -13,32 +21,53 @@ import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 
 // Valeurs
+<<<<<<< HEAD
 const values = [
   {
+=======
+const values = {
+  excellence: {
+>>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
     icon: GiDiamondRing,
     title: 'Excellence',
     description: 'Des formations de qualité dispensées par des experts reconnus',
     color: 'from-dice-blue to-blue-600'
   },
+<<<<<<< HEAD
   {
+=======
+  communaute: {
+>>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
     icon: FaUsers,
     title: 'Communauté',
     description: 'Rejoignez une communauté de professionnels passionnés',
     color: 'from-purple-500 to-pink-500'
   },
+<<<<<<< HEAD
   {
+=======
+  flexibilite: {
+>>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
     icon: FaVideo,
     title: 'Flexibilité',
     description: 'Formations en présentiel et à distance selon vos besoins',
     color: 'from-green-500 to-emerald-500'
   },
+<<<<<<< HEAD
   {
+=======
+  accompagnement: {
+>>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
     icon: FaHeadset,
     title: 'Accompagnement',
     description: 'Un suivi personnalisé tout au long de votre parcours',
     color: 'from-orange-500 to-red-500'
   }
+<<<<<<< HEAD
 ]
+=======
+}
+>>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
 
 // Sponsors officiels avec logos
 const sponsors = [
@@ -78,7 +107,11 @@ const stats = [
 
 export default function WhyDiceSection() {
   return (
+<<<<<<< HEAD
     <section className="py-20 bg-white">
+=======
+    <section className="py-20 bg-gradient-to-br from-dice-blue/5 via-white to-purple-500/5">
+>>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
       <div className="container mx-auto px-4">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Colonne gauche - Texte */}
@@ -139,6 +172,7 @@ export default function WhyDiceSection() {
             </div>
           </motion.div>
 
+<<<<<<< HEAD
           {/* Colonne droite - Grille de valeurs */}
           <div className="grid grid-cols-2 gap-4">
             {values.map((value, index) => (
@@ -166,6 +200,161 @@ export default function WhyDiceSection() {
                 </Card>
               </motion.div>
             ))}
+=======
+          {/* Colonne droite - Grille de valeurs avec glassmorphisme */}
+          <div className="relative grid grid-cols-2 grid-rows-[auto_auto_auto] gap-4">
+
+            {/* Communauté - haut gauche */}
+            <motion.div
+              className="col-start-1 row-start-1"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+            >
+              <div className="glass-card-dice rounded-2xl p-6 border border-dice-blue/20 shadow-xl backdrop-blur-md bg-dice-blue/10 hover:bg-dice-blue/15 transition-all duration-300 h-full relative overflow-hidden group">
+                {/* Effet aquarium au survol */}
+                <div className="absolute inset-0 rounded-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+                  <div className="absolute inset-0 bg-gradient-to-br from-dice-blue/30 via-transparent to-cyan-400/20 rounded-2xl" />
+                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent rounded-2xl animate-pulse" />
+                </div>
+                
+                {/* Reflet lumineux */}
+                <div className="absolute top-0 left-0 right-0 h-1/2 pointer-events-none opacity-40">
+                  <div className="absolute inset-0 bg-gradient-to-b from-dice-blue/10 to-transparent rounded-t-2xl" />
+                </div>
+
+                <div className="relative z-10">
+                  <div className={`w-14 h-14 bg-gradient-to-r ${values.communaute.color} rounded-2xl flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                    <values.communaute.icon className="text-2xl text-white" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-800 mb-2">
+                    {values.communaute.title}
+                  </h3>
+                  <p className="text-gray-600 text-sm">
+                    {values.communaute.description}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Excellence - colonne droite, pleine hauteur */}
+            <motion.div
+              className="col-start-2 row-start-1 row-span-2"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+            >
+              <div className="glass-card-dice rounded-2xl p-6 border border-dice-blue/20 shadow-xl backdrop-blur-md bg-dice-blue/10 hover:bg-dice-blue/15 transition-all duration-300 h-full relative overflow-hidden group">
+                {/* Effet aquarium au survol */}
+                <div className="absolute inset-0 rounded-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+                  <div className="absolute inset-0 bg-gradient-to-br from-dice-blue/30 via-transparent to-cyan-400/20 rounded-2xl" />
+                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent rounded-2xl animate-pulse" />
+                </div>
+                
+                {/* Reflet lumineux */}
+                <div className="absolute top-0 left-0 right-0 h-1/2 pointer-events-none opacity-40">
+                  <div className="absolute inset-0 bg-gradient-to-b from-dice-blue/10 to-transparent rounded-t-2xl" />
+                </div>
+
+                <div className="relative z-10 flex flex-col h-full">
+                  <div className={`w-14 h-14 bg-gradient-to-r ${values.excellence.color} rounded-2xl flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                    <values.excellence.icon className="text-2xl text-white" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-800 mb-2">
+                    {values.excellence.title}
+                  </h3>
+                  <p className="text-gray-600 text-sm">
+                    {values.excellence.description}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Flexibilité - bas gauche */}
+            <motion.div
+              className="col-start-1 row-start-2"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.3 }}
+            >
+              <div className="glass-card-dice rounded-2xl p-6 border border-dice-blue/20 shadow-xl backdrop-blur-md bg-dice-blue/10 hover:bg-dice-blue/15 transition-all duration-300 h-full relative overflow-hidden group">
+                {/* Effet aquarium au survol */}
+                <div className="absolute inset-0 rounded-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+                  <div className="absolute inset-0 bg-gradient-to-br from-dice-blue/30 via-transparent to-cyan-400/20 rounded-2xl" />
+                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent rounded-2xl animate-pulse" />
+                </div>
+                
+                {/* Reflet lumineux */}
+                <div className="absolute top-0 left-0 right-0 h-1/2 pointer-events-none opacity-40">
+                  <div className="absolute inset-0 bg-gradient-to-b from-dice-blue/10 to-transparent rounded-t-2xl" />
+                </div>
+
+                <div className="relative z-10">
+                  <div className={`w-14 h-14 bg-gradient-to-r ${values.flexibilite.color} rounded-2xl flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                    <values.flexibilite.icon className="text-2xl text-white" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-800 mb-2">
+                    {values.flexibilite.title}
+                  </h3>
+                  <p className="text-gray-600 text-sm">
+                    {values.flexibilite.description}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Accompagnement - bande pleine largeur en bas */}
+            <motion.div
+              className="col-span-2 row-start-3"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.4 }}
+            >
+              <div className="glass-card-dice rounded-2xl p-6 border border-dice-blue/20 shadow-xl backdrop-blur-md bg-dice-blue/10 hover:bg-dice-blue/15 transition-all duration-300 h-full relative overflow-hidden group">
+                {/* Effet aquarium au survol */}
+                <div className="absolute inset-0 rounded-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+                  <div className="absolute inset-0 bg-gradient-to-br from-dice-blue/30 via-transparent to-cyan-400/20 rounded-2xl" />
+                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent rounded-2xl animate-pulse" />
+                </div>
+                
+                {/* Reflet lumineux */}
+                <div className="absolute top-0 left-0 right-0 h-1/2 pointer-events-none opacity-40">
+                  <div className="absolute inset-0 bg-gradient-to-b from-dice-blue/10 to-transparent rounded-t-2xl" />
+                </div>
+
+                <div className="relative z-10">
+                  <div className={`w-14 h-14 bg-gradient-to-r ${values.accompagnement.color} rounded-2xl flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                    <values.accompagnement.icon className="text-2xl text-white" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-800 mb-2">
+                    {values.accompagnement.title}
+                  </h3>
+                  <p className="text-gray-600 text-sm">
+                    {values.accompagnement.description}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Logo Diamond Centre */}
+            <motion.div
+              className="absolute left-[-30px] top-[30%] -translate-y-1/2 z-20"
+              initial={{ opacity: 0, scale: 0.6 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.5 }}
+            >
+              <div className="w-16 h-16 rounded-full bg-white border-4 border-white shadow-2xl flex items-center justify-center">
+                <div className="w-full h-full bg-gradient-to-br from-dice-blue to-purple-600 rounded-full flex items-center justify-center shadow-lg">
+                  <GiDiamondRing className="text-white text-2xl" />
+                </div>
+              </div>
+            </motion.div>
+>>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
           </div>
         </div>
 
@@ -197,6 +386,117 @@ export default function WhyDiceSection() {
           ))}
         </motion.div>
       </div>
+<<<<<<< HEAD
+=======
+
+      {/* Styles globaux pour le glassmorphisme bleu Diamond Centre et effet aquarium */}
+      <style jsx global>{`
+        .glass-card-dice {
+          background: rgba(10, 137, 242, 0.08);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border: 1px solid rgba(10, 137, 242, 0.15);
+          box-shadow: 
+            0 8px 32px rgba(10, 137, 242, 0.06),
+            inset 0 1px 0 rgba(10, 137, 242, 0.1);
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card-dice:hover {
+          background: rgba(10, 137, 242, 0.15);
+          box-shadow: 
+            0 12px 48px rgba(10, 137, 242, 0.15),
+            inset 0 1px 0 rgba(10, 137, 242, 0.2),
+            0 0 60px rgba(10, 137, 242, 0.05);
+          transform: translateY(-4px);
+        }
+
+        /* Reflet supérieur */
+        .glass-card-dice::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 50%;
+          background: linear-gradient(
+            to bottom,
+            rgba(10, 137, 242, 0.08),
+            transparent
+          );
+          pointer-events: none;
+          border-radius: 16px 16px 0 0;
+          opacity: 0.5;
+          transition: opacity 0.4s ease;
+        }
+
+        .glass-card-dice:hover::before {
+          opacity: 0.8;
+        }
+
+        /* Effet aquarium - vagues lumineuses */
+        .glass-card-dice .aquarium-effect {
+          position: absolute;
+          inset: 0;
+          border-radius: 16px;
+          pointer-events: none;
+          opacity: 0;
+          transition: opacity 0.7s ease;
+          background: 
+            radial-gradient(circle at 20% 30%, rgba(10, 137, 242, 0.15) 0%, transparent 50%),
+            radial-gradient(circle at 80% 70%, rgba(6, 182, 212, 0.1) 0%, transparent 50%);
+          animation: aquariumPulse 4s ease-in-out infinite;
+        }
+
+        .glass-card-dice:hover .aquarium-effect {
+          opacity: 1;
+        }
+
+        /* Animation aquarium */
+        @keyframes aquariumPulse {
+          0%, 100% {
+            opacity: 0.6;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1.02);
+          }
+        }
+
+        /* Effet de brillance mobile */
+        @keyframes shimmer {
+          0% {
+            transform: translateX(-100%) rotate(25deg);
+          }
+          100% {
+            transform: translateX(200%) rotate(25deg);
+          }
+        }
+
+        .glass-card-dice::after {
+          content: '';
+          position: absolute;
+          top: -50%;
+          left: -50%;
+          width: 200%;
+          height: 200%;
+          background: linear-gradient(
+            to bottom right,
+            transparent 40%,
+            rgba(255, 255, 255, 0.05) 50%,
+            transparent 60%
+          );
+          transform: rotate(25deg) translateX(-100%);
+          transition: transform 0.8s ease;
+          pointer-events: none;
+        }
+
+        .glass-card-dice:hover::after {
+          transform: rotate(25deg) translateX(100%);
+        }
+      `}</style>
+>>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
     </section>
   )
 }
