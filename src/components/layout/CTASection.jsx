@@ -1,5 +1,9 @@
 /**
+<<<<<<< HEAD
  * Section CTA (Call To Action) avec effet glassmorphisme - Taille harmonisée
+=======
+ * Section CTA (Call To Action) avec effet glassmorphisme - Uniquement bleu Diamond Centre
+>>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
  */
 'use client'
 
@@ -13,10 +17,17 @@ export default function CTASection({
   subtitle,
   primaryCta = { text: 'Commencer gratuitement', href: '/auth/register' },
   secondaryCta = { text: 'Explorer nos services', href: '/events' },
+<<<<<<< HEAD
   bgClass = 'bg-gradient-to-r from-dice-blue to-purple-600'
 }) {
   return (
     <section className="py-16 md:py-20 bg-white">
+=======
+  bgClass = 'bg-gradient-to-r from-dice-blue to-dice-blue-dark'
+}) {
+  return (
+    <section className="py-16 md:py-20 bg-gradient-to-br from-dice-blue/5 via-white to-purple-500/5">
+>>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
       <div className="container mx-auto px-4">
         <motion.div 
           className={`max-w-5xl mx-auto ${bgClass} rounded-2xl md:rounded-3xl p-8 md:p-12 lg:p-16 text-center text-white shadow-xl relative overflow-hidden`}
@@ -33,7 +44,11 @@ export default function CTASection({
             transition={{ duration: 20, repeat: Infinity }}
           />
           <motion.div 
+<<<<<<< HEAD
             className="absolute -bottom-20 -left-20 w-48 h-48 bg-purple-300/10 rounded-full blur-2xl"
+=======
+            className="absolute -bottom-20 -left-20 w-48 h-48 bg-dice-blue/20 rounded-full blur-2xl"
+>>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
             animate={{ scale: [1, 1.3, 1], rotate: [0, -90, 0] }}
             transition={{ duration: 25, repeat: Infinity }}
           />
@@ -68,14 +83,23 @@ export default function CTASection({
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
+<<<<<<< HEAD
                   {/* Fond animé au survol */}
                   <span className="absolute inset-0 bg-gradient-to-r from-dice-blue to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+=======
+                  {/* Fond animé au survol - Bleu Diamond Centre */}
+                  <span className="absolute inset-0 bg-gradient-to-r from-dice-blue to-dice-blue-dark opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+>>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
                   
                   {/* Effet de brillance */}
                   <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
                   
                   {/* Effet d'onde au survol */}
+<<<<<<< HEAD
                   <span className="absolute inset-0 scale-0 group-hover:scale-150 transition-transform duration-700 rounded-full bg-white/10" />
+=======
+                  <span className="absolute inset-0 scale-0 group-hover:scale-150 transition-transform duration-700 rounded-full bg-dice-blue/20" />
+>>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
                   
                   {/* Contenu du bouton */}
                   <span className="relative flex items-center gap-2 text-dice-blue group-hover:text-white transition-colors duration-300">
@@ -86,7 +110,11 @@ export default function CTASection({
                   
                   {/* Points lumineux décoratifs */}
                   <span className="absolute -top-2 -right-2 w-2.5 h-2.5 md:w-3 md:h-3 bg-dice-blue rounded-full opacity-0 group-hover:opacity-100 group-hover:scale-150 transition-all duration-500" />
+<<<<<<< HEAD
                   <span className="absolute -bottom-2 -left-2 w-2.5 h-2.5 md:w-3 md:h-3 bg-purple-400 rounded-full opacity-0 group-hover:opacity-100 group-hover:scale-150 transition-all duration-500 delay-100" />
+=======
+                  <span className="absolute -bottom-2 -left-2 w-2.5 h-2.5 md:w-3 md:h-3 bg-dice-blue-dark rounded-full opacity-0 group-hover:opacity-100 group-hover:scale-150 transition-all duration-500 delay-100" />
+>>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
                 </motion.button>
               </Link>
 
