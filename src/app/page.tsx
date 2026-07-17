@@ -15,26 +15,11 @@ import { IconType } from 'react-icons'
 import Navbar from '@/components/layout/Navbar'
 import HeroSection from '@/components/layout/HeroSection'
 import WhyDiceSection from '@/components/layout/WhyDiceSection'
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
 import FormationsSection from '@/components/layout/FormationsSection'
->>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
-=======
-import FormationsSection from '@/components/layout/FormationsSection'
->>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
 import TestimonialsSection from '@/components/layout/TestimonialsSection'
 import CTASection from '@/components/layout/CTASection'
 import Footer from '@/components/layout/Footer'
 import VideoModal from '@/components/layout/VideoModal'
-<<<<<<< HEAD
-<<<<<<< HEAD
-import Section from '@/components/ui/Section'
-import EventCard from '@/components/events/EventCard'
-=======
->>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
-=======
->>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
 
 // Types
 interface CarouselImage {
@@ -97,15 +82,7 @@ const carouselImages: CarouselImage[] = [
   }
 ]
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-// Statistiques avec différentes icônes
-=======
 // Statistiques
->>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
-=======
-// Statistiques
->>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
 const stats: Stat[] = [
   { icon: FaGraduationCap, label: 'Formations', value: '50+' },
   { icon: FaUsers, label: 'Participants', value: '5 000+' },
@@ -113,56 +90,24 @@ const stats: Stat[] = [
   { icon: FaAward, label: 'Experts', value: '20+' }
 ]
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-// Témoignages
-=======
 // Témoignages avec rôles pour les emojis
->>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
-=======
-// Témoignages avec rôles pour les emojis
->>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
 const testimonials: Testimonial[] = [
   {
     name: 'Sophie Martin',
     role: 'Entrepreneure',
-<<<<<<< HEAD
-<<<<<<< HEAD
-    text: 'Les conférences de motivation du Dr SONFFO ont transformé ma vision des choses.',
-=======
     text: 'Les conférences de motivation du Dr SONFFO ont transformé ma vision des choses. Je recommande vivement !',
->>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
-=======
-    text: 'Les conférences de motivation du Dr SONFFO ont transformé ma vision des choses. Je recommande vivement !',
->>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
     rating: 5
   },
   {
     name: 'Thomas Dubois',
     role: 'Étudiant',
-<<<<<<< HEAD
-<<<<<<< HEAD
-    text: 'Le séminaire ÉTUPRENEUR m\'a donné les clés pour lancer ma première entreprise.',
-=======
     text: 'Le séminaire ÉTUPRENEUR m\'a donné les clés pour lancer ma première entreprise. Une expérience inoubliable.',
->>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
-=======
-    text: 'Le séminaire ÉTUPRENEUR m\'a donné les clés pour lancer ma première entreprise. Une expérience inoubliable.',
->>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
     rating: 5
   },
   {
     name: 'Laura Petit',
     role: 'Chef d\'entreprise',
-<<<<<<< HEAD
-<<<<<<< HEAD
-    text: 'L\'école de l\'art oratoire m\'a permis de gagner en confiance.',
-=======
     text: 'L\'école de l\'art oratoire m\'a permis de gagner en confiance et de mieux communiquer avec mes équipes.',
->>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
-=======
-    text: 'L\'école de l\'art oratoire m\'a permis de gagner en confiance et de mieux communiquer avec mes équipes.',
->>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
     rating: 4
   }
 ]
@@ -212,30 +157,6 @@ export default function Home() {
         {/* Why Dice Section */}
         <WhyDiceSection />
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-        {/* Événements à venir */}
-        <Section
-          badge="À venir"
-          title="Événements Diamond Centre"
-          subtitle="Découvrez nos prochains événements et réservez votre place."
-          className="bg-gray-50"
-        >
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {loading ? (
-              <div className="col-span-full flex justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-dice-blue" />
-              </div>
-            ) : (
-              upcomingEvents.map((event) => (
-                <EventCard key={event.id} event={event} onVideoClick={handleVideoOpen} />
-              ))
-            )}
-          </div>
-        </Section>
-=======
-=======
->>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
         {/* Formations Section - Nouveau composant avec glassmorphisme */}
         <FormationsSection
           formations={upcomingEvents}
@@ -245,23 +166,11 @@ export default function Home() {
           badge="Nos formations"
           onVideoClick={handleVideoOpen}
         />
-<<<<<<< HEAD
->>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
-=======
->>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
 
         {/* Témoignages */}
         <TestimonialsSection
           testimonials={testimonials}
-<<<<<<< HEAD
-<<<<<<< HEAD
-          bgClass="bg-gradient-to-br from-dice-blue to-purple-600 text-white"
-=======
           bgClass="bg-gradient-to-br from-dice-blue to-dice-blue-dark"
->>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
-=======
-          bgClass="bg-gradient-to-br from-dice-blue to-dice-blue-dark"
->>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
         />
 
         {/* CTA */}
@@ -270,14 +179,7 @@ export default function Home() {
           subtitle="Rejoignez des milliers de personnes qui ont déjà fait le choix de l'excellence avec Diamond Centre."
           primaryCta={{ text: 'Commencer gratuitement', href: '/auth/register' }}
           secondaryCta={{ text: 'Explorer nos services', href: '/events' }}
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
           bgClass="bg-gradient-to-r from-dice-blue to-dice-blue-dark"
->>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
-=======
-          bgClass="bg-gradient-to-r from-dice-blue to-dice-blue-dark"
->>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
         />
       </main>
 

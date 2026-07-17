@@ -186,15 +186,7 @@ export default function EventsPage() {
 
       <main className="pt-20">
         {/* Hero Section */}
-<<<<<<< HEAD
-<<<<<<< HEAD
-        <section className="relative bg-gradient-to-br from-dice-blue/5 via-white to-purple-500/5 py-16">
-=======
         <section className="relative py-12">
->>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
-=======
-        <section className="relative py-12">
->>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
           <Container>
             <div className="max-w-4xl">
               <motion.div
