@@ -7,8 +7,6 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 
 // Composants layout
-import Navbar from '@/components/layout/Navbar'
-import Footer from '@/components/layout/Footer'
 import Container from '@/components/ui/Container'
 import VideoModal from '@/components/layout/VideoModal'
 
@@ -60,8 +58,6 @@ export default function AboutPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Navbar />
-
       <main>
         {/* Hero */}
         <AboutHero onVideoClick={() => handleVideoOpen('https://www.youtube.com/embed/dQw4w9WgXcQ')} />

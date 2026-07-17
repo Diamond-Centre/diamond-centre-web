@@ -12,13 +12,11 @@ import {
 import { IconType } from 'react-icons'
 
 // Composants layout
-import Navbar from '@/components/layout/Navbar'
 import HeroSection from '@/components/layout/HeroSection'
 import WhyDiceSection from '@/components/layout/WhyDiceSection'
 import FormationsSection from '@/components/layout/FormationsSection'
 import TestimonialsSection from '@/components/layout/TestimonialsSection'
 import CTASection from '@/components/layout/CTASection'
-import Footer from '@/components/layout/Footer'
 import VideoModal from '@/components/layout/VideoModal'
 
 // Types
@@ -140,8 +138,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen">
-      <Navbar />
-      
       <main>
         {/* Hero Section */}
         <HeroSection

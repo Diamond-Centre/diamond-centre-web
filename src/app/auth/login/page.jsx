@@ -36,26 +36,16 @@ export default function LoginPage() {
     setIsLoading(true)
     try {
       await login(email, password)
-      toast.success('Connexion réussie !')
       router.push('/dashboard')
     } catch (error) {
-      toast.error(error.message || 'Erreur de connexion')
+      // toast already shown in useAuth
     } finally {
       setIsLoading(false)
     }
   }
 
   const handleGoogleLogin = async () => {
-    setIsLoading(true)
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      toast.success('Connexion avec Google réussie !')
-      router.push('/dashboard')
-    } catch (error) {
-      toast.error('Erreur avec Google')
-    } finally {
-      setIsLoading(false)
-    }
+    toast.error('La connexion Google sera bientôt disponible. Utilisez email et mot de passe.')
   }
 
   return (
@@ -166,11 +156,15 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Mot de passe oublié */}
+              {/* Mot de passe oublié — bientôt disponible */}
               <div className="text-right">
-                <Link href="/auth/forgot-password" className="text-sm text-dice-blue hover:underline font-medium">
+                <button
+                  type="button"
+                  onClick={() => toast('Réinitialisation bientôt disponible', { icon: 'ℹ️' })}
+                  className="text-sm text-dice-blue hover:underline font-medium"
+                >
                   Mot de passe oublié ?
-                </Link>
+                </button>
               </div>
 
               {/* Bouton de connexion */}
