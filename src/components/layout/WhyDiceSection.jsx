@@ -1,18 +1,26 @@
 /**
 <<<<<<< HEAD
+<<<<<<< HEAD
  * Section "Pourquoi Dice" avec sponsors officiels
 =======
  * Section "Pourquoi Dice" avec glassmorphisme bleu Diamond Centre
  * et effet aquarium au survol
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+ * Section "Pourquoi Dice" avec glassmorphisme bleu Diamond Centre
+ * et effet aquarium au survol
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
  */
 'use client'
 
 import Link from 'next/link'
 <<<<<<< HEAD
+<<<<<<< HEAD
 import Image from 'next/image'
 =======
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
 import { motion } from 'framer-motion'
 import { FaArrowRight, FaUsers, FaVideo, FaHeadset } from 'react-icons/fa'
 import { GiDiamondRing } from 'react-icons/gi'
@@ -22,52 +30,73 @@ import Button from '@/components/ui/Button'
 
 // Valeurs
 <<<<<<< HEAD
+<<<<<<< HEAD
 const values = [
   {
 =======
 const values = {
   excellence: {
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+const values = {
+  excellence: {
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
     icon: GiDiamondRing,
     title: 'Excellence',
     description: 'Des formations de qualité dispensées par des experts reconnus',
     color: 'from-dice-blue to-blue-600'
   },
 <<<<<<< HEAD
+<<<<<<< HEAD
   {
 =======
   communaute: {
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+  communaute: {
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
     icon: FaUsers,
     title: 'Communauté',
     description: 'Rejoignez une communauté de professionnels passionnés',
     color: 'from-purple-500 to-pink-500'
   },
 <<<<<<< HEAD
+<<<<<<< HEAD
   {
 =======
   flexibilite: {
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+  flexibilite: {
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
     icon: FaVideo,
     title: 'Flexibilité',
     description: 'Formations en présentiel et à distance selon vos besoins',
     color: 'from-green-500 to-emerald-500'
   },
 <<<<<<< HEAD
+<<<<<<< HEAD
   {
 =======
   accompagnement: {
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+  accompagnement: {
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
     icon: FaHeadset,
     title: 'Accompagnement',
     description: 'Un suivi personnalisé tout au long de votre parcours',
     color: 'from-orange-500 to-red-500'
   }
 <<<<<<< HEAD
+<<<<<<< HEAD
 ]
 =======
 }
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+}
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
 
 // Sponsors officiels avec logos
 const sponsors = [
@@ -108,10 +137,14 @@ const stats = [
 export default function WhyDiceSection() {
   return (
 <<<<<<< HEAD
+<<<<<<< HEAD
     <section className="py-20 bg-white">
 =======
     <section className="py-20 bg-gradient-to-br from-dice-blue/5 via-white to-purple-500/5">
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+    <section className="py-20 bg-gradient-to-br from-dice-blue/5 via-white to-purple-500/5">
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
       <div className="container mx-auto px-4">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Colonne gauche - Texte */}
@@ -173,6 +206,7 @@ export default function WhyDiceSection() {
           </motion.div>
 
 <<<<<<< HEAD
+<<<<<<< HEAD
           {/* Colonne droite - Grille de valeurs */}
           <div className="grid grid-cols-2 gap-4">
             {values.map((value, index) => (
@@ -201,6 +235,8 @@ export default function WhyDiceSection() {
               </motion.div>
             ))}
 =======
+=======
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
           {/* Colonne droite - Grille de valeurs avec glassmorphisme */}
           <div className="relative grid grid-cols-2 grid-rows-[auto_auto_auto] gap-4">
 
@@ -354,7 +390,10 @@ export default function WhyDiceSection() {
                 </div>
               </div>
             </motion.div>
+<<<<<<< HEAD
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
           </div>
         </div>
 
@@ -387,7 +426,10 @@ export default function WhyDiceSection() {
         </motion.div>
       </div>
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
 
       {/* Styles globaux pour le glassmorphisme bleu Diamond Centre et effet aquarium */}
       <style jsx global>{`
@@ -496,7 +538,10 @@ export default function WhyDiceSection() {
           transform: rotate(25deg) translateX(100%);
         }
       `}</style>
+<<<<<<< HEAD
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
     </section>
   )
 }

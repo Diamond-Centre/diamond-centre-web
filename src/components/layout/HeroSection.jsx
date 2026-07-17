@@ -1,14 +1,19 @@
 /**
 <<<<<<< HEAD
+<<<<<<< HEAD
  * Section Hero avec glassmorphisme
 =======
  * Section Hero - Informations textuelles descendues en bas
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+ * Section Hero - Informations textuelles descendues en bas
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
  */
 'use client'
 
 import Link from 'next/link'
 import { motion } from 'framer-motion'
+<<<<<<< HEAD
 <<<<<<< HEAD
 import { FaArrowRight, FaPlay, FaChevronRight } from 'react-icons/fa'
 import { GiDiamondRing } from 'react-icons/gi'
@@ -17,6 +22,10 @@ import Container from '@/components/ui/Container'
 import { FaArrowRight, FaPlay } from 'react-icons/fa'
 import { GiDiamondRing } from 'react-icons/gi'
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+import { FaArrowRight, FaPlay } from 'react-icons/fa'
+import { GiDiamondRing } from 'react-icons/gi'
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
 import Button from '@/components/ui/Button'
 import Stats from '@/components/ui/Stats'
 import Carousel from '@/components/ui/Carousel'
@@ -31,6 +40,7 @@ export default function HeroSection({
   primaryCta = { text: 'Explorer les formations', href: '/events' },
 }) {
   return (
+<<<<<<< HEAD
 <<<<<<< HEAD
     <section className="relative min-h-screen flex items-center overflow-hidden bg-gradient-to-br from-dice-blue/5 via-white to-purple-500/5">
       {/* Background décoratif */}
@@ -128,6 +138,8 @@ export default function HeroSection({
         <FaChevronRight className="rotate-90 text-2xl" />
       </motion.div>
 =======
+=======
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
     <section className="relative min-h-screen w-full flex items-center overflow-hidden bg-gradient-to-br from-dice-blue/10 via-white to-purple-500/10">
       {/* Background décoratif */}
       <div className="absolute inset-0">
@@ -227,7 +239,10 @@ export default function HeroSection({
           </div>
         </div>
       </div>
+<<<<<<< HEAD
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
     </section>
   )
 }

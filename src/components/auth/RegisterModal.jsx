@@ -1,13 +1,18 @@
 /**
 <<<<<<< HEAD
+<<<<<<< HEAD
  * Modal d'inscription simplifié
 =======
  * Modal d'inscription pour la réservation de tickets
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+ * Modal d'inscription pour la réservation de tickets
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
  */
 'use client'
 
 import { useState } from 'react'
+<<<<<<< HEAD
 <<<<<<< HEAD
 import { motion } from 'framer-motion'
 import { useForm } from 'react-hook-form'
@@ -34,6 +39,8 @@ export default function RegisterModal({ isOpen, onClose, onSuccess, redirectAfte
   const { register: registerUser, loading } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
 =======
+=======
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
 import { motion, AnimatePresence } from 'framer-motion'
 import { useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
@@ -72,11 +79,15 @@ export default function RegisterModal({
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [passwordStrength, setPasswordStrength] = useState(0)
+<<<<<<< HEAD
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
 
   const {
     register,
     handleSubmit,
+<<<<<<< HEAD
 <<<<<<< HEAD
     formState: { errors }
 =======
@@ -84,6 +95,11 @@ export default function RegisterModal({
     formState: { errors },
     reset
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+    watch,
+    formState: { errors },
+    reset
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
   } = useForm({
     resolver: yupResolver(registerSchema),
     defaultValues: {
@@ -92,6 +108,7 @@ export default function RegisterModal({
       email: '',
       telephone: '',
       password: '',
+<<<<<<< HEAD
 <<<<<<< HEAD
       sexe: ''
     }
@@ -196,6 +213,8 @@ export default function RegisterModal({
       </div>
     </Modal>
 =======
+=======
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
       confirmPassword: '',
       sexe: '',
       acceptTerms: false
@@ -480,6 +499,9 @@ export default function RegisterModal({
         </motion.div>
       </motion.div>
     </AnimatePresence>
+<<<<<<< HEAD
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
   )
 }

@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 'use client'
 
 import { useContext } from 'react'
@@ -11,6 +12,8 @@ export function useAuth() {
   }
   return context
 =======
+=======
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
 /**
  * Hook d'authentification personnalisé
  */
@@ -142,5 +145,8 @@ export function useAuth() {
     register,
     logout
   }
+<<<<<<< HEAD
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
 }

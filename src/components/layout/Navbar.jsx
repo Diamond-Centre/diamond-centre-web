@@ -1,9 +1,13 @@
 /**
 <<<<<<< HEAD
+<<<<<<< HEAD
  * Barre de navigation principale avec glassmorphisme
 =======
  * Barre de navigation principale - Avec affichage du nom utilisateur
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+ * Barre de navigation principale - Avec affichage du nom utilisateur
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
  */
 'use client'
 
@@ -12,17 +16,23 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { FaBars, FaTimes, FaUser, FaSignOutAlt } from 'react-icons/fa'
 import { GiDiamondRing } from 'react-icons/gi'
 import { useAuth } from '@/hooks/useAuth'
 import Button from '@/components/ui/Button'
 import Container from '@/components/ui/Container'
 =======
+=======
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
 import { FaBars, FaTimes, FaUser, FaSignOutAlt, FaChevronDown } from 'react-icons/fa'
 import { GiDiamondRing } from 'react-icons/gi'
 import { useAuth } from '@/hooks/useAuth'
 import Button from '@/components/ui/Button'
+<<<<<<< HEAD
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
 
 const navLinks = [
   { href: '/', label: 'Accueil' },
@@ -33,13 +43,18 @@ const navLinks = [
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
   const [isProfileOpen, setIsProfileOpen] = useState(false)
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
   const { user, logout, isAuthenticated } = useAuth()
   const pathname = usePathname()
 
   return (
+<<<<<<< HEAD
 <<<<<<< HEAD
     <nav className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-7xl">
       <div className="glass-dark rounded-2xl px-4 md:px-6 py-3 border border-white/10 shadow-xl">
@@ -51,6 +66,8 @@ export default function Navbar() {
             </div>
             <span className="text-lg font-bold text-white hidden sm:block">
 =======
+=======
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
     <nav className="fixed top-[28px] left-24 right-24 z-50">
       <div className="glass-dark rounded-3xl px-3 md:px-4 py-2 border border-white/10 shadow-xl w-full">
         <div className="flex items-center justify-between">
@@ -60,27 +77,38 @@ export default function Navbar() {
               <GiDiamondRing className="text-white text-lg" />
             </div>
             <span className="text-base font-bold text-white hidden sm:block">
+<<<<<<< HEAD
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
               Diamond Centre
             </span>
           </Link>
 
           {/* Navigation desktop */}
 <<<<<<< HEAD
+<<<<<<< HEAD
           <div className="hidden md:flex items-center gap-8">
 =======
           <div className="hidden md:flex items-center gap-6">
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+          <div className="hidden md:flex items-center gap-6">
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 className={`text-sm font-medium transition-colors hover:text-dice-blue ${
 <<<<<<< HEAD
+<<<<<<< HEAD
                   pathname === link.href ? 'text-dice-blue' : 'text-white/80'
 =======
                   pathname === link.href ? 'text-dice-blue' : 'text-black'
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+                  pathname === link.href ? 'text-dice-blue' : 'text-black'
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
                 }`}
               >
                 {link.label}
@@ -88,6 +116,7 @@ export default function Navbar() {
             ))}
           </div>
 
+<<<<<<< HEAD
 <<<<<<< HEAD
           {/* Actions */}
           <div className="hidden md:flex items-center gap-3">
@@ -111,6 +140,8 @@ export default function Navbar() {
                 <Button variant="glass" size="small">
                   <FaUser className="mr-2" />
 =======
+=======
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
           {/* Actions - Bouton Connexion ou Profil utilisateur */}
           <div className="hidden md:flex items-center gap-1">
             {isAuthenticated ? (
@@ -163,7 +194,10 @@ export default function Navbar() {
                   className="bg-dice-blue hover:bg-dice-blue-dark text-white px-3.5 py-1.5 rounded-full text-xs"
                 >
                   <FaUser className="mr-1 text-xs" />
+<<<<<<< HEAD
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
                   Connexion
                 </Button>
               </Link>
@@ -176,23 +210,30 @@ export default function Navbar() {
             className="md:hidden text-white/80 hover:text-white transition-colors"
           >
 <<<<<<< HEAD
+<<<<<<< HEAD
             {isOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
           </button>
         </div>
 
         {/* Menu mobile déroulant glassmorphisme */}
 =======
+=======
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
             {isOpen ? <FaTimes size={22} /> : <FaBars size={22} />}
           </button>
         </div>
 
         {/* Menu mobile déroulant */}
+<<<<<<< HEAD
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
         {isOpen && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
+<<<<<<< HEAD
 <<<<<<< HEAD
             className="md:hidden mt-4 pt-4 border-t border-white/10"
           >
@@ -202,22 +243,32 @@ export default function Navbar() {
           >
             <div className="flex flex-col gap-2">
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+            className="md:hidden mt-2 pt-2 border-t border-white/10"
+          >
+            <div className="flex flex-col gap-2">
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
                   className={`text-sm font-medium transition-colors hover:text-dice-blue ${
 <<<<<<< HEAD
+<<<<<<< HEAD
                     pathname === link.href ? 'text-dice-blue' : 'text-white/80'
 =======
                     pathname === link.href ? 'text-dice-blue' : 'text-black'
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+                    pathname === link.href ? 'text-dice-blue' : 'text-black'
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
                   }`}
                   onClick={() => setIsOpen(false)}
                 >
                   {link.label}
                 </Link>
               ))}
+<<<<<<< HEAD
 <<<<<<< HEAD
               <div className="flex flex-col gap-2 pt-3 border-t border-white/10">
                 {isAuthenticated ? (
@@ -226,6 +277,8 @@ export default function Navbar() {
                       <Button variant="glass" fullWidth>
                         Dashboard
 =======
+=======
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
               <div className="flex flex-col gap-2 pt-2 border-t border-white/10">
                 {isAuthenticated ? (
                   <>
@@ -241,7 +294,10 @@ export default function Navbar() {
                     <Link href="/dashboard" onClick={() => setIsOpen(false)}>
                       <Button variant="glass" fullWidth>
                         Tableau de bord
+<<<<<<< HEAD
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
                       </Button>
                     </Link>
                     <button
@@ -257,10 +313,14 @@ export default function Navbar() {
                 ) : (
                   <Link href="/auth/login" onClick={() => setIsOpen(false)}>
 <<<<<<< HEAD
+<<<<<<< HEAD
                     <Button variant="glass" fullWidth>
 =======
                     <Button variant="primary" fullWidth>
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+                    <Button variant="primary" fullWidth>
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
                       Connexion
                     </Button>
                   </Link>
