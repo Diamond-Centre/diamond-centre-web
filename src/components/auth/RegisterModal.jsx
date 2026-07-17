@@ -14,12 +14,17 @@ import {
 } from 'react-icons/fa'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
+import { useAuth } from '@/hooks/useAuth'
+import toast from 'react-hot-toast'
 
 const registerSchema = yup.object().shape({
   nom: yup.string().required('Le nom est requis').min(2, 'Nom trop court'),
   prenom: yup.string().required('Le prénom est requis').min(2, 'Prénom trop court'),
   email: yup.string().email('Email invalide').required('L\'email est requis'),
-  telephone: yup.string().matches(/^[0-9]{10}$/, 'Numéro invalide (10 chiffres)').required('Téléphone requis'),
+  telephone: yup
+    .string()
+    .matches(/^[0-9+\s-]{8,20}$/, 'Numéro de téléphone invalide')
+    .required('Téléphone requis'),
   password: yup.string()
     .min(8, '8 caractères minimum')
     .matches(/[a-z]/, 'Une minuscule')
@@ -33,12 +38,15 @@ const registerSchema = yup.object().shape({
   acceptTerms: yup.boolean().oneOf([true], 'Acceptez les conditions')
 })
 
-export default function RegisterModal({ 
-  isOpen, 
-  onClose, 
-  onRegister, 
-  loading = false 
+export default function RegisterModal({
+  isOpen,
+  onClose,
+  onRegister,
+  onSuccess,
+  loading: loadingProp = false
 }) {
+  const { register: registerUser, loading: authLoading } = useAuth()
+  const loading = loadingProp || authLoading
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [passwordStrength, setPasswordStrength] = useState(0)
@@ -97,6 +105,28 @@ export default function RegisterModal({
     setPasswordStrength(calculateStrength(password))
   }
 
+  const submitRegister = async (formData) => {
+    try {
+      if (typeof onRegister === 'function') {
+        await onRegister(formData)
+      } else {
+        await registerUser(formData)
+      }
+      reset()
+      setPasswordStrength(0)
+      if (typeof onSuccess === 'function') {
+        onSuccess()
+      } else {
+        onClose()
+      }
+    } catch (error) {
+      // toast already handled in useAuth when using registerUser
+      if (typeof onRegister === 'function') {
+        toast.error(error.message || "Erreur lors de l'inscription")
+      }
+    }
+  }
+
   // Fermer et réinitialiser
   const handleClose = () => {
     reset()
@@ -140,7 +170,7 @@ export default function RegisterModal({
           </div>
 
           {/* Formulaire */}
-          <form onSubmit={handleSubmit(onRegister)} className="space-y-4">
+          <form onSubmit={handleSubmit(submitRegister)} className="space-y-4">
             {/* Nom et Prénom */}
             <div className="grid grid-cols-2 gap-4">
               <div>

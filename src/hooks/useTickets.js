@@ -1,75 +1,93 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import api from '@/lib/api'
 import { useAuth } from './useAuth'
 
+/**
+ * Tickets API aligned with DICE backend:
+ * POST /tickets/reserve
+ * GET  /tickets/:id
+ */
 export function useTickets() {
   const [tickets, setTickets] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const { user } = useAuth()
 
-  const fetchTickets = useCallback(async () => {
-    if (!user) return
+  const getTicketById = useCallback(async (id) => {
     try {
       setLoading(true)
-      const response = await api.get('/tickets')
-      setTickets(response.data)
+      const response = await api.get(`/tickets/${id}`)
+      const ticket = response.data
       setError(null)
+      return ticket
     } catch (err) {
-      setError(err.message || 'Erreur lors du chargement des tickets')
+      const message =
+        err.response?.data?.message ||
+        err.message ||
+        'Erreur lors du chargement du ticket'
+      setError(message)
+      throw new Error(message)
     } finally {
       setLoading(false)
     }
-  }, [user])
-
-  const createTicket = useCallback(async (data) => {
-    try {
-      const response = await api.post('/tickets', data)
-      setTickets(prev => [...prev, response.data])
-      return response.data
-    } catch (err) {
-      setError(err.message || 'Erreur lors de la création du ticket')
-      throw err
-    }
   }, [])
 
-  const validateTicket = useCallback(async (id) => {
-    try {
-      const response = await api.put(`/tickets/${id}/validate`)
-      setTickets(prev => prev.map(t => t._id === id ? response.data : t))
-      return response.data
-    } catch (err) {
-      setError(err.message || 'Erreur lors de la validation du ticket')
-      throw err
-    }
-  }, [])
+  const createTicket = useCallback(
+    async (data) => {
+      try {
+        setLoading(true)
+        const payload = {
+          event_id: Number(data.event_id ?? data.eventId),
+          quantity: Number(data.quantity ?? 1),
+          customer_name:
+            data.customer_name ||
+            [user?.prenom, user?.nom].filter(Boolean).join(' ') ||
+            user?.name ||
+            data.customerName,
+          customer_email: data.customer_email || user?.email || data.customerEmail,
+          customer_phone:
+            data.customer_phone ||
+            user?.telephone ||
+            data.customerPhone ||
+            '0000000000',
+        }
 
-  const cancelTicket = useCallback(async (id) => {
-    try {
-      const response = await api.put(`/tickets/${id}/cancel`)
-      setTickets(prev => prev.map(t => t._id === id ? response.data : t))
-      return response.data
-    } catch (err) {
-      setError(err.message || 'Erreur lors de l\'annulation du ticket')
-      throw err
-    }
-  }, [])
+        if (
+          !payload.event_id ||
+          !payload.quantity ||
+          !payload.customer_name ||
+          !payload.customer_email ||
+          !payload.customer_phone
+        ) {
+          throw new Error('Informations de réservation incomplètes')
+        }
 
-  useEffect(() => {
-    if (user) {
-      fetchTickets()
-    }
-  }, [user, fetchTickets])
+        const response = await api.post('/tickets/reserve', payload)
+        const ticket = response.data
+        setTickets((prev) => [...prev, ticket])
+        setError(null)
+        return ticket
+      } catch (err) {
+        const message =
+          err.response?.data?.message ||
+          err.message ||
+          'Erreur lors de la création du ticket'
+        setError(message)
+        throw new Error(message)
+      } finally {
+        setLoading(false)
+      }
+    },
+    [user]
+  )
 
   return {
     tickets,
     loading,
     error,
-    fetchTickets,
     createTicket,
-    validateTicket,
-    cancelTicket
+    getTicketById,
   }
 }

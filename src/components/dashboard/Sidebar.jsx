@@ -78,16 +78,10 @@ export default function Sidebar() {
 
       {/* Footer */}
       <div className="mt-6 md:mt-8 pt-4 md:pt-6 border-t border-gray-200/50 space-y-2">
-        <Link href="/profile">
+        <Link href="/dashboard">
           <div className="flex items-center gap-3 px-3 md:px-4 py-2 md:py-2.5 rounded-xl text-gray-500 hover:bg-dice-blue/5 hover:text-dice-blue transition-colors cursor-pointer">
             <span className="text-base md:text-lg">👤</span>
             <span className="text-sm font-medium">Profil</span>
-          </div>
-        </Link>
-        <Link href="/settings">
-          <div className="flex items-center gap-3 px-3 md:px-4 py-2 md:py-2.5 rounded-xl text-gray-500 hover:bg-dice-blue/5 hover:text-dice-blue transition-colors cursor-pointer">
-            <span className="text-base md:text-lg">⚙️</span>
-            <span className="text-sm font-medium">Paramètres</span>
           </div>
         </Link>
         <button

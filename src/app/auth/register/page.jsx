@@ -96,26 +96,16 @@ export default function RegisterPage() {
     setIsLoading(true)
     try {
       await registerUser(userData)
-      toast.success('Compte créé avec succès !')
-      router.push('/auth/login')
+      router.push('/dashboard')
     } catch (error) {
-      toast.error(error.message || 'Erreur lors de l\'inscription')
+      // toast already shown in useAuth
     } finally {
       setIsLoading(false)
     }
   }
 
   const handleGoogleRegister = async () => {
-    setIsLoading(true)
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      toast.success('Inscription avec Google réussie !')
-      router.push('/dashboard')
-    } catch (error) {
-      toast.error('Erreur avec Google')
-    } finally {
-      setIsLoading(false)
-    }
+    toast.error("L'inscription Google sera bientôt disponible. Utilisez le formulaire.")
   }
 
   return (

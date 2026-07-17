@@ -1,17 +1,15 @@
 import axios from 'axios'
 
-// URL relative : fonctionne sur n'importe quel port sans config DB/JWT
-const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
 
 const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000,
+  timeout: 15000,
 })
 
-// Intercepteur token (désactivé en mode local mock — pas de vérification JWT côté serveur)
 api.interceptors.request.use(
   (config) => {
     if (typeof window !== 'undefined') {
@@ -22,22 +20,27 @@ api.interceptors.request.use(
     }
     return config
   },
-  (error) => {
-    return Promise.reject(error)
-  }
+  (error) => Promise.reject(error)
 )
 
-// Intercepteur erreurs — redirection 401 désactivée en mode local (pas de JWT réel)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // if (error.response?.status === 401) {
-    //   if (typeof window !== 'undefined') {
-    //     localStorage.removeItem('token')
-    //     localStorage.removeItem('user')
-    //     window.location.href = '/auth/login'
-    //   }
-    // }
+    // Only force logout on auth failures for protected auth checks,
+    // not for unrelated API 401/404 responses that can happen while
+    // some dashboard endpoints are still mock/partial.
+    const url = error.config?.url || ''
+    const isAuthRequest = url.includes('/auth/')
+    if (
+      error.response?.status === 401 &&
+      typeof window !== 'undefined' &&
+      isAuthRequest &&
+      !window.location.pathname.startsWith('/auth/')
+    ) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      window.location.href = '/auth/login'
+    }
     return Promise.reject(error)
   }
 )

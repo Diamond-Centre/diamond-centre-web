@@ -12,8 +12,6 @@ import { useEvents } from '@/hooks/useEvents'
 import { EventTypes } from '@/models/Event'
 
 // Composants layout
-import Navbar from '@/components/layout/Navbar'
-import Footer from '@/components/layout/Footer'
 import Container from '@/components/ui/Container'
 import Badge from '@/components/ui/Badge'
 import Spinner from '@/components/ui/Spinner'
@@ -121,7 +119,10 @@ export default function EventsPage() {
   // Statistiques
   const stats = {
     total: events?.length || 0,
-    upcoming: events?.filter((e: EventType) => e?.statut === 'à venir').length || 0,
+    upcoming: events?.filter((e: EventType) => {
+      const status = String(e?.statut || e?.status || '').toLowerCase()
+      return status === 'à venir' || status === 'published' || status === 'upcoming'
+    }).length || 0,
     participants: events?.reduce((acc: number, e: EventType) => acc + (e?.nbInscrits || 0), 0) || 0,
   }
 
@@ -182,8 +183,6 @@ export default function EventsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
-
       <main className="pt-20">
         {/* Hero Section */}
         <section className="relative py-12">

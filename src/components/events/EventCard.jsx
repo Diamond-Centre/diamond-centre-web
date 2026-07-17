@@ -36,6 +36,7 @@ export default function EventCard({
     prix, 
     prixPromotion, 
     date, 
+    time,
     lieu, 
     formateur, 
     type, 
@@ -46,9 +47,13 @@ export default function EventCard({
 
   const [isHovered, setIsHovered] = useState(false)
   const [showReservation, setShowReservation] = useState(false)
-  const isFull = nbInscrits >= nbPlaces
-  const isPast = new Date(date) < new Date()
-  const placesRestantes = nbPlaces - nbInscrits
+  const safePlaces = Number(nbPlaces) || 0
+  const safeInscrits = Number(nbInscrits) || 0
+  const isFull = safePlaces > 0 && safeInscrits >= safePlaces
+  const parsedDate = date ? new Date(date) : null
+  const hasValidDate = parsedDate && !Number.isNaN(parsedDate.getTime())
+  const isPast = hasValidDate ? parsedDate < new Date() : false
+  const placesRestantes = Math.max(0, safePlaces - safeInscrits)
 
   const getStatusBadge = () => {
     if (isPast) return { label: 'Terminé', variant: 'gray' }
@@ -121,18 +126,20 @@ export default function EventCard({
             <div className="flex items-center gap-2">
               <FaCalendar className="text-dice-blue text-xs" />
               <span>
-                {format(new Date(date), 'dd MMMM yyyy', { locale: fr })}
+                {hasValidDate
+                  ? format(parsedDate, 'dd MMMM yyyy', { locale: fr })
+                  : (date || 'Date à confirmer')}
               </span>
             </div>
             <div className="flex items-center gap-2">
               <FaClock className="text-dice-blue text-xs" />
               <span>
-                {format(new Date(date), 'HH:mm')}
+                {time || (hasValidDate ? format(parsedDate, 'HH:mm') : '--:--')}
               </span>
             </div>
             <div className="flex items-center gap-2">
               <FaMapMarker className="text-dice-blue text-xs" />
-              <span className="truncate">{lieu}</span>
+              <span className="truncate">{lieu || 'Lieu à confirmer'}</span>
             </div>
             <div className="flex items-center gap-2">
               <FaUser className="text-dice-blue text-xs" />

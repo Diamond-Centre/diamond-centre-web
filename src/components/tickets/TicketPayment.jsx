@@ -13,7 +13,6 @@ import {
   FaArrowLeft,
   FaSpinner
 } from 'react-icons/fa'
-import { SiOrange, SiMtn } from 'react-icons/si'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 
@@ -139,14 +138,14 @@ export default function TicketPayment({
               type="button"
               className="p-4 border-2 rounded-xl flex items-center gap-3 hover:border-dice-blue transition-colors"
             >
-              <SiOrange className="text-3xl text-orange-500" />
+              <FaMobileAlt className="text-3xl text-orange-500" />
               <span className="font-medium">Orange Money</span>
             </button>
             <button
               type="button"
               className="p-4 border-2 rounded-xl flex items-center gap-3 hover:border-dice-blue transition-colors"
             >
-              <SiMtn className="text-3xl text-yellow-500" />
+              <FaMobileAlt className="text-3xl text-yellow-500" />
               <span className="font-medium">MTN Mobile</span>
             </button>
           </div>
