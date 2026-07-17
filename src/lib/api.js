@@ -1,6 +1,8 @@
 import axios from 'axios'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+// Same-origin by default so the browser never hits CORS.
+// Next.js rewrites /api/* → BACKEND_URL (see next.config.js).
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api'
 
 const api = axios.create({
   baseURL: API_URL,
@@ -26,9 +28,6 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Only force logout on auth failures for protected auth checks,
-    // not for unrelated API 401/404 responses that can happen while
-    // some dashboard endpoints are still mock/partial.
     const url = error.config?.url || ''
     const isAuthRequest = url.includes('/auth/')
     if (
