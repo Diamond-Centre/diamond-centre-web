@@ -1,9 +1,5 @@
 /**
-<<<<<<< HEAD
- * Page de connexion - Moderne avec glassmorphisme
-=======
  * Page de connexion - Plein écran avec Bleu Diamond Centre
->>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
  */
 'use client'
 
@@ -12,51 +8,25 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/hooks/useAuth'
-<<<<<<< HEAD
-import { FaArrowLeft, FaGem, FaShieldAlt } from 'react-icons/fa'
-import toast from 'react-hot-toast'
-
-// Composants Auth
-import LoginForm from '@/components/auth/LoginForm'
-import SocialAuth from '@/components/auth/SocialAuth'
-import AuthDivider from '@/components/auth/AuthDivider'
-
-// Composants UI
-import Container from '@/components/ui/Container'
-=======
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash, FaGoogle } from 'react-icons/fa'
 import { GiDiamondRing } from 'react-icons/gi'
 import toast from 'react-hot-toast'
 import Button from '@/components/ui/Button'
->>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
 
 export default function LoginPage() {
   const router = useRouter()
   const { login, isAuthenticated, loading } = useAuth()
-<<<<<<< HEAD
-  const [isLoading, setIsLoading] = useState(false)
-
-  // Rediriger si déjà connecté
-=======
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
->>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
   useEffect(() => {
     if (isAuthenticated) {
       router.push('/dashboard')
     }
   }, [isAuthenticated, router])
 
-<<<<<<< HEAD
-  // Connexion avec email/password
-  const handleLogin = async (data) => {
-    setIsLoading(true)
-    try {
-      await login(data.email, data.password)
-=======
   const handleLogin = async (e) => {
     e.preventDefault()
     if (!email || !password) {
@@ -66,7 +36,6 @@ export default function LoginPage() {
     setIsLoading(true)
     try {
       await login(email, password)
->>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
       toast.success('Connexion réussie !')
       router.push('/dashboard')
     } catch (error) {
@@ -76,18 +45,6 @@ export default function LoginPage() {
     }
   }
 
-<<<<<<< HEAD
-  // Connexion sociale (mock)
-  const handleSocialLogin = async (provider) => {
-    setIsLoading(true)
-    try {
-      // Simulation de connexion sociale
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      toast.success(`Connexion avec ${provider} réussie !`)
-      router.push('/dashboard')
-    } catch (error) {
-      toast.error(`Erreur avec ${provider}`)
-=======
   const handleGoogleLogin = async () => {
     setIsLoading(true)
     try {
@@ -96,68 +53,12 @@ export default function LoginPage() {
       router.push('/dashboard')
     } catch (error) {
       toast.error('Erreur avec Google')
->>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-<<<<<<< HEAD
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-dice-blue/5 via-white to-purple-500/5 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Formes décoratives */}
-      <motion.div className="absolute top-0 right-0 w-96 h-96 bg-dice-blue/10 rounded-full blur-3xl" animate={{ scale: [1, 1.2, 1], rotate: [0, 90, 0] }} transition={{ duration: 20, repeat: Infinity }} />
-      <motion.div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" animate={{ scale: [1, 1.3, 1], rotate: [0, -90, 0] }} transition={{ duration: 25, repeat: Infinity }} />
-      <motion.div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-dice-blue/5 rounded-full blur-3xl" animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 15, repeat: Infinity }} />
-
-      {/* Back button */}
-      <motion.button
-        onClick={() => router.push('/')}
-        className="fixed top-6 left-6 z-10 flex items-center gap-2 text-gray-500 hover:text-dice-blue transition-colors glass-card-dice px-4 py-2 rounded-full text-sm"
-        whileHover={{ x: -3 }}
-      >
-        <FaArrowLeft className="text-sm" /> Retour
-      </motion.button>
-
-      <Container className="relative z-10 max-w-md">
-        <motion.div
-          className="glass-card-dice rounded-3xl p-8 backdrop-blur-xl bg-white/40 border border-white/30 shadow-2xl"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          {/* En-tête */}
-          <div className="text-center">
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 200, delay: 0.1 }}
-              className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-dice-blue to-purple-600 rounded-2xl mb-4 shadow-lg"
-            >
-              <FaGem className="text-2xl text-white" />
-            </motion.div>
-            <h2 className="text-2xl font-bold text-gray-800">Bienvenue</h2>
-            <p className="text-gray-500 text-sm mt-1">Connectez-vous pour continuer</p>
-          </div>
-
-          {/* Contenu */}
-          <div className="mt-6">
-            {/* Login Form */}
-            <LoginForm onSubmit={handleLogin} loading={isLoading || loading} />
-
-            {/* Divider */}
-            <AuthDivider text="Ou continuez avec" />
-
-            {/* Social Auth */}
-            <SocialAuth onSocialLogin={handleSocialLogin} loading={isLoading || loading} />
-
-            {/* Register link */}
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600">
-                Pas encore de compte ?{' '}
-                <Link href="/auth/register" className="text-dice-blue hover:text-dice-blue-dark font-medium transition-colors">
-                  Inscrivez-vous
-=======
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-dice-blue/5 via-white to-purple-500/5 p-0">
       {/* Conteneur principal - Plein écran */}
       <div className="w-full h-screen max-h-screen bg-white shadow-2xl overflow-hidden flex flex-col md:flex-row">
@@ -215,42 +116,10 @@ export default function LoginPage() {
                 Pas encore de compte ?{' '}
                 <Link href="/auth/register" className="text-dice-blue hover:underline font-medium">
                   Créer un compte
->>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
                 </Link>
               </p>
             </div>
 
-<<<<<<< HEAD
-            {/* Sécurité */}
-            <motion.div
-              className="mt-6 flex items-center justify-center gap-4 text-xs text-gray-400"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-            >
-              <span className="flex items-center gap-1">
-                <FaShieldAlt className="text-dice-blue" /> Sécurisé
-              </span>
-              <span className="w-px h-3 bg-gray-300" />
-              <span>🔒 Chiffré</span>
-              <span className="w-px h-3 bg-gray-300" />
-              <span>✓ 100% confidentiel</span>
-            </motion.div>
-          </div>
-        </motion.div>
-      </Container>
-
-      {/* Styles */}
-      <style jsx global>{`
-        .glass-card-dice {
-          background: rgba(255, 255, 255, 0.4);
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 255, 255, 0.3);
-          box-shadow: 0 8px 32px rgba(10, 137, 242, 0.06);
-        }
-      `}</style>
-=======
             <form onSubmit={handleLogin} className="space-y-4">
               {/* Email */}
               <div>
@@ -345,7 +214,6 @@ export default function LoginPage() {
           </motion.div>
         </div>
       </div>
->>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
     </div>
   )
 }
