@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
-const backendUrl = (process.env.BACKEND_URL || 'http://127.0.0.1:3001').replace(/\/$/, '')
+// Default points at the shared DICE backend host on the LAN so teammates
+// work with zero config. Override with BACKEND_URL in .env if needed.
+const backendUrl = (process.env.BACKEND_URL || 'http://192.168.1.113:3001').replace(/\/$/, '')
 
 const nextConfig = {
   reactStrictMode: true,
