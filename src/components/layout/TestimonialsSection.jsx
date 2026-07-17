@@ -1,9 +1,13 @@
 /**
 <<<<<<< HEAD
+<<<<<<< HEAD
  * Section témoignages
 =======
  * Section témoignages - Bleu Diamond Centre avec emojis
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+ * Section témoignages - Bleu Diamond Centre avec emojis
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
  */
 'use client'
 
@@ -13,7 +17,10 @@ import Section from '@/components/ui/Section'
 import Card from '@/components/ui/Card'
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
 // Emojis pour les avatars
 const avatarEmojis = [
   '👩‍💼', // Femme entrepreneur
@@ -30,16 +37,23 @@ const avatarEmojis = [
   '🧑‍💼', // Personne professionnelle
 ]
 
+<<<<<<< HEAD
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
 export default function TestimonialsSection({ 
   testimonials,
   title = 'Ce que disent nos participants',
   badge = 'Témoignages',
 <<<<<<< HEAD
+<<<<<<< HEAD
   bgClass = 'bg-gradient-to-br from-blue-900 to-indigo-900 text-white'
 =======
   bgClass = 'bg-gradient-to-br from-dice-blue to-dice-blue-dark'
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+  bgClass = 'bg-gradient-to-br from-dice-blue to-dice-blue-dark'
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
 }) {
   return (
     <Section 
@@ -48,6 +62,7 @@ export default function TestimonialsSection({
       className={bgClass}
     >
       <div className="grid md:grid-cols-3 gap-8">
+<<<<<<< HEAD
 <<<<<<< HEAD
         {testimonials.map((testimonial, index) => (
           <motion.div
@@ -77,6 +92,8 @@ export default function TestimonialsSection({
           </motion.div>
         ))}
 =======
+=======
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
         {testimonials.map((testimonial, index) => {
           // Sélectionner un emoji basé sur l'index ou le rôle
           let emoji = '👤' // Emoji par défaut
@@ -132,7 +149,10 @@ export default function TestimonialsSection({
             </motion.div>
           )
         })}
+<<<<<<< HEAD
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
       </div>
     </Section>
   )

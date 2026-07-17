@@ -36,10 +36,14 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
 <<<<<<< HEAD
+<<<<<<< HEAD
   ],
 =======
 , "app/dashboard/page.jsx"  ],
 >>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
+=======
+, "app/dashboard/page.jsx"  ],
+>>>>>>> f28adba (feat: mise à jour du design pages de connexion et inscription)
   "exclude": [
     "node_modules"
   ]
