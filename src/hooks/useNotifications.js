@@ -1,60 +1,29 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import api from '@/lib/api'
+import { useState, useCallback } from 'react'
 import { useAuth } from './useAuth'
 import toast from 'react-hot-toast'
 
+/**
+ * Notifications are not yet exposed by DICE backend.
+ * Keep a safe no-op hook so UI can mount without 404 polling.
+ */
 export function useNotifications() {
-  const [notifications, setNotifications] = useState([])
-  const [unreadCount, setUnreadCount] = useState(0)
-  const [loading, setLoading] = useState(true)
+  const [notifications] = useState([])
+  const [unreadCount] = useState(0)
+  const [loading] = useState(false)
   const { user } = useAuth()
 
   const fetchNotifications = useCallback(async () => {
     if (!user) return
-    try {
-      setLoading(true)
-      const response = await api.get('/notifications')
-      setNotifications(response.data)
-      setUnreadCount(response.data.filter(n => !n.read).length)
-    } catch (err) {
-      console.error('Erreur notifications:', err)
-    } finally {
-      setLoading(false)
-    }
+    // Backend endpoint not available yet
   }, [user])
 
-  const markAsRead = useCallback(async (id) => {
-    try {
-      await api.put(`/notifications/${id}/read`)
-      setNotifications(prev => prev.map(n => 
-        n._id === id ? { ...n, read: true } : n
-      ))
-      setUnreadCount(prev => Math.max(0, prev - 1))
-    } catch (err) {
-      console.error('Erreur marquage lu:', err)
-    }
-  }, [])
+  const markAsRead = useCallback(async () => {}, [])
 
   const markAllAsRead = useCallback(async () => {
-    try {
-      await api.put('/notifications/read-all')
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })))
-      setUnreadCount(0)
-      toast.success('Toutes les notifications ont été marquées comme lues')
-    } catch (err) {
-      console.error('Erreur marquage tout lu:', err)
-    }
+    toast('Les notifications seront bientôt disponibles')
   }, [])
-
-  useEffect(() => {
-    if (user) {
-      fetchNotifications()
-      const interval = setInterval(fetchNotifications, 30000) // toutes les 30s
-      return () => clearInterval(interval)
-    }
-  }, [user, fetchNotifications])
 
   return {
     notifications,
@@ -62,6 +31,6 @@ export function useNotifications() {
     loading,
     fetchNotifications,
     markAsRead,
-    markAllAsRead
+    markAllAsRead,
   }
 }

@@ -1,39 +1,9 @@
 /**
-<<<<<<< HEAD
- * Modal d'inscription simplifié
-=======
  * Modal d'inscription pour la réservation de tickets
->>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
  */
 'use client'
 
 import { useState } from 'react'
-<<<<<<< HEAD
-import { motion } from 'framer-motion'
-import { useForm } from 'react-hook-form'
-import { yupResolver } from '@hookform/resolvers/yup'
-import * as yup from 'yup'
-import { FaUser, FaEnvelope, FaLock, FaPhone, FaVenusMars } from 'react-icons/fa'
-import { useAuth } from '@/hooks/useAuth'
-import Button from '@/components/ui/Button'
-import Input from '@/components/ui/Input'
-import Modal from '@/components/ui/Modal'
-import toast from 'react-hot-toast'
-
-// Schéma de validation simplifié
-const registerSchema = yup.object().shape({
-  nom: yup.string().required('Le nom est requis'),
-  prenom: yup.string().required('Le prénom est requis'),
-  email: yup.string().email('Email invalide').required('L\'email est requis'),
-  telephone: yup.string().matches(/^[0-9]{10}$/, 'Téléphone invalide').required(),
-  password: yup.string().min(6, '6 caractères minimum').required(),
-  sexe: yup.string().oneOf(['M', 'F']).required()
-})
-
-export default function RegisterModal({ isOpen, onClose, onSuccess, redirectAfterLogin = true }) {
-  const { register: registerUser, loading } = useAuth()
-  const [showPassword, setShowPassword] = useState(false)
-=======
 import { motion, AnimatePresence } from 'framer-motion'
 import { useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
@@ -44,12 +14,17 @@ import {
 } from 'react-icons/fa'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
+import { useAuth } from '@/hooks/useAuth'
+import toast from 'react-hot-toast'
 
 const registerSchema = yup.object().shape({
   nom: yup.string().required('Le nom est requis').min(2, 'Nom trop court'),
   prenom: yup.string().required('Le prénom est requis').min(2, 'Prénom trop court'),
   email: yup.string().email('Email invalide').required('L\'email est requis'),
-  telephone: yup.string().matches(/^[0-9]{10}$/, 'Numéro invalide (10 chiffres)').required('Téléphone requis'),
+  telephone: yup
+    .string()
+    .matches(/^[0-9+\s-]{8,20}$/, 'Numéro de téléphone invalide')
+    .required('Téléphone requis'),
   password: yup.string()
     .min(8, '8 caractères minimum')
     .matches(/[a-z]/, 'Une minuscule')
@@ -63,27 +38,25 @@ const registerSchema = yup.object().shape({
   acceptTerms: yup.boolean().oneOf([true], 'Acceptez les conditions')
 })
 
-export default function RegisterModal({ 
-  isOpen, 
-  onClose, 
-  onRegister, 
-  loading = false 
+export default function RegisterModal({
+  isOpen,
+  onClose,
+  onRegister,
+  onSuccess,
+  loading: loadingProp = false
 }) {
+  const { register: registerUser, loading: authLoading } = useAuth()
+  const loading = loadingProp || authLoading
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [passwordStrength, setPasswordStrength] = useState(0)
->>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
 
   const {
     register,
     handleSubmit,
-<<<<<<< HEAD
-    formState: { errors }
-=======
     watch,
     formState: { errors },
     reset
->>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
   } = useForm({
     resolver: yupResolver(registerSchema),
     defaultValues: {
@@ -92,110 +65,6 @@ export default function RegisterModal({
       email: '',
       telephone: '',
       password: '',
-<<<<<<< HEAD
-      sexe: ''
-    }
-  })
-
-  const onSubmit = async (data) => {
-    try {
-      await registerUser(data)
-      toast.success('Inscription réussie !')
-      if (onSuccess) {
-        onSuccess()
-      }
-      if (redirectAfterLogin) {
-        onClose()
-      }
-    } catch (error) {
-      toast.error('Erreur lors de l\'inscription')
-    }
-  }
-
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} size="md">
-      <div className="p-6">
-        <div className="text-center mb-6">
-          <h3 className="text-2xl font-bold text-gray-800">Créer un compte</h3>
-          <p className="text-gray-500">Inscrivez-vous pour réserver votre place</p>
-        </div>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Nom"
-              placeholder="Dupont"
-              icon={<FaUser />}
-              error={errors.nom?.message}
-              {...register('nom')}
-            />
-            <Input
-              label="Prénom"
-              placeholder="Jean"
-              icon={<FaUser />}
-              error={errors.prenom?.message}
-              {...register('prenom')}
-            />
-          </div>
-
-          <Input
-            label="Email"
-            type="email"
-            placeholder="exemple@email.com"
-            icon={<FaEnvelope />}
-            error={errors.email?.message}
-            {...register('email')}
-          />
-
-          <Input
-            label="Téléphone"
-            type="tel"
-            placeholder="0612345678"
-            icon={<FaPhone />}
-            error={errors.telephone?.message}
-            {...register('telephone')}
-          />
-
-          <Input
-            label="Mot de passe"
-            type={showPassword ? 'text' : 'password'}
-            placeholder="••••••••"
-            icon={<FaLock />}
-            error={errors.password?.message}
-            {...register('password')}
-          />
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Sexe</label>
-            <div className="grid grid-cols-2 gap-4">
-              <label className="p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
-                <input type="radio" value="M" className="sr-only" {...register('sexe')} />
-                <FaVenusMars className="text-blue-500" />
-                <span>Homme</span>
-              </label>
-              <label className="p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
-                <input type="radio" value="F" className="sr-only" {...register('sexe')} />
-                <FaVenusMars className="text-pink-500" />
-                <span>Femme</span>
-              </label>
-            </div>
-            {errors.sexe && <p className="text-sm text-red-600 mt-1">{errors.sexe.message}</p>}
-          </div>
-
-          <Button type="submit" variant="primary" fullWidth loading={loading}>
-            S'inscrire
-          </Button>
-
-          <p className="text-sm text-center text-gray-500">
-            Déjà un compte ?{' '}
-            <button type="button" className="text-dice-blue hover:underline" onClick={onClose}>
-              Se connecter
-            </button>
-          </p>
-        </form>
-      </div>
-    </Modal>
-=======
       confirmPassword: '',
       sexe: '',
       acceptTerms: false
@@ -234,6 +103,28 @@ export default function RegisterModal({
   const handlePasswordChange = (e) => {
     const password = e.target.value
     setPasswordStrength(calculateStrength(password))
+  }
+
+  const submitRegister = async (formData) => {
+    try {
+      if (typeof onRegister === 'function') {
+        await onRegister(formData)
+      } else {
+        await registerUser(formData)
+      }
+      reset()
+      setPasswordStrength(0)
+      if (typeof onSuccess === 'function') {
+        onSuccess()
+      } else {
+        onClose()
+      }
+    } catch (error) {
+      // toast already handled in useAuth when using registerUser
+      if (typeof onRegister === 'function') {
+        toast.error(error.message || "Erreur lors de l'inscription")
+      }
+    }
   }
 
   // Fermer et réinitialiser
@@ -279,7 +170,7 @@ export default function RegisterModal({
           </div>
 
           {/* Formulaire */}
-          <form onSubmit={handleSubmit(onRegister)} className="space-y-4">
+          <form onSubmit={handleSubmit(submitRegister)} className="space-y-4">
             {/* Nom et Prénom */}
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -480,6 +371,5 @@ export default function RegisterModal({
         </motion.div>
       </motion.div>
     </AnimatePresence>
->>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
   )
 }

@@ -1,7 +1,6 @@
 import { AuthProvider } from '@/context/AuthContext'
 import './globals.css'
-import Navbar from '@/components/layout/Navbar'
-import Footer from '@/components/layout/Footer'
+import AppShell from '@/components/layout/AppShell'
 import { Toaster } from 'react-hot-toast'
 
 export const metadata = {
@@ -14,11 +13,7 @@ export default function RootLayout({ children }) {
     <html lang="fr">
       <body>
         <AuthProvider>
-          <div className="min-h-screen flex flex-col">
-            <Navbar />
-            <main className="flex-grow">{children}</main>
-            <Footer />
-          </div>
+          <AppShell>{children}</AppShell>
           <Toaster position="top-right" />
         </AuthProvider>
       </body>

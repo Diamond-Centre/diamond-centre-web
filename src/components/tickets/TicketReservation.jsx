@@ -48,8 +48,12 @@ export default function TicketReservation({
   const [isProcessing, setIsProcessing] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState('card')
 
-  const maxPlaces = event?.nbPlaces - event?.nbInscrits || 0
-  const prixTotal = (event?.prixPromotion || event?.prix || 0) * selectedQuantity
+  const maxPlaces = Math.max(
+    0,
+    Number(event?.available_tickets ?? (event?.nbPlaces - event?.nbInscrits) ?? 0)
+  )
+  const unitPrice = Number(event?.prixPromotion ?? event?.prix ?? 0)
+  const prixTotal = unitPrice * selectedQuantity
 
   // Réinitialiser quand le modal s'ouvre
   useEffect(() => {
@@ -70,28 +74,28 @@ export default function TicketReservation({
     setStep(2)
   }
 
-  // Gérer le paiement
+  // Gérer le paiement / réservation backend
   const handlePayment = async (paymentData) => {
     setIsProcessing(true)
     try {
       const ticket = await createTicket({
-        userId: user.id,
-        eventId: event.id,
+        event_id: event.id,
         quantity: selectedQuantity,
-        prixPaye: prixTotal,
-        paymentMethod: paymentData.method,
-        paymentId: paymentData.transactionId
+        customer_name: [user?.prenom, user?.nom].filter(Boolean).join(' ') || user?.name,
+        customer_email: user?.email,
+        customer_phone: user?.telephone || '0000000000',
+        paymentMethod: paymentData?.method,
       })
-      
+
       setTicketData(ticket)
       setStep(3)
       toast.success('Réservation confirmée !')
-      
+
       if (onSuccess) {
         onSuccess(ticket)
       }
     } catch (error) {
-      toast.error('Erreur lors de la réservation')
+      toast.error(error.message || 'Erreur lors de la réservation')
     } finally {
       setIsProcessing(false)
     }
@@ -101,8 +105,14 @@ export default function TicketReservation({
   const handleRegisterSuccess = () => {
     setShowRegister(false)
     toast.success('Inscription réussie ! Vous pouvez maintenant réserver.')
-    // Passer à l'étape de paiement
     setStep(2)
+  }
+
+  const formatEventDate = (value, pattern) => {
+    if (!value) return 'Date à confirmer'
+    const d = new Date(value)
+    if (Number.isNaN(d.getTime())) return String(value)
+    return format(d, pattern, { locale: fr })
   }
 
   // Rendu des étapes
@@ -130,23 +140,23 @@ export default function TicketReservation({
 
       {/* Détails de l'événement */}
       <div className="bg-gray-50 rounded-xl p-4 space-y-2">
-        <h4 className="font-semibold text-gray-800">{event?.titre}</h4>
+        <h4 className="font-semibold text-gray-800">{event?.titre || event?.title}</h4>
         <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
           <div className="flex items-center gap-2">
             <FaCalendar className="text-dice-blue" />
-            <span>{format(new Date(event?.date), 'dd MMMM yyyy', { locale: fr })}</span>
+            <span>{formatEventDate(event?.date, 'dd MMMM yyyy')}</span>
           </div>
           <div className="flex items-center gap-2">
             <FaClock className="text-dice-blue" />
-            <span>{format(new Date(event?.date), 'HH:mm')}</span>
+            <span>{event?.time || formatEventDate(event?.date, 'HH:mm')}</span>
           </div>
           <div className="flex items-center gap-2">
             <FaMapMarker className="text-dice-blue" />
-            <span>{event?.lieu}</span>
+            <span>{event?.lieu || event?.location || 'Lieu à confirmer'}</span>
           </div>
           <div className="flex items-center gap-2">
             <FaUser className="text-dice-blue" />
-            <span>{event?.formateur?.nom}</span>
+            <span>{event?.formateur?.nom || 'Diamond Centre'}</span>
           </div>
         </div>
       </div>
@@ -217,7 +227,6 @@ export default function TicketReservation({
         isOpen={showRegister}
         onClose={() => setShowRegister(false)}
         onSuccess={handleRegisterSuccess}
-        redirectAfterLogin={false}
       />
     </div>
   )
@@ -247,7 +256,7 @@ export default function TicketReservation({
       ticket={ticketData}
       event={event}
       onClose={onClose}
-      onViewTicket={() => router.push('/profile/tickets')}
+      onViewTicket={() => router.push('/dashboard/tickets')}
     />
   )
 

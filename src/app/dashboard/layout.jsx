@@ -18,10 +18,10 @@ export default function DashboardLayout({ children }) {
   }, [])
 
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      router.push('/auth/login')
+    if (isClient && !loading && !isAuthenticated) {
+      router.replace('/auth/login')
     }
-  }, [isAuthenticated, loading, router])
+  }, [isClient, isAuthenticated, loading, router])
 
   if (!isClient || loading) {
     return (
@@ -39,10 +39,7 @@ export default function DashboardLayout({ children }) {
     <div className="min-h-screen bg-gradient-to-br from-dice-blue/5 via-white to-purple-500/5 pt-20 md:pt-24 pb-20 md:pb-8">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex gap-6">
-          {/* Sidebar - gère son propre affichage responsive */}
           <Sidebar />
-
-          {/* Contenu principal */}
           <div className="flex-1 min-w-0">
             {children}
           </div>

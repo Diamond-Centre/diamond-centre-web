@@ -7,6 +7,30 @@ import { useRouter } from 'next/navigation'
 
 export const AuthContext = createContext()
 
+function mapBackendUser(user) {
+  if (!user) return null
+  const nameParts = String(user.name || '').trim().split(/\s+/)
+  const prenom = nameParts[0] || ''
+  const nom = nameParts.slice(1).join(' ') || prenom
+  return {
+    id: String(user.id),
+    email: user.email,
+    name: user.name,
+    nom,
+    prenom,
+    role: user.role === 'admin' ? 'admin' : 'user',
+  }
+}
+
+function getErrorMessage(error, fallback) {
+  return (
+    error.response?.data?.message ||
+    error.response?.data?.error ||
+    error.message ||
+    fallback
+  )
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -34,40 +58,61 @@ export function AuthProvider({ children }) {
   const login = useCallback(async (email, password) => {
     try {
       const response = await api.post('/auth/login', { email, password })
-      const { user, token } = response.data
-      
+      const mappedUser = mapBackendUser(response.data.user)
+      const token = response.data.access_token
+
+      if (!mappedUser || !token) {
+        throw new Error('Réponse d\'authentification invalide')
+      }
+
       localStorage.setItem('token', token)
-      localStorage.setItem('user', JSON.stringify(user))
-      
-      setUser(user)
+      localStorage.setItem('user', JSON.stringify(mappedUser))
+
+      setUser(mappedUser)
       setIsAuthenticated(true)
       toast.success('Connexion réussie !')
-      
+
       router.push('/')
       return { success: true }
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Erreur de connexion')
-      return { success: false, error: error.response?.data?.error }
+      toast.error(getErrorMessage(error, 'Erreur de connexion'))
+      return { success: false, error: getErrorMessage(error, 'Erreur de connexion') }
     }
   }, [router])
 
   const register = useCallback(async (data) => {
     try {
-      const response = await api.post('/auth/register', data)
-      const { user, token } = response.data
-      
+      const name =
+        data.name ||
+        [data.prenom, data.nom].filter(Boolean).join(' ').trim()
+
+      await api.post('/auth/register', {
+        email: data.email,
+        password: data.password,
+        name,
+        role: data.role || 'client',
+      })
+
+      const response = await api.post('/auth/login', {
+        email: data.email,
+        password: data.password,
+      })
+
+      const mappedUser = mapBackendUser(response.data.user)
+      const token = response.data.access_token
+
       localStorage.setItem('token', token)
-      localStorage.setItem('user', JSON.stringify(user))
-      
-      setUser(user)
+      localStorage.setItem('user', JSON.stringify(mappedUser))
+
+      setUser(mappedUser)
       setIsAuthenticated(true)
       toast.success('Inscription réussie !')
-      
+
       router.push('/')
       return { success: true }
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Erreur d\'inscription')
-      return { success: false, error: error.response?.data?.error }
+      toast.error(getErrorMessage(error, "Erreur d'inscription"))
+      return { success: false, error: getErrorMessage(error, "Erreur d'inscription") }
     }
   }, [router])
 

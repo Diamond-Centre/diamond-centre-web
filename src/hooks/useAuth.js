@@ -1,131 +1,146 @@
-<<<<<<< HEAD
-'use client'
-
-import { useContext } from 'react'
-import { AuthContext } from '@/context/AuthContext'
-
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
-  return context
-=======
 /**
- * Hook d'authentification personnalisé
+ * Hook d'authentification — connecté à DICE-PROJECT-BACKEND
  */
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { authStore } from '@/store/authStore'
+import api from '@/lib/api'
 import toast from 'react-hot-toast'
 
-// Mock users pour la démonstration
-const mockUsers = [
-  {
-    id: '1',
-    email: 'demo@diamondcentre.com',
-    password: 'Demo123!',
-    nom: 'Dupont',
-    prenom: 'Jean',
-    role: 'user',
-    telephone: '0612345678',
-    sexe: 'M'
-  },
-  {
-    id: '2',
-    email: 'admin@diamondcentre.com',
-    password: 'Admin123!',
-    nom: 'Admin',
-    prenom: 'Super',
-    role: 'admin',
-    telephone: '0623456789',
-    sexe: 'M'
+function mapBackendUser(user) {
+  if (!user) return null
+  const nameParts = String(user.name || '').trim().split(/\s+/)
+  const prenom = nameParts[0] || ''
+  const nom = nameParts.slice(1).join(' ') || prenom
+  return {
+    id: String(user.id),
+    email: user.email,
+    name: user.name,
+    nom,
+    prenom,
+    role: user.role === 'admin' ? 'admin' : 'user',
   }
-]
+}
+
+function persistSession(user, token) {
+  localStorage.setItem('token', token)
+  localStorage.setItem('user', JSON.stringify(user))
+}
+
+function clearSession() {
+  localStorage.removeItem('token')
+  localStorage.removeItem('user')
+  document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+  document.cookie = 'user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+}
+
+function getErrorMessage(error, fallback) {
+  return (
+    error.response?.data?.message ||
+    error.response?.data?.error ||
+    error.message ||
+    fallback
+  )
+}
 
 export function useAuth() {
   const router = useRouter()
-  const { user, setUser, clearUser, isAuthenticated } = authStore()
+  const { user, setUser, clearUser, setToken } = authStore()
   const [loading, setLoading] = useState(false)
+  const [initialized, setInitialized] = useState(false)
 
   useEffect(() => {
-    // Vérifier si l'utilisateur est déjà connecté (cookies)
-    const userCookie = document.cookie
-      .split('; ')
-      .find(row => row.startsWith('user='))
-      ?.split('=')[1]
-    
-    if (userCookie && !user) {
+    if (typeof window === 'undefined') return
+
+    try {
+      const storedUser = localStorage.getItem('user')
+      const storedToken = localStorage.getItem('token')
+      if (storedUser && storedToken) {
+        setUser(JSON.parse(storedUser))
+        setToken(storedToken)
+      }
+    } catch (error) {
+      console.error('Erreur lors du parsing des données utilisateur', error)
+      clearSession()
+      clearUser()
+    } finally {
+      setInitialized(true)
+    }
+  }, [setUser, setToken, clearUser])
+
+  const login = useCallback(
+    async (email, password) => {
+      setLoading(true)
       try {
-        const userData = JSON.parse(decodeURIComponent(userCookie))
-        setUser(userData)
+        const { data } = await api.post('/auth/login', { email, password })
+        const mappedUser = mapBackendUser(data.user)
+        const token = data.access_token
+
+        if (!mappedUser || !token) {
+          throw new Error("Réponse d'authentification invalide")
+        }
+
+        persistSession(mappedUser, token)
+        setUser(mappedUser)
+        setToken(token)
+        toast.success('Connexion réussie !')
+        return mappedUser
       } catch (error) {
-        console.error('Erreur lors du parsing des données utilisateur', error)
+        const message = getErrorMessage(error, 'Erreur de connexion')
+        toast.error(message)
+        throw new Error(message)
+      } finally {
+        setLoading(false)
       }
-    }
-  }, [user, setUser])
+    },
+    [setUser, setToken]
+  )
 
-  const login = useCallback(async (email, password) => {
-    setLoading(true)
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      const foundUser = mockUsers.find(u => u.email === email && u.password === password)
-      
-      if (!foundUser) {
-        throw new Error('Email ou mot de passe incorrect')
+  const register = useCallback(
+    async (formData) => {
+      setLoading(true)
+      try {
+        const name = [formData.prenom, formData.nom].filter(Boolean).join(' ').trim()
+        if (!name) {
+          throw new Error('Le nom et le prénom sont requis')
+        }
+
+        await api.post('/auth/register', {
+          email: formData.email,
+          password: formData.password,
+          name,
+          role: 'client',
+        })
+
+        const { data } = await api.post('/auth/login', {
+          email: formData.email,
+          password: formData.password,
+        })
+
+        const mappedUser = mapBackendUser(data.user)
+        const token = data.access_token
+        persistSession(mappedUser, token)
+        setUser(mappedUser)
+        setToken(token)
+
+        toast.success('Compte créé avec succès !')
+        return mappedUser
+      } catch (error) {
+        const message = getErrorMessage(error, "Erreur lors de l'inscription")
+        toast.error(message)
+        throw new Error(message)
+      } finally {
+        setLoading(false)
       }
-
-      const { password: _, ...userWithoutPassword } = foundUser
-      
-      document.cookie = `user=${encodeURIComponent(JSON.stringify(userWithoutPassword))}; path=/; max-age=604800`
-      document.cookie = `token=mock-token-${Date.now()}; path=/; max-age=604800`
-      
-      setUser(userWithoutPassword)
-      toast.success('Connexion réussie !')
-      return userWithoutPassword
-    } catch (error) {
-      toast.error(error.message || 'Erreur de connexion')
-      throw error
-    } finally {
-      setLoading(false)
-    }
-  }, [setUser])
-
-  const register = useCallback(async (data) => {
-    setLoading(true)
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      if (mockUsers.some(u => u.email === data.email)) {
-        throw new Error('Cet email est déjà utilisé')
-      }
-
-      const newUser = {
-        id: String(mockUsers.length + 1),
-        ...data,
-        role: 'user'
-      }
-      
-      mockUsers.push(newUser)
-      
-      toast.success('Compte créé avec succès !')
-      return newUser
-    } catch (error) {
-      toast.error(error.message || 'Erreur lors de l\'inscription')
-      throw error
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+    },
+    [setUser, setToken]
+  )
 
   const logout = useCallback(async () => {
     try {
-      document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
-      document.cookie = 'user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
-      
+      clearSession()
       clearUser()
       toast.success('Déconnexion réussie')
       router.push('/')
@@ -137,10 +152,10 @@ export function useAuth() {
   return {
     user,
     isAuthenticated: !!user,
-    loading,
+    loading: loading || !initialized,
+    initialized,
     login,
     register,
-    logout
+    logout,
   }
->>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
 }

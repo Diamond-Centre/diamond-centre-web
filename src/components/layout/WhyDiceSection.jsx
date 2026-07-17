@@ -1,18 +1,10 @@
 /**
-<<<<<<< HEAD
- * Section "Pourquoi Dice" avec sponsors officiels
-=======
  * Section "Pourquoi Dice" avec glassmorphisme bleu Diamond Centre
  * et effet aquarium au survol
->>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
  */
 'use client'
 
 import Link from 'next/link'
-<<<<<<< HEAD
-import Image from 'next/image'
-=======
->>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
 import { motion } from 'framer-motion'
 import { FaArrowRight, FaUsers, FaVideo, FaHeadset } from 'react-icons/fa'
 import { GiDiamondRing } from 'react-icons/gi'
@@ -21,53 +13,32 @@ import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 
 // Valeurs
-<<<<<<< HEAD
-const values = [
-  {
-=======
 const values = {
   excellence: {
->>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
     icon: GiDiamondRing,
     title: 'Excellence',
     description: 'Des formations de qualité dispensées par des experts reconnus',
     color: 'from-dice-blue to-blue-600'
   },
-<<<<<<< HEAD
-  {
-=======
   communaute: {
->>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
     icon: FaUsers,
     title: 'Communauté',
     description: 'Rejoignez une communauté de professionnels passionnés',
     color: 'from-purple-500 to-pink-500'
   },
-<<<<<<< HEAD
-  {
-=======
   flexibilite: {
->>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
     icon: FaVideo,
     title: 'Flexibilité',
     description: 'Formations en présentiel et à distance selon vos besoins',
     color: 'from-green-500 to-emerald-500'
   },
-<<<<<<< HEAD
-  {
-=======
   accompagnement: {
->>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
     icon: FaHeadset,
     title: 'Accompagnement',
     description: 'Un suivi personnalisé tout au long de votre parcours',
     color: 'from-orange-500 to-red-500'
   }
-<<<<<<< HEAD
-]
-=======
 }
->>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
 
 // Sponsors officiels avec logos
 const sponsors = [
@@ -107,11 +78,7 @@ const stats = [
 
 export default function WhyDiceSection() {
   return (
-<<<<<<< HEAD
-    <section className="py-20 bg-white">
-=======
     <section className="py-20 bg-gradient-to-br from-dice-blue/5 via-white to-purple-500/5">
->>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
       <div className="container mx-auto px-4">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Colonne gauche - Texte */}
@@ -172,35 +139,6 @@ export default function WhyDiceSection() {
             </div>
           </motion.div>
 
-<<<<<<< HEAD
-          {/* Colonne droite - Grille de valeurs */}
-          <div className="grid grid-cols-2 gap-4">
-            {values.map((value, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                className={`${index === 0 ? 'col-span-2 row-span-2' : ''}`}
-              >
-                <Card 
-                  variant="hover" 
-                  className={`h-full p-6 border border-gray-100 ${index === 0 ? 'bg-gradient-to-br from-dice-blue/5 to-purple-500/5' : ''}`}
-                >
-                  <div className={`w-14 h-14 bg-gradient-to-r ${value.color} rounded-2xl flex items-center justify-center mb-4`}>
-                    <value.icon className="text-2xl text-white" />
-                  </div>
-                  <h3 className="text-lg font-bold text-gray-800 mb-2">
-                    {value.title}
-                  </h3>
-                  <p className="text-gray-600 text-sm">
-                    {value.description}
-                  </p>
-                </Card>
-              </motion.div>
-            ))}
-=======
           {/* Colonne droite - Grille de valeurs avec glassmorphisme */}
           <div className="relative grid grid-cols-2 grid-rows-[auto_auto_auto] gap-4">
 
@@ -354,7 +292,6 @@ export default function WhyDiceSection() {
                 </div>
               </div>
             </motion.div>
->>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
           </div>
         </div>
 
@@ -386,8 +323,6 @@ export default function WhyDiceSection() {
           ))}
         </motion.div>
       </div>
-<<<<<<< HEAD
-=======
 
       {/* Styles globaux pour le glassmorphisme bleu Diamond Centre et effet aquarium */}
       <style jsx global>{`
@@ -496,7 +431,6 @@ export default function WhyDiceSection() {
           transform: rotate(25deg) translateX(100%);
         }
       `}</style>
->>>>>>> 5427ba6 (feat: mise à jour du design avec glassmorphisme et charte graphique Diamond Centre, Dashboard aussi)
     </section>
   )
 }

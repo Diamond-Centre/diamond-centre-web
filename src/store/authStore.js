@@ -10,10 +10,9 @@ export const authStore = create((set, get) => ({
   loading: false,
 
   setUser: (user) => {
-    set({ 
-      user, 
+    set({
+      user,
       isAuthenticated: !!user,
-      token: user?.token || null 
     })
   },
 
