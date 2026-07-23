@@ -1,31 +1,39 @@
-/**
- * Layout du dashboard avec sidebar responsive
- */
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
+import Link from 'next/link'
+import { 
+  FaChartBar, FaCalendar, FaUsers, FaPlus, 
+  FaSignOutAlt, FaHome, FaTicketAlt
+} from 'react-icons/fa'
 import { useAuth } from '@/hooks/useAuth'
-import Sidebar from '@/components/dashboard/Sidebar'
+
+const menuItems = [
+  { href: '/dashboard', label: 'Tableau de bord', icon: FaChartBar },
+  { href: '/dashboard/events', label: 'Événements', icon: FaCalendar },
+  { href: '/dashboard/events/new', label: 'Nouvel événement', icon: FaPlus },
+]
 
 export default function DashboardLayout({ children }) {
-  const [isClient, setIsClient] = useState(false)
-  const { isAuthenticated, loading } = useAuth()
+  const { user, isAuthenticated, loading, logout } = useAuth()
   const router = useRouter()
+  const pathname = usePathname()
+  const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
-    setIsClient(true)
+    setIsMounted(true)
   }, [])
 
   useEffect(() => {
-    if (isClient && !loading && !isAuthenticated) {
-      router.replace('/auth/login')
+    if (!loading && !isAuthenticated && isMounted) {
+      router.push('/auth/login')
     }
-  }, [isClient, isAuthenticated, loading, router])
+  }, [loading, isAuthenticated, router, isMounted])
 
-  if (!isClient || loading) {
+  if (!isMounted || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex justify-center items-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-dice-blue" />
       </div>
     )
@@ -36,15 +44,63 @@ export default function DashboardLayout({ children }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-dice-blue/5 via-white to-purple-500/5 pt-20 md:pt-24 pb-20 md:pb-8">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex gap-6">
-          <Sidebar />
-          <div className="flex-1 min-w-0">
-            {children}
+    <div className="flex min-h-screen bg-gray-50">
+      {/* Sidebar */}
+      <aside className="fixed left-0 top-0 h-full w-64 bg-white shadow-lg border-r border-gray-200 z-40 overflow-y-auto">
+        <div className="p-6">
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <span className="text-2xl font-bold text-dice-blue">Diamond Centre</span>
+          </Link>
+          <p className="text-sm text-gray-500 mt-1">Administration</p>
+        </div>
+
+        <nav className="mt-6 px-4">
+          {menuItems.map((item) => {
+            const isActive = pathname === item.href || 
+              (item.href !== '/dashboard' && pathname?.startsWith(item.href))
+            
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                  isActive
+                    ? 'bg-dice-blue text-white'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <item.icon className="text-lg" />
+                <span>{item.label}</span>
+              </Link>
+            )
+          })}
+        </nav>
+
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
+          <div className="flex items-center gap-3 px-4 py-2">
+            <div className="w-10 h-10 rounded-full bg-dice-blue/10 flex items-center justify-center">
+              <span className="text-dice-blue font-bold">
+                {user?.name?.charAt(0) || 'A'}
+              </span>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-800">{user?.name || 'Admin'}</p>
+              <p className="text-xs text-gray-500">{user?.email || 'admin@diamondcentre.com'}</p>
+            </div>
+            <button
+              onClick={logout}
+              className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+            >
+              <FaSignOutAlt />
+            </button>
           </div>
         </div>
-      </div>
+      </aside>
+
+      {/* Main content */}
+      <main className="ml-64 flex-1 p-8">
+        {children}
+      </main>
     </div>
   )
 }

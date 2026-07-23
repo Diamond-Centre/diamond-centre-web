@@ -1,5 +1,5 @@
 /**
- * Page d'inscription - Centrée comme la page de connexion
+ * Page d'inscription - Version avec tous les champs requis
  */
 'use client'
 
@@ -7,26 +7,24 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { useAuth } from '@/hooks/useAuth'
+import { api } from '@/lib/api'
+import { auth } from '@/lib/auth'
 import { 
-  FaEnvelope, FaLock, FaEye, FaEyeSlash, FaGoogle, 
-  FaUser, FaPhoneAlt, FaVenusMars
+  FaEnvelope, FaLock, FaEye, FaEyeSlash, FaGoogle, FaUser
 } from 'react-icons/fa'
 import { GiDiamondRing } from 'react-icons/gi'
 import toast from 'react-hot-toast'
 import Button from '@/components/ui/Button'
+import Navbar from '@/components/layout/Navbar'
 
 export default function RegisterPage() {
   const router = useRouter()
-  const { register: registerUser, isAuthenticated, loading } = useAuth()
   const [formData, setFormData] = useState({
-    nom: '',
-    prenom: '',
+    name: '',
     email: '',
-    telephone: '',
     password: '',
     confirmPassword: '',
-    sexe: '',
+    role: 'user',  // ← Ajout du champ role
     acceptTerms: false
   })
   const [showPassword, setShowPassword] = useState(false)
@@ -35,10 +33,10 @@ export default function RegisterPage() {
   const [passwordStrength, setPasswordStrength] = useState(0)
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (auth.isAuthenticated()) {
       router.push('/dashboard')
     }
-  }, [isAuthenticated, router])
+  }, [router])
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -76,44 +74,59 @@ export default function RegisterPage() {
 
   const handleRegister = async (e) => {
     e.preventDefault()
-    const { confirmPassword, acceptTerms, ...userData } = formData
     
-    if (!userData.nom || !userData.prenom || !userData.email || !userData.password) {
+    // Validation des champs
+    if (!formData.name || !formData.email || !formData.password) {
       toast.error('Veuillez remplir tous les champs obligatoires')
       return
     }
     
-    if (userData.password !== confirmPassword) {
+    if (formData.password !== formData.confirmPassword) {
       toast.error('Les mots de passe ne correspondent pas')
       return
     }
     
-    if (!acceptTerms) {
+    if (!formData.acceptTerms) {
       toast.error('Veuillez accepter les conditions d\'utilisation')
       return
     }
 
     setIsLoading(true)
     try {
-      await registerUser(userData)
-      router.push('/dashboard')
+      // Envoyer les données exactes attendues par le backend
+      const payload = {
+        email: formData.email,
+        password: formData.password,
+        name: formData.name,
+        role: formData.role // 'user' par défaut
+      }
+      
+      console.log('📤 Envoi au backend:', payload)
+      
+      const response = await api.register(payload)
+      
+      console.log('📥 Réponse du backend:', response)
+      
+      toast.success('Inscription réussie ! Connectez-vous pour continuer.')
+      
+      setTimeout(() => {
+        router.push('/auth/login')
+      }, 1500)
+      
     } catch (error) {
-      // toast already shown in useAuth
+      console.error('❌ Erreur d\'inscription:', error)
+      toast.error(error.message || 'Erreur lors de l\'inscription')
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleGoogleRegister = async () => {
-    toast.error("L'inscription Google sera bientôt disponible. Utilisez le formulaire.")
-  }
-
   return (
+    <><Navbar />
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-dice-blue/5 via-white to-purple-500/5 p-0">
-      {/* Conteneur principal - Plein écran */}
       <div className="w-full h-screen max-h-screen bg-white shadow-2xl overflow-hidden flex flex-col md:flex-row">
-        
-        {/* Panneau gauche - Message de bienvenue (50%) */}
+
+        {/* Panneau gauche */}
         <div className="w-full md:w-1/2 bg-gradient-to-br from-dice-blue to-dice-blue-dark p-8 md:p-12 lg:p-16 flex flex-col justify-center text-white h-full">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -133,31 +146,28 @@ export default function RegisterPage() {
               <br />
               <span className="text-white/90">Commencez gratuitement</span>
             </h1>
-            
+
             <p className="text-white/80 text-base md:text-lg mb-6 leading-relaxed max-w-sm">
               Créez votre compte en moins d'une minute et accédez à toutes nos formations, certifications et ressources.
             </p>
 
             <div className="flex items-center gap-4 text-sm text-white/70">
               <span className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                Sécurisé
+                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" /> Sécurisé
               </span>
               <span className="w-px h-4 bg-white/20" />
               <span className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                Gratuit
+                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" /> Gratuit
               </span>
               <span className="w-px h-4 bg-white/20" />
               <span className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                24/7 Support
+                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" /> 24/7 Support
               </span>
             </div>
           </motion.div>
         </div>
 
-        {/* Panneau droit - Formulaire d'inscription avec décalage */}
+        {/* Panneau droit - Formulaire */}
         <div className="w-full md:w-1/2 p-6 md:p-10 lg:p-14 flex flex-col justify-center h-full bg-white">
           <motion.div
             initial={{ opacity: 0, x: 20 }}
@@ -176,43 +186,26 @@ export default function RegisterPage() {
             </div>
 
             <form onSubmit={handleRegister} className="space-y-3.5">
-              {/* Nom et Prénom */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <FaUser className="h-4 w-4 text-gray-400" />
-                    </div>
-                    <input
-                      type="text"
-                      name="nom"
-                      value={formData.nom}
-                      onChange={handleChange}
-                      placeholder="Dupont"
-                      className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-dice-blue/30 focus:border-dice-blue outline-none transition-all text-sm"
-                    />
+              {/* Nom complet */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nom complet</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FaUser className="h-4 w-4 text-gray-400" />
                   </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <FaUser className="h-4 w-4 text-gray-400" />
-                    </div>
-                    <input
-                      type="text"
-                      name="prenom"
-                      value={formData.prenom}
-                      onChange={handleChange}
-                      placeholder="Jean"
-                      className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-dice-blue/30 focus:border-dice-blue outline-none transition-all text-sm"
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    placeholder="Jean Dupont"
+                    className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-dice-blue/30 focus:border-dice-blue outline-none transition-all text-sm placeholder-gray-400"
+                    required
+                  />
                 </div>
               </div>
 
-              {/* Email - avec placeholder grisé */}
+              {/* Email */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                 <div className="relative">
@@ -226,25 +219,7 @@ export default function RegisterPage() {
                     onChange={handleChange}
                     placeholder="exemple@gmail.com"
                     className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-dice-blue/30 focus:border-dice-blue outline-none transition-all text-sm placeholder-gray-400"
-                  />
-                </div>
-              </div>
-
-              {/* Téléphone - avec format 9 chiffres et icône modifiée */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FaPhoneAlt className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <input
-                    type="tel"
-                    name="telephone"
-                    value={formData.telephone}
-                    onChange={handleChange}
-                    placeholder="690142918"
-                    className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-dice-blue/30 focus:border-dice-blue outline-none transition-all text-sm placeholder-gray-400"
-                    maxLength="9"
+                    required
                   />
                 </div>
               </div>
@@ -262,7 +237,8 @@ export default function RegisterPage() {
                     value={formData.password}
                     onChange={handlePasswordChange}
                     placeholder="••••••••"
-                    className="w-full pl-9 pr-9 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-dice-blue/30 focus:border-dice-blue outline-none transition-all text-sm"
+                    className="w-full pl-9 pr-9 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-dice-blue/30 focus:border-dice-blue outline-none transition-all text-sm placeholder-gray-400"
+                    required
                   />
                   <button
                     type="button"
@@ -298,6 +274,7 @@ export default function RegisterPage() {
                     onChange={handleChange}
                     placeholder="••••••••"
                     className="w-full pl-9 pr-9 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-dice-blue/30 focus:border-dice-blue outline-none transition-all text-sm"
+                    required
                   />
                   <button
                     type="button"
@@ -309,40 +286,8 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              {/* Sexe */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Sexe</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <label className="relative flex items-center justify-center py-2.5 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors">
-                    <input
-                      type="radio"
-                      name="sexe"
-                      value="M"
-                      checked={formData.sexe === 'M'}
-                      onChange={handleChange}
-                      className="sr-only peer"
-                    />
-                    <span className="peer-checked:text-dice-blue peer-checked:font-semibold flex items-center gap-2 text-sm">
-                      <FaVenusMars className="text-blue-500" /> Homme
-                    </span>
-                    <div className="absolute inset-0 border-2 border-transparent peer-checked:border-dice-blue rounded-xl pointer-events-none" />
-                  </label>
-                  <label className="relative flex items-center justify-center py-2.5 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors">
-                    <input
-                      type="radio"
-                      name="sexe"
-                      value="F"
-                      checked={formData.sexe === 'F'}
-                      onChange={handleChange}
-                      className="sr-only peer"
-                    />
-                    <span className="peer-checked:text-dice-blue peer-checked:font-semibold flex items-center gap-2 text-sm">
-                      <FaVenusMars className="text-pink-500" /> Femme
-                    </span>
-                    <div className="absolute inset-0 border-2 border-transparent peer-checked:border-dice-blue rounded-xl pointer-events-none" />
-                  </label>
-                </div>
-              </div>
+              {/* Rôle - Champ caché mais envoyé */}
+              <input type="hidden" name="role" value={formData.role} />
 
               {/* Conditions */}
               <div className="flex items-start">
@@ -352,6 +297,7 @@ export default function RegisterPage() {
                   checked={formData.acceptTerms}
                   onChange={handleChange}
                   className="h-4 w-4 text-dice-blue focus:ring-dice-blue/30 border-gray-300 rounded mt-0.5"
+                  required
                 />
                 <label className="ml-2.5 text-sm text-gray-600">
                   J'accepte les{' '}
@@ -371,8 +317,8 @@ export default function RegisterPage() {
                 variant="primary"
                 size="medium"
                 fullWidth
-                loading={isLoading || loading}
-                disabled={isLoading || loading}
+                loading={isLoading}
+                disabled={isLoading}
                 className="text-base py-2.5 bg-dice-blue hover:bg-dice-blue-dark rounded-xl"
               >
                 Créer un compte
@@ -389,23 +335,23 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* Inscription avec Google */}
+            {/* Google */}
             <button
-              onClick={handleGoogleRegister}
-              disabled={isLoading || loading}
+              onClick={() => toast.info('Inscription avec Google bientôt disponible')}
+              disabled={isLoading}
               className="w-full flex items-center justify-center gap-2.5 py-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FaGoogle className="text-red-500 text-lg" />
               <span className="text-base font-medium text-gray-700">S'inscrire avec Google</span>
             </button>
 
-            {/* Footer - Position inchangée */}
+            {/* Footer */}
             <div className="mt-5 text-center text-sm text-gray-400">
               <p>© 2026 Diamond Centre. Tous droits réservés.</p>
             </div>
           </motion.div>
         </div>
       </div>
-    </div>
+    </div></>
   )
 }

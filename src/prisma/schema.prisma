@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  email      String   @unique
+  password   String
+  name       String
+  role       String   @default("user")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Event {
+  id              Int        @id @default(autoincrement())
+  title           String
+  description     String?
+  price           Float
+  currency        String     @default("XAF")
+  startDate       DateTime   @map("start_date")
+  endDate         DateTime   @map("end_date")
+  location        String
+  category        String
+  capacity        Int
+  availableTickets Int       @default(0) @map("available_tickets")
+  imageUrl        String?    @map("image_url")
+  status          String     @default("draft")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+  
+  // Relations
+  promotion      Promotion?
+  tickets        Ticket[]    // Ajout de la relation inverse
+
+  @@map("events")
+}
+
+model Promotion {
+  id          Int      @id @default(autoincrement())
+  eventId     Int      @unique @map("event_id")
+  nombre      Int
+  sexe        String
+  pourcentage Int
+  prixPromo   Float    @map("prix_promo")
+  duree       Int
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  
+  // Relation
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@map("promotions")
+}
+
+model Ticket {
+  id             Int      @id @default(autoincrement())
+  eventId        Int      @map("event_id")
+  quantity       Int
+  totalPrice     Float    @map("total_price")
+  currency       String   @default("XAF")
+  status         String   @default("pending")
+  customerName   String   @map("customer_name")
+  customerEmail  String   @map("customer_email")
+  customerPhone  String?  @map("customer_phone")
+  qrCodes        Json     @map("qr_codes")
+  expiresAt      DateTime @map("expires_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  event          Event    @relation(fields: [eventId], references: [id])
+  payments       Payment[] // Ajout de la relation inverse
+  validations    Validation[] // Ajout de la relation inverse
+
+  @@map("tickets")
+}
+
+model Payment {
+  id           Int      @id @default(autoincrement())
+  ticketId     Int      @map("ticket_id")
+  amount       Float
+  currency     String   @default("XAF")
+  method       String
+  status       String   @default("pending")
+  reference    String?
+  providerFee  Float    @default(0) @map("provider_fee")
+  paidAt       DateTime? @map("paid_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  
+  // Relation
+  ticket       Ticket   @relation(fields: [ticketId], references: [id])
+
+  @@map("payments")
+}
+
+model Validation {
+  id          Int      @id @default(autoincrement())
+  ticketId    Int      @map("ticket_id")
+  qrCode      String   @map("qr_code")
+  validatedAt DateTime @default(now()) @map("validated_at")
+  
+  // Relation
+  ticket      Ticket   @relation(fields: [ticketId], references: [id])
+
+  @@map("validations")
+}
