@@ -1,161 +1,107 @@
 /**
- * Hook d'authentification — connecté à DICE-PROJECT-BACKEND
+ * Hook d'authentification - Version avec redirection forcée
  */
-'use client'
-
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { authStore } from '@/store/authStore'
-import api from '@/lib/api'
+import { api } from '@/lib/api'
+import { auth } from '@/lib/auth'
 import toast from 'react-hot-toast'
-
-function mapBackendUser(user) {
-  if (!user) return null
-  const nameParts = String(user.name || '').trim().split(/\s+/)
-  const prenom = nameParts[0] || ''
-  const nom = nameParts.slice(1).join(' ') || prenom
-  return {
-    id: String(user.id),
-    email: user.email,
-    name: user.name,
-    nom,
-    prenom,
-    role: user.role === 'admin' ? 'admin' : 'user',
-  }
-}
-
-function persistSession(user, token) {
-  localStorage.setItem('token', token)
-  localStorage.setItem('user', JSON.stringify(user))
-}
-
-function clearSession() {
-  localStorage.removeItem('token')
-  localStorage.removeItem('user')
-  document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
-  document.cookie = 'user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
-}
-
-function getErrorMessage(error, fallback) {
-  return (
-    error.response?.data?.message ||
-    error.response?.data?.error ||
-    error.message ||
-    fallback
-  )
-}
 
 export function useAuth() {
   const router = useRouter()
-  const { user, setUser, clearUser, setToken } = authStore()
-  const [loading, setLoading] = useState(false)
-  const [initialized, setInitialized] = useState(false)
+  const [user, setUser] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   useEffect(() => {
-    if (typeof window === 'undefined') return
+    const token = auth.getToken()
+    const storedUser = auth.getUser()
+    
+    if (token && storedUser) {
+      setUser(storedUser)
+      setIsAuthenticated(true)
+    }
+    setLoading(false)
+  }, [])
 
+  const login = async (email, password) => {
+    setLoading(true)
     try {
-      const storedUser = localStorage.getItem('user')
-      const storedToken = localStorage.getItem('token')
-      if (storedUser && storedToken) {
-        setUser(JSON.parse(storedUser))
-        setToken(storedToken)
+      const response = await api.login(email, password)
+      
+      // Stocker les données
+      auth.setToken(response.access_token)
+      auth.setUser(response.user)
+      
+      setUser(response.user)
+      setIsAuthenticated(true)
+      
+      toast.success('Connexion réussie !')
+      
+      // 🔥 REDIRECTION FORCÉE - Utiliser window.location.replace
+      if (response.user.role === 'admin' || response.user.role === 'super_admin') {
+        // replace() évite que l'utilisateur puisse revenir en arrière
+        window.location.replace('/admin')
+        return response.user
+      } else {
+        window.location.replace('/dashboard')
+        return response.user
       }
     } catch (error) {
-      console.error('Erreur lors du parsing des données utilisateur', error)
-      clearSession()
-      clearUser()
+      toast.error(error.message || 'Erreur de connexion')
+      throw error
     } finally {
-      setInitialized(true)
+      setLoading(false)
     }
-  }, [setUser, setToken, clearUser])
+  }
 
-  const login = useCallback(
-    async (email, password) => {
-      setLoading(true)
-      try {
-        const { data } = await api.post('/auth/login', { email, password })
-        const mappedUser = mapBackendUser(data.user)
-        const token = data.access_token
-
-        if (!mappedUser || !token) {
-          throw new Error("Réponse d'authentification invalide")
-        }
-
-        persistSession(mappedUser, token)
-        setUser(mappedUser)
-        setToken(token)
-        toast.success('Connexion réussie !')
-        return mappedUser
-      } catch (error) {
-        const message = getErrorMessage(error, 'Erreur de connexion')
-        toast.error(message)
-        throw new Error(message)
-      } finally {
-        setLoading(false)
-      }
-    },
-    [setUser, setToken]
-  )
-
-  const register = useCallback(
-    async (formData) => {
-      setLoading(true)
-      try {
-        const name = [formData.prenom, formData.nom].filter(Boolean).join(' ').trim()
-        if (!name) {
-          throw new Error('Le nom et le prénom sont requis')
-        }
-
-        await api.post('/auth/register', {
-          email: formData.email,
-          password: formData.password,
-          name,
-          role: 'client',
-        })
-
-        const { data } = await api.post('/auth/login', {
-          email: formData.email,
-          password: formData.password,
-        })
-
-        const mappedUser = mapBackendUser(data.user)
-        const token = data.access_token
-        persistSession(mappedUser, token)
-        setUser(mappedUser)
-        setToken(token)
-
-        toast.success('Compte créé avec succès !')
-        return mappedUser
-      } catch (error) {
-        const message = getErrorMessage(error, "Erreur lors de l'inscription")
-        toast.error(message)
-        throw new Error(message)
-      } finally {
-        setLoading(false)
-      }
-    },
-    [setUser, setToken]
-  )
-
-  const logout = useCallback(async () => {
+  const register = async (userData) => {
+    setLoading(true)
     try {
-      clearSession()
-      clearUser()
-      toast.success('Déconnexion réussie')
-      router.push('/')
+      const response = await api.register(userData)
+      toast.success('Inscription réussie ! Connectez-vous pour continuer.')
+      router.push('/auth/login')
+      return response
     } catch (error) {
-      toast.error('Erreur lors de la déconnexion')
+      toast.error(error.message || 'Erreur d\'inscription')
+      throw error
+    } finally {
+      setLoading(false)
     }
-  }, [clearUser, router])
+  }
+
+  const logout = async () => {
+    auth.logout()
+    setUser(null)
+    setIsAuthenticated(false)
+    toast.success('Déconnexion réussie')
+    window.location.replace('/')
+  }
+
+  const checkAuth = async () => {
+    const token = auth.getToken()
+    if (token) {
+      const isValid = await api.verifyToken(token)
+      if (!isValid) {
+        auth.logout()
+        setUser(null)
+        setIsAuthenticated(false)
+        router.push('/auth/login')
+        return false
+      }
+    }
+    return !!token
+  }
 
   return {
     user,
-    isAuthenticated: !!user,
-    loading: loading || !initialized,
-    initialized,
+    loading,
+    isAuthenticated,
     login,
     register,
     logout,
+    checkAuth,
+    isAdmin: () => user?.role === 'admin' || user?.role === 'super_admin',
+    isSuperAdmin: () => user?.role === 'super_admin'
   }
 }

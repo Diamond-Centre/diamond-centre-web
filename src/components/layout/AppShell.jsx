@@ -1,27 +1,24 @@
 'use client'
 
-/**
- * Shell that hides global Navbar/Footer on auth pages
- * and avoids double chrome on full-screen flows.
- */
 import { usePathname } from 'next/navigation'
-import Navbar from '@/components/layout/Navbar'
-import Footer from '@/components/layout/Footer'
+import Navbar from './Navbar'
+import Footer from './Footer'
 
 export default function AppShell({ children }) {
   const pathname = usePathname()
-  const isAuthPage = pathname?.startsWith('/auth')
-  const isDashboard = pathname?.startsWith('/dashboard')
-
-  if (isAuthPage) {
-    return <>{children}</>
-  }
-
+  
+  // Vérifier si on est sur une page admin
+  const isAdminPage = pathname?.startsWith('/admin')
+  
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <main className={`flex-grow ${isDashboard ? '' : ''}`}>{children}</main>
-      {!isDashboard && <Footer />}
+      {/* Ne pas afficher la Navbar sur les pages admin */}
+      {!isAdminPage && <Navbar />}
+      <main className={`flex-grow ${!isAdminPage ? '' : ''}`}>
+        {children}
+      </main>
+      {/* Ne pas afficher le Footer sur les pages admin */}
+      {!isAdminPage && <Footer />}
     </div>
   )
 }

@@ -1,206 +1,149 @@
-/**
- * Carte d'événement avec réservation
- */
+// Ajouter la gestion des réservations
 'use client'
 
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
-import { 
-  FaCalendar, 
-  FaMapMarker, 
-  FaUser, 
-  FaEuroSign, 
-  FaClock,
-  FaArrowRight
-} from 'react-icons/fa'
+import { FaCalendar, FaMapMarker, FaUser, FaEuroSign, FaClock } from 'react-icons/fa'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
-import TicketReservation from '@/components/tickets/TicketReservation'
+import { useAuth } from '@/hooks/useAuth'
+import toast from 'react-hot-toast'
 
-export default function EventCard({ 
-  event, 
-  variant = 'default',
-  className,
-  onVideoClick 
-}) {
+export default function EventCard({ event, className }) {
+  const { user, isAuthenticated } = useAuth()
+  const [reserving, setReserving] = useState(false)
+  
   const { 
     id, 
-    titre, 
+    title, 
     description, 
-    image, 
-    prix, 
-    prixPromotion, 
-    date, 
-    time,
-    lieu, 
-    formateur, 
-    type, 
-    statut,
-    nbPlaces,
-    nbInscrits
+    image_url, 
+    price, 
+    currency = 'XAF',
+    start_date, 
+    location, 
+    category, 
+    capacity,
+    available_tickets,
+    status
   } = event
 
-  const [isHovered, setIsHovered] = useState(false)
-  const [showReservation, setShowReservation] = useState(false)
-  const safePlaces = Number(nbPlaces) || 0
-  const safeInscrits = Number(nbInscrits) || 0
-  const isFull = safePlaces > 0 && safeInscrits >= safePlaces
-  const parsedDate = date ? new Date(date) : null
-  const hasValidDate = parsedDate && !Number.isNaN(parsedDate.getTime())
-  const isPast = hasValidDate ? parsedDate < new Date() : false
-  const placesRestantes = Math.max(0, safePlaces - safeInscrits)
+  const isPast = new Date(start_date) < new Date()
+  const isFull = available_tickets <= 0
+  const isPublished = status === 'published'
 
-  const getStatusBadge = () => {
-    if (isPast) return { label: 'Terminé', variant: 'gray' }
-    if (isFull) return { label: 'Complet', variant: 'danger' }
-    if (placesRestantes <= 3) return { label: 'Dernières places', variant: 'warning' }
-    return { label: 'Disponible', variant: 'success' }
-  }
-
-  const status = getStatusBadge()
-
-  const handleReserve = () => {
-    if (!isPast && !isFull) {
-      setShowReservation(true)
+  const handleReserve = async (e) => {
+    e.preventDefault()
+    if (!isAuthenticated) {
+      toast.error('Veuillez vous connecter pour réserver')
+      return
+    }
+    
+    setReserving(true)
+    try {
+      // Rediriger vers la page de réservation
+      window.location.href = `/events/${id}/reserve`
+    } catch (error) {
+      toast.error('Erreur lors de la réservation')
+    } finally {
+      setReserving(false)
     }
   }
 
+  if (!isPublished) return null
+
   return (
-    <>
-      <motion.div
-        onHoverStart={() => setIsHovered(true)}
-        onHoverEnd={() => setIsHovered(false)}
-        className={cn(
-          'group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300',
-          'border border-gray-100',
-          className
-        )}
-      >
-        {/* Image */}
-        <div className="relative h-52 overflow-hidden bg-gray-100">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -4 }}
+      className={cn('bg-white rounded-xl shadow-sm hover:shadow-lg transition-shadow duration-300 overflow-hidden border border-gray-100', className)}
+    >
+      {/* Image */}
+      <div className="relative h-48 overflow-hidden bg-gray-100">
+        {image_url ? (
           <Image
-            src={image || '/images/events/placeholder.jpg'}
-            alt={titre}
+            src={image_url}
+            alt={title}
             fill
-            className={cn(
-              'object-cover transition-transform duration-500',
-              isHovered && 'scale-110'
-            )}
+            className="object-cover hover:scale-105 transition-transform duration-500"
           />
-          
-          {/* Badge de statut */}
-          <div className="absolute top-4 left-4">
-            <Badge variant={status.variant}>
-              {status.label}
-            </Badge>
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-dice-blue/20 to-purple-500/20 flex items-center justify-center">
+            <span className="text-4xl">🎯</span>
           </div>
-
-          {/* Badge de type */}
+        )}
+        <div className="absolute top-4 left-4">
+          <Badge variant="default">{category}</Badge>
+        </div>
+        {isFull && (
           <div className="absolute top-4 right-4">
-            <Badge variant="default">
-              {type}
-            </Badge>
+            <Badge variant="danger">Complet</Badge>
           </div>
+        )}
+        {isPast && (
+          <div className="absolute top-4 right-4">
+            <Badge variant="warning">Terminé</Badge>
+          </div>
+        )}
+      </div>
 
-          {/* Overlay gradient */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+      {/* Contenu */}
+      <div className="p-5">
+        <h3 className="text-lg font-bold text-gray-800 mb-2 line-clamp-1">
+          {title}
+        </h3>
+        
+        <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+          {description}
+        </p>
+
+        <div className="space-y-2 text-sm text-gray-600">
+          <div className="flex items-center gap-2">
+            <FaCalendar className="text-dice-blue text-xs" />
+            <span>
+              {format(new Date(start_date), 'dd MMMM yyyy', { locale: fr })}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <FaClock className="text-dice-blue text-xs" />
+            <span>
+              {format(new Date(start_date), 'HH:mm')}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <FaMapMarker className="text-dice-blue text-xs" />
+            <span className="truncate">{location}</span>
+          </div>
         </div>
 
-        {/* Contenu */}
-        <div className="p-5">
-          <h3 className="text-lg font-bold text-gray-800 mb-2 line-clamp-1">
-            {titre}
-          </h3>
-          
-          <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-            {description}
-          </p>
-
-          {/* Détails */}
-          <div className="space-y-2 text-sm text-gray-600">
-            <div className="flex items-center gap-2">
-              <FaCalendar className="text-dice-blue text-xs" />
-              <span>
-                {hasValidDate
-                  ? format(parsedDate, 'dd MMMM yyyy', { locale: fr })
-                  : (date || 'Date à confirmer')}
+        <div className="mt-4 pt-4 border-t border-gray-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-2xl font-bold text-dice-blue">
+                {price} {currency}
+              </span>
+              <span className="text-xs text-gray-400 ml-1">
+                / personne
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              <FaClock className="text-dice-blue text-xs" />
-              <span>
-                {time || (hasValidDate ? format(parsedDate, 'HH:mm') : '--:--')}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FaMapMarker className="text-dice-blue text-xs" />
-              <span className="truncate">{lieu || 'Lieu à confirmer'}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FaUser className="text-dice-blue text-xs" />
-              <span className="truncate">{formateur?.nom || 'Formateur'}</span>
+            <div className="text-xs text-gray-400">
+              {available_tickets || 0} places disponibles
             </div>
           </div>
 
-          {/* Prix et places */}
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-2xl font-bold text-dice-blue">
-                  {prixPromotion ? (
-                    <>
-                      <span className="text-sm text-gray-400 line-through mr-2">
-                        {prix}€
-                      </span>
-                      {prixPromotion}€
-                    </>
-                  ) : (
-                    `${prix}€`
-                  )}
-                </span>
-                {prixPromotion && (
-                  <Badge variant="success" className="ml-2 text-xs">
-                    -{Math.round((1 - prixPromotion/prix) * 100)}%
-                  </Badge>
-                )}
-              </div>
-              <div className="text-xs text-gray-500">
-                {placesRestantes} place{placesRestantes > 1 ? 's' : ''} restante{placesRestantes > 1 ? 's' : ''}
-              </div>
-            </div>
-
-            {/* Bouton de réservation */}
-            <Button 
-              variant="primary" 
-              fullWidth 
-              className="mt-4 group"
-              disabled={isPast || isFull}
-              onClick={handleReserve}
-            >
-              {isPast ? 'Terminé' : isFull ? 'Complet' : 'Réserver'}
-              {!isPast && !isFull && (
-                <FaArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-              )}
+          <Link href={`/events/${id}`}>
+            <Button variant="primary" fullWidth className="mt-3">
+              Voir détails
             </Button>
-          </div>
+          </Link>
         </div>
-      </motion.div>
-
-      {/* Modal de réservation */}
-      <TicketReservation
-        event={event}
-        isOpen={showReservation}
-        onClose={() => setShowReservation(false)}
-        onSuccess={() => {
-          setShowReservation(false)
-          // Rafraîchir les données
-        }}
-      />
-    </>
+      </div>
+    </motion.div>
   )
 }

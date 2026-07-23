@@ -70,7 +70,10 @@ export default function FormationsSection({
       formateur: { nom: 'Dr SONFFO' },
       nbPlaces: 20,
       nbInscrits: 5,
-      statut: 'à venir'
+      statut: 'à venir',
+      rating: 4.9,
+      videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+      image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop' 
     },
     {
       id: 'demo2',

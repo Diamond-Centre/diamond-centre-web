@@ -41,38 +41,38 @@ interface Testimonial {
   rating: number
 }
 
-// Données du carousel
+// Données du carousel - Images Unsplash
 const carouselImages: CarouselImage[] = [
   {
-    src: '/images/formation/img1.jpg',
+    src: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&h=500&fit=crop&crop=center',
     alt: 'Diamond Centre - Formation',
     title: 'Formations d\'excellence',
     description: 'Des programmes adaptés à vos besoins',
     videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
   },
   {
-    src: '/images/formation/img2.jpg',
+    src: 'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=800&h=500&fit=crop&crop=center',
     alt: 'Diamond Centre - Conférence',
     title: 'Conférences Inspirantes',
     description: 'Des moments de partage et de motivation',
     videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
   },
   {
-    src: '/images/formation/img3.jpg',
+    src: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800&h=500&fit=crop&crop=center',
     alt: 'Diamond Centre - Atelier',
     title: 'Ateliers Pratiques',
     description: 'Mettez en pratique vos connaissances',
     videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
   },
   {
-    src: '/images/formation/img4.jpg',
+    src: 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&h=500&fit=crop&crop=center',
     alt: 'Diamond Centre - Séminaire',
     title: 'Séminaires Transformateurs',
     description: 'Des expériences qui changent des vies',
     videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
   },
   {
-    src: '/images/formation/img5.jpg',
+    src: 'https://images.unsplash.com/photo-1507537297725-24a1c029d3ca?w=800&h=500&fit=crop&crop=center',
     alt: 'Diamond Centre - Événement',
     title: 'Événements Exclusifs',
     description: 'Des opportunités uniques de développement',
@@ -88,7 +88,7 @@ const stats: Stat[] = [
   { icon: FaAward, label: 'Experts', value: '20+' }
 ]
 
-// Témoignages avec rôles pour les emojis
+// Témoignages
 const testimonials: Testimonial[] = [
   {
     name: 'Sophie Martin',
@@ -153,7 +153,7 @@ export default function Home() {
         {/* Why Dice Section */}
         <WhyDiceSection />
 
-        {/* Formations Section - Nouveau composant avec glassmorphisme */}
+        {/* Formations Section */}
         <FormationsSection
           formations={upcomingEvents}
           loading={loading}
