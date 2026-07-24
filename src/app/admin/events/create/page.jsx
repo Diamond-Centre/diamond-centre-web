@@ -1,5 +1,6 @@
 /**
  * Création d'événement - Admin
+ * Synchronisé avec la page publique /events
  */
 'use client'
 
@@ -13,6 +14,7 @@ import { api } from '@/lib/api'
 import { auth } from '@/lib/auth'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
+import toast from 'react-hot-toast'
 
 const eventSchema = yup.object().shape({
   title: yup.string().required('Le titre est requis').min(3, 'Titre trop court'),
@@ -42,7 +44,8 @@ export default function CreateEvent() {
       currency: 'XAF',
       category: 'conférence',
       capacity: 50,
-      price: 0
+      price: 0,
+      image_url: ''
     }
   })
 
@@ -51,7 +54,7 @@ export default function CreateEvent() {
     if (!token) {
       router.push('/auth/login')
     }
-  }, [])
+  }, [router])
 
   const onSubmit = async (data) => {
     try {
@@ -60,21 +63,38 @@ export default function CreateEvent() {
       
       const token = auth.getToken()
       
+      // Formatage des données pour le backend
       const formattedData = {
-        ...data,
+        title: data.title,
+        description: data.description,
+        price: Number(data.price),
+        currency: data.currency || 'XAF',
         start_date: data.start_date,
         end_date: data.end_date,
-        price: Number(data.price),
+        location: data.location,
+        category: data.category,
         capacity: Number(data.capacity),
-        status: 'published' // Le statut est directement 'published' car en base de données
+        image_url: data.image_url || '',
+        status: 'published' // Directement publié
       }
 
-      await api.createEvent(formattedData, token)
+      console.log('📤 Création événement:', formattedData)
+      
+      const result = await api.createEvent(formattedData, token)
+      
+      console.log('✅ Événement créé:', result)
+      
+      toast.success('Événement créé avec succès ! Visible sur la page publique.')
       
       // Rediriger vers la liste des événements admin
-      router.push('/admin/events')
+      setTimeout(() => {
+        router.push('/admin/events')
+      }, 1000)
+      
     } catch (err) {
+      console.error('❌ Erreur création:', err)
       setError(err.message)
+      toast.error(err.message || 'Erreur lors de la création')
     } finally {
       setLoading(false)
     }
@@ -91,7 +111,7 @@ export default function CreateEvent() {
         </button>
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Nouvel événement</h1>
-          <p className="text-gray-500">Créez un nouvel événement</p>
+          <p className="text-gray-500">L'événement sera immédiatement visible sur la page publique</p>
         </div>
       </div>
 
@@ -236,7 +256,7 @@ export default function CreateEvent() {
             disabled={loading}
           >
             <FaSave className="mr-2" />
-            Créer l'événement
+            Publier l'événement
           </Button>
         </div>
       </form>

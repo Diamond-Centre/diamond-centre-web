@@ -1,14 +1,12 @@
 /**
- * Hook d'authentification - Version avec redirection forcée
+ * Hook d'authentification - Version corrigée
  */
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import { auth } from '@/lib/auth'
 import toast from 'react-hot-toast'
 
 export function useAuth() {
-  const router = useRouter()
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -16,6 +14,8 @@ export function useAuth() {
   useEffect(() => {
     const token = auth.getToken()
     const storedUser = auth.getUser()
+    
+    console.log('🔍 useAuth init:', { token: !!token, user: !!storedUser })
     
     if (token && storedUser) {
       setUser(storedUser)
@@ -29,7 +29,6 @@ export function useAuth() {
     try {
       const response = await api.login(email, password)
       
-      // Stocker les données
       auth.setToken(response.access_token)
       auth.setUser(response.user)
       
@@ -38,15 +37,13 @@ export function useAuth() {
       
       toast.success('Connexion réussie !')
       
-      // 🔥 REDIRECTION FORCÉE - Utiliser window.location.replace
       if (response.user.role === 'admin' || response.user.role === 'super_admin') {
-        // replace() évite que l'utilisateur puisse revenir en arrière
-        window.location.replace('/admin')
-        return response.user
+        window.location.href = '/admin'
       } else {
-        window.location.replace('/dashboard')
-        return response.user
+        window.location.href = '/dashboard'
       }
+      
+      return response.user
     } catch (error) {
       toast.error(error.message || 'Erreur de connexion')
       throw error
@@ -60,7 +57,7 @@ export function useAuth() {
     try {
       const response = await api.register(userData)
       toast.success('Inscription réussie ! Connectez-vous pour continuer.')
-      router.push('/auth/login')
+      window.location.href = '/auth/login'
       return response
     } catch (error) {
       toast.error(error.message || 'Erreur d\'inscription')
@@ -70,27 +67,29 @@ export function useAuth() {
     }
   }
 
-  const logout = async () => {
+  const logout = () => {
     auth.logout()
     setUser(null)
     setIsAuthenticated(false)
     toast.success('Déconnexion réussie')
-    window.location.replace('/')
+    window.location.href = '/'
   }
 
-  const checkAuth = async () => {
+  // Fonction pour forcer la vérification de l'authentification
+  const checkAuth = () => {
     const token = auth.getToken()
-    if (token) {
-      const isValid = await api.verifyToken(token)
-      if (!isValid) {
-        auth.logout()
-        setUser(null)
-        setIsAuthenticated(false)
-        router.push('/auth/login')
-        return false
-      }
+    const userData = auth.getUser()
+    const isAuth = !!(token && userData)
+    
+    if (isAuth && !isAuthenticated) {
+      setUser(userData)
+      setIsAuthenticated(true)
+    } else if (!isAuth && isAuthenticated) {
+      setUser(null)
+      setIsAuthenticated(false)
     }
-    return !!token
+    
+    return isAuth
   }
 
   return {
@@ -100,8 +99,6 @@ export function useAuth() {
     login,
     register,
     logout,
-    checkAuth,
-    isAdmin: () => user?.role === 'admin' || user?.role === 'super_admin',
-    isSuperAdmin: () => user?.role === 'super_admin'
+    checkAuth
   }
 }

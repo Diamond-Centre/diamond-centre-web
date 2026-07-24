@@ -1,28 +1,35 @@
 /**
- * Dashboard Admin - Graphiques et statistiques
+ * Dashboard Admin - Synchronisé avec le backend
  */
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { 
-  FaPlus, FaSignOutAlt, FaDiamond, FaHome,
-  FaCalendar, FaTicketAlt, FaUsers
-} from 'react-icons/fa'
 import { auth } from '@/lib/auth'
 import { api } from '@/lib/api'
-import StatsCards from '@/components/admin/StatsCards'
-import RevenueChart from '@/components/admin/RevenueChart'
-import EventsChart from '@/components/admin/EventsChart'
-import CategoryChart from '@/components/admin/CategoryChart'
-import UsersChart from '@/components/admin/UsersChart'
+import { 
+  FaCalendar, FaUsers, FaTicketAlt, FaChartLine,
+  FaPlus, FaEye, FaEdit, FaTrash, FaDollarSign,
+  FaArrowUp, FaArrowDown, FaMinus, FaSync,
+  FaSpinner
+} from 'react-icons/fa'
+import {
+  LineChart, Line, BarChart, Bar, PieChart, Pie,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  ResponsiveContainer, Area, AreaChart, Cell
+} from 'recharts'
+
+const COLORS = ['#0a89f2', '#8b5cf6', '#22c55e', '#f59e0b', '#ef4444']
 
 export default function AdminPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [stats, setStats] = useState(null)
+  const [events, setEvents] = useState([])
   const [user, setUser] = useState(null)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     const token = auth.getToken()
@@ -34,139 +41,465 @@ export default function AdminPage() {
     }
     
     setUser(storedUser)
-    loadStats(token)
-  }, [])
+    loadDashboardData(token)
+  }, [router])
 
-  const loadStats = async (token) => {
+  const loadDashboardData = async (token) => {
     try {
-      // Récupérer les stats depuis l'API
-      const response = await fetch('/api/admin/stats', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+      setLoading(true)
+      setError(null)
       
-      if (response.ok) {
-        const data = await response.json()
-        setStats(data)
-      }
+      // Charger les événements
+      const eventsData = await api.getEvents(token)
+      setEvents(eventsData)
+      
+      // Charger les statistiques
+      const statsData = await api.getStats(token)
+      setStats(statsData)
+      
     } catch (error) {
-      console.error('Erreur chargement stats:', error)
+      console.error('Erreur chargement dashboard:', error)
+      setError(error.message || 'Erreur lors du chargement des données')
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }
 
-  const handleLogout = () => {
-    auth.logout()
-    window.location.href = '/auth/login'
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    const token = auth.getToken()
+    await loadDashboardData(token)
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-dice-blue border-t-transparent" />
       </div>
     )
   }
 
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+        <div className="text-4xl mb-4">⚠️</div>
+        <h3 className="text-lg font-semibold text-red-700">Erreur de chargement</h3>
+        <p className="text-red-600 mt-2">{error}</p>
+        <button
+          onClick={handleRefresh}
+          className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+        >
+          Réessayer
+        </button>
+      </div>
+    )
+  }
+
+  // Statistiques pour les cartes avec données réelles
+  const statCards = [
+    {
+      title: 'Total Événements',
+      value: stats?.totalEvents || events.length || 0,
+      icon: FaCalendar,
+      color: 'from-blue-500 to-blue-600',
+      change: stats?.eventsChange || '+0%',
+      trend: stats?.eventsTrend || 'up'
+    },
+    {
+      title: 'Utilisateurs',
+      value: stats?.totalUsers || 0,
+      icon: FaUsers,
+      color: 'from-green-500 to-green-600',
+      change: stats?.usersChange || '+0%',
+      trend: stats?.usersTrend || 'up'
+    },
+    {
+      title: 'Tickets Vendus',
+      value: stats?.totalTickets || 0,
+      icon: FaTicketAlt,
+      color: 'from-purple-500 to-purple-600',
+      change: stats?.ticketsChange || '+0%',
+      trend: stats?.ticketsTrend || 'up'
+    },
+    {
+      title: 'Revenus Totaux',
+      value: `${(stats?.totalRevenue || 0).toLocaleString()} FCFA`,
+      icon: FaDollarSign,
+      color: 'from-orange-500 to-orange-600',
+      change: stats?.revenueChange || '+0%',
+      trend: stats?.revenueTrend || 'up'
+    }
+  ]
+
+  // Données pour les graphiques (à partir des événements réels)
+  const revenueData = stats?.revenueByMonth || []
+  const eventsData = stats?.eventsByMonth || []
+  const categoriesData = stats?.categories || []
+  const usersData = stats?.usersByMonth || []
+
+  // Statistiques supplémentaires à partir des données réelles
+  const totalEvents = events.length
+  const publishedEvents = events.filter(e => e.status === 'published').length
+  const draftEvents = events.filter(e => e.status === 'draft').length
+  const upcomingEvents = events.filter(e => new Date(e.start_date) > new Date()).length
+
+  const averagePrice = totalEvents > 0 
+    ? Math.round(events.reduce((sum, e) => sum + (e.price || 0), 0) / totalEvents) 
+    : 0
+
+  const completionRate = stats?.totalTickets > 0 
+    ? Math.round(((stats?.totalTickets || 0) / (stats?.totalTickets || 1)) * 100) 
+    : 0
+
+  // Derniers événements créés
+  const recentEvents = [...events]
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .slice(0, 5)
+
+  const customTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg">
+          <p className="text-sm font-medium text-gray-800">{label}</p>
+          <p className="text-sm text-dice-blue font-bold">
+            {payload[0].value}
+          </p>
+        </div>
+      )
+    }
+    return null
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Navbar Admin */}
-      <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-dice-blue to-purple-600 rounded-xl flex items-center justify-center">
-              <FaDiamond className="text-white text-lg" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-800">Dashboard Admin</h1>
-              <p className="text-sm text-gray-500">Bienvenue, {user?.name || 'Admin'}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link href="/">
-              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Voir le site">
-                <FaHome className="text-gray-600" />
-              </button>
-            </Link>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-            >
-              <FaSignOutAlt />
-              <span className="text-sm font-medium hidden sm:inline">Déconnexion</span>
-            </button>
-          </div>
+    <div>
+      {/* En-tête */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
+          <p className="text-gray-500">
+            Bienvenue {user?.name || 'Admin'} ! 
+            <span className="ml-2 text-xs text-gray-400">
+              {events.length} événements au total
+            </span>
+          </p>
         </div>
-      </header>
-
-      {/* Contenu principal */}
-      <main className="container mx-auto px-4 py-8">
-        {/* Statistiques */}
-        <StatsCards stats={stats} />
-
-        {/* Actions rapides */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+        <div className="flex gap-2">
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-sm flex items-center gap-2 disabled:opacity-50"
+          >
+            {refreshing ? (
+              <FaSpinner className="animate-spin" />
+            ) : (
+              <FaSync />
+            )}
+            Rafraîchir
+          </button>
           <Link href="/admin/events/create">
-            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md hover:border-dice-blue transition-all cursor-pointer group">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-dice-blue/10 rounded-xl flex items-center justify-center group-hover:bg-dice-blue/20 transition-colors">
-                  <FaPlus className="text-dice-blue text-xl" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-800">Créer un événement</h3>
-                  <p className="text-sm text-gray-500">Ajouter un nouvel événement</p>
-                </div>
-              </div>
-            </div>
-          </Link>
-
-          <Link href="/admin/events">
-            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md hover:border-dice-blue transition-all cursor-pointer group">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-dice-blue/10 rounded-xl flex items-center justify-center group-hover:bg-dice-blue/20 transition-colors">
-                  <FaCalendar className="text-dice-blue text-xl" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-800">Gérer les événements</h3>
-                  <p className="text-sm text-gray-500">Voir et modifier vos événements</p>
-                </div>
-              </div>
-            </div>
-          </Link>
-
-          <Link href="/admin/tickets">
-            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md hover:border-dice-blue transition-all cursor-pointer group">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-dice-blue/10 rounded-xl flex items-center justify-center group-hover:bg-dice-blue/20 transition-colors">
-                  <FaTicketAlt className="text-dice-blue text-xl" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-800">Tickets</h3>
-                  <p className="text-sm text-gray-500">Gérer les réservations</p>
-                </div>
-              </div>
-            </div>
+            <button className="px-4 py-2 bg-dice-blue text-white rounded-lg hover:bg-dice-blue-dark transition-colors text-sm flex items-center gap-2">
+              <FaPlus />
+              Nouvel événement
+            </button>
           </Link>
         </div>
+      </div>
 
-        {/* Graphiques */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-          <RevenueChart data={stats?.revenueByMonth || []} />
-          <EventsChart data={stats?.eventsByMonth || []} />
+      {/* Stats rapides des événements */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <p className="text-sm text-gray-500">Total</p>
+          <p className="text-xl font-bold text-dice-blue">{totalEvents}</p>
+          <p className="text-xs text-gray-400">événements créés</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <p className="text-sm text-gray-500">Publiés</p>
+          <p className="text-xl font-bold text-green-500">{publishedEvents}</p>
+          <p className="text-xs text-gray-400">en ligne</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <p className="text-sm text-gray-500">Brouillons</p>
+          <p className="text-xl font-bold text-yellow-500">{draftEvents}</p>
+          <p className="text-xs text-gray-400">en attente</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <p className="text-sm text-gray-500">À venir</p>
+          <p className="text-xl font-bold text-purple-500">{upcomingEvents}</p>
+          <p className="text-xs text-gray-400">prochains événements</p>
+        </div>
+      </div>
+
+      {/* Cartes statistiques principales */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {statCards.map((stat, index) => (
+          <div
+            key={index}
+            className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">{stat.title}</p>
+                <p className="text-2xl font-bold text-gray-800 mt-1">{stat.value}</p>
+              </div>
+              <div className={`w-12 h-12 bg-gradient-to-r ${stat.color} rounded-xl flex items-center justify-center`}>
+                <stat.icon className="text-white text-xl" />
+              </div>
+            </div>
+            {stat.change && (
+              <div className="mt-2 flex items-center gap-1">
+                {stat.trend === 'up' ? (
+                  <FaArrowUp className="text-green-500 text-xs" />
+                ) : stat.trend === 'down' ? (
+                  <FaArrowDown className="text-red-500 text-xs" />
+                ) : (
+                  <FaMinus className="text-gray-400 text-xs" />
+                )}
+                <span className={`text-xs font-medium ${
+                  stat.trend === 'up' ? 'text-green-500' : 
+                  stat.trend === 'down' ? 'text-red-500' : 
+                  'text-gray-400'
+                }`}>
+                  {stat.change}
+                </span>
+                <span className="text-xs text-gray-400">vs mois précédent</span>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Derniers événements créés */}
+      {recentEvents.length > 0 && (
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-800">Derniers événements créés</h3>
+            <Link href="/admin/events" className="text-sm text-dice-blue hover:underline">
+              Voir tous →
+            </Link>
+          </div>
+          <div className="space-y-3">
+            {recentEvents.map((event) => (
+              <div key={event.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 bg-dice-blue/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <FaCalendar className="text-dice-blue" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-800 truncate">{event.title}</p>
+                    <p className="text-xs text-gray-500">
+                      {new Date(event.start_date).toLocaleDateString('fr-FR')} • {event.location}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className={`px-2 py-0.5 text-xs rounded-full ${
+                    event.status === 'published' 
+                      ? 'bg-green-100 text-green-700' 
+                      : 'bg-yellow-100 text-yellow-700'
+                  }`}>
+                    {event.status === 'published' ? 'Publié' : 'Brouillon'}
+                  </span>
+                  <span className="text-sm font-semibold text-dice-blue">
+                    {event.price} {event.currency || 'FCFA'}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Graphiques */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Revenus mensuels */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-800">Revenus mensuels</h3>
+            <span className="text-xs text-gray-400">
+              {stats?.totalRevenue ? `${stats.totalRevenue.toLocaleString()} FCFA` : '0 FCFA'} total
+            </span>
+          </div>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={revenueData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="month" stroke="#9ca3af" />
+                <YAxis stroke="#9ca3af" />
+                <Tooltip content={customTooltip} />
+                <Bar dataKey="revenue" fill="#0a89f2" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-          <CategoryChart data={stats?.categories || []} />
-          <UsersChart data={stats?.usersByMonth || []} />
+        {/* Événements par mois */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-800">Événements par mois</h3>
+            <span className="text-xs text-gray-400">{totalEvents} événements</span>
+          </div>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={eventsData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="month" stroke="#9ca3af" />
+                <YAxis stroke="#9ca3af" />
+                <Tooltip content={customTooltip} />
+                <Line 
+                  type="monotone" 
+                  dataKey="count" 
+                  stroke="#0a89f2" 
+                  strokeWidth={2}
+                  dot={{ fill: '#0a89f2', strokeWidth: 2 }}
+                  activeDot={{ r: 6 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        {/* Catégories */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-800">Catégories</h3>
+            <span className="text-xs text-gray-400">Distribution</span>
+          </div>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={categoriesData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={80}
+                  paddingAngle={5}
+                  dataKey="count"
+                >
+                  {categoriesData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip content={customTooltip} />
+                <Legend 
+                  verticalAlign="bottom" 
+                  height={36}
+                  formatter={(value) => <span className="text-xs text-gray-600">{value}</span>}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
-        {/* Footer */}
-        <div className="mt-8 text-center text-sm text-gray-400 border-t border-gray-200 pt-6">
-          <p>© 2026 Diamond Centre. Tous droits réservés.</p>
+        {/* Utilisateurs par mois */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm lg:col-span-2">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-800">Utilisateurs par mois</h3>
+            <span className="text-xs text-gray-400">{stats?.totalUsers || 0} utilisateurs</span>
+          </div>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={usersData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="month" stroke="#9ca3af" />
+                <YAxis stroke="#9ca3af" />
+                <Tooltip content={customTooltip} />
+                <Area 
+                  type="monotone" 
+                  dataKey="count" 
+                  stroke="#8b5cf6" 
+                  fill="url(#colorUsers)"
+                  strokeWidth={2}
+                />
+                <defs>
+                  <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         </div>
-      </main>
+      </div>
+
+      {/* Statistiques supplémentaires */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <p className="text-sm text-gray-500">Prix moyen</p>
+          <p className="text-xl font-bold text-dice-blue">{averagePrice.toLocaleString()} FCFA</p>
+          <p className="text-xs text-gray-400">par événement</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <p className="text-sm text-gray-500">Taux de remplissage</p>
+          <p className="text-xl font-bold text-green-500">{completionRate}%</p>
+          <p className="text-xs text-gray-400">des places vendues</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <p className="text-sm text-gray-500">Catégorie populaire</p>
+          <p className="text-xl font-bold text-gray-800">
+            {categoriesData.length > 0 ? categoriesData[0]?.name : '-'}
+          </p>
+          <p className="text-xs text-gray-400">
+            {categoriesData.length > 0 ? categoriesData[0]?.percentage : 0}% des événements
+          </p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <p className="text-sm text-gray-500">Mois actif</p>
+          <p className="text-xl font-bold text-gray-800">
+            {eventsData.reduce((max, curr) => curr.count > max.count ? curr : max, { month: '-', count: 0 }).month}
+          </p>
+          <p className="text-xs text-gray-400">
+            {eventsData.reduce((max, curr) => curr.count > max.count ? curr : max, { month: '-', count: 0 }).count} événements
+          </p>
+        </div>
+      </div>
+
+      {/* Actions rapides */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Link href="/admin/events">
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md hover:border-dice-blue transition-all cursor-pointer group">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-dice-blue/10 rounded-lg flex items-center justify-center group-hover:bg-dice-blue/20 transition-colors">
+                <FaEye className="text-dice-blue" />
+              </div>
+              <div>
+                <h4 className="font-medium text-gray-800 group-hover:text-dice-blue transition-colors">Voir les événements</h4>
+                <p className="text-sm text-gray-500">{events.length} événements créés</p>
+              </div>
+            </div>
+          </div>
+        </Link>
+        <Link href="/admin/tickets">
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md hover:border-dice-blue transition-all cursor-pointer group">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center group-hover:bg-purple-500/20 transition-colors">
+                <FaTicketAlt className="text-purple-500" />
+              </div>
+              <div>
+                <h4 className="font-medium text-gray-800 group-hover:text-purple-500 transition-colors">Gérer les tickets</h4>
+                <p className="text-sm text-gray-500">{stats?.totalTickets || 0} tickets vendus</p>
+              </div>
+            </div>
+          </div>
+        </Link>
+        <Link href="/admin/events/create">
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md hover:border-dice-blue transition-all cursor-pointer group">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center group-hover:bg-green-500/20 transition-colors">
+                <FaPlus className="text-green-500" />
+              </div>
+              <div>
+                <h4 className="font-medium text-gray-800 group-hover:text-green-500 transition-colors">Créer un événement</h4>
+                <p className="text-sm text-gray-500">Ajouter au calendrier</p>
+              </div>
+            </div>
+          </div>
+        </Link>
+      </div>
     </div>
   )
 }

@@ -1,144 +1,128 @@
-'use client'
-
-import { useState, useEffect, useCallback } from 'react'
-import api from '@/lib/api'
-
-/** Normalize backend event shape for French UI components */
-export function normalizeEvent(event) {
-  if (!event) return null
-
-  const id = event.id ?? event._id
-  const titre = event.titre || event.title || ''
-  const date = event.date || event.starts_at || null
-  const lieu = event.lieu || event.location || ''
-  const prix = Number(event.prix ?? event.price ?? 0)
-  const capacity = Number(event.nbPlaces ?? event.capacity ?? 0)
-  const available = Number(
-    event.available_tickets ?? event.nbPlacesRestantes ?? capacity
-  )
-  const nbInscrits = capacity > 0 ? Math.max(0, capacity - available) : 0
-
-  return {
-    ...event,
-    id,
-    _id: id,
-    titre,
-    title: titre,
-    description: event.description || '',
-    image: event.image || event.image_url || '/images/events/placeholder.jpg',
-    image_url: event.image_url || event.image || '',
-    prix,
-    price: prix,
-    prixPromotion: event.prixPromotion ?? null,
-    date,
-    time: event.time || '',
-    lieu,
-    location: lieu,
-    category: event.category || event.type || '',
-    type: event.type || event.category || 'formation',
-    statut: event.statut || event.status || 'published',
-    status: event.status || event.statut || 'published',
-    nbPlaces: capacity,
-    capacity,
-    available_tickets: available,
-    nbInscrits,
-    formateur: event.formateur || { nom: event.instructor || 'Diamond Centre' },
-    currency: event.currency || 'XAF',
-  }
-}
-
-function unwrapList(data) {
-  if (Array.isArray(data)) return data
-  if (Array.isArray(data?.data)) return data.data
-  if (Array.isArray(data?.events)) return data.events
-  return []
-}
-
-function isValidDate(value) {
-  if (!value) return false
-  const d = new Date(value)
-  return !Number.isNaN(d.getTime())
-}
+/**
+ * Hook de gestion des événements
+ */
+import { useState, useCallback } from 'react'
+import { api } from '@/lib/api'
+import { auth } from '@/lib/auth'
 
 export function useEvents() {
   const [events, setEvents] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const fetchEvents = useCallback(async () => {
+  // Récupérer les événements publics
+  const fetchPublicEvents = useCallback(async () => {
+    setLoading(true)
+    setError(null)
     try {
-      setLoading(true)
-      const response = await api.get('/events')
-      const list = unwrapList(response.data).map(normalizeEvent).filter(Boolean)
-      setEvents(list)
-      setError(null)
+      console.log('📤 Chargement des événements publics...')
+      const data = await api.getPublicEvents()
+      console.log('📥 Événements reçus:', data)
+      setEvents(data || [])
+      return data
     } catch (err) {
-      setError(err.message || 'Erreur lors du chargement des événements')
+      console.error('❌ Erreur fetchPublicEvents:', err)
+      setError(err.message)
       setEvents([])
+      throw err
     } finally {
       setLoading(false)
     }
   }, [])
 
-  const getEventById = useCallback(async (id) => {
+  // Récupérer tous les événements (avec token)
+  const fetchEvents = useCallback(async () => {
+    setLoading(true)
+    setError(null)
     try {
-      const response = await api.get(`/events/${id}`)
-      return normalizeEvent(response.data?.data || response.data)
+      const token = auth.getToken()
+      console.log('📤 Chargement des événements avec token...')
+      const data = await api.getEvents(token)
+      console.log('📥 Événements reçus:', data)
+      setEvents(data || [])
+      return data
     } catch (err) {
-      setError(err.message || "Erreur lors du chargement de l'événement")
+      console.error('❌ Erreur fetchEvents:', err)
+      setError(err.message)
+      setEvents([])
       throw err
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  const getEvent = useCallback(async (id) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const token = auth.getToken()
+      const data = await api.getEventById(id, token)
+      return data
+    } catch (err) {
+      setError(err.message)
+      throw err
+    } finally {
+      setLoading(false)
     }
   }, [])
 
   const createEvent = useCallback(async (data) => {
+    setLoading(true)
+    setError(null)
     try {
-      const response = await api.post('/events', data)
-      const created = normalizeEvent(response.data)
-      setEvents((prev) => [...prev, created])
-      return created
+      const token = auth.getToken()
+      const result = await api.createEvent(data, token)
+      await fetchEvents()
+      return result
     } catch (err) {
-      setError(err.message || 'Erreur lors de la création')
+      setError(err.message)
       throw err
+    } finally {
+      setLoading(false)
     }
-  }, [])
+  }, [fetchEvents])
 
   const updateEvent = useCallback(async (id, data) => {
+    setLoading(true)
+    setError(null)
     try {
-      const response = await api.put(`/events/${id}`, data)
-      const updated = normalizeEvent(response.data)
-      setEvents((prev) =>
-        prev.map((e) => (String(e.id) === String(id) ? updated : e))
-      )
-      return updated
+      const token = auth.getToken()
+      const result = await api.updateEvent(id, data, token)
+      await fetchEvents()
+      return result
     } catch (err) {
-      setError(err.message || 'Erreur lors de la mise à jour')
+      setError(err.message)
       throw err
+    } finally {
+      setLoading(false)
     }
-  }, [])
+  }, [fetchEvents])
 
   const deleteEvent = useCallback(async (id) => {
+    setLoading(true)
+    setError(null)
     try {
-      await api.delete(`/events/${id}`)
-      setEvents((prev) => prev.filter((e) => String(e.id) !== String(id)))
+      const token = auth.getToken()
+      await api.deleteEvent(id, token)
+      await fetchEvents()
+      return true
     } catch (err) {
-      setError(err.message || 'Erreur lors de la suppression')
+      setError(err.message)
       throw err
+    } finally {
+      setLoading(false)
     }
-  }, [])
-
-  useEffect(() => {
-    fetchEvents()
   }, [fetchEvents])
 
   return {
     events,
     loading,
     error,
+    fetchPublicEvents,
     fetchEvents,
-    getEventById,
+    getEvent,
     createEvent,
     updateEvent,
-    deleteEvent,
-    isValidDate,
+    deleteEvent
   }
 }

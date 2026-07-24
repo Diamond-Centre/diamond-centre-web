@@ -8,12 +8,14 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { 
   FaPlus, FaEye, FaEdit, FaTrash, FaCalendar,
-  FaMapMarker, FaUsers, FaTicketAlt, FaSearch
+  FaMapMarker, FaUsers, FaTicketAlt, FaSearch,
+  FaSync
 } from 'react-icons/fa'
 import { api } from '@/lib/api'
 import { auth } from '@/lib/auth'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
+import toast from 'react-hot-toast'
 
 export default function AdminEvents() {
   const router = useRouter()
@@ -37,8 +39,9 @@ export default function AdminEvents() {
       const token = auth.getToken()
       const data = await api.getEvents(token)
       setEvents(data)
-    } catch (error) {
-      setError(error.message)
+    } catch (err) {
+      setError(err.message)
+      toast.error(err.message)
     } finally {
       setLoading(false)
     }
@@ -50,9 +53,10 @@ export default function AdminEvents() {
     try {
       const token = auth.getToken()
       await api.deleteEvent(id, token)
+      toast.success('Événement supprimé avec succès')
       await loadEvents()
-    } catch (error) {
-      setError(error.message)
+    } catch (err) {
+      toast.error(err.message)
     }
   }
 
@@ -66,7 +70,7 @@ export default function AdminEvents() {
     } else if (status === 'draft') {
       return { variant: 'warning', label: 'Brouillon' }
     } else {
-      return { variant: 'default', label: status }
+      return { variant: 'default', label: status || 'Inconnu' }
     }
   }
 
@@ -84,14 +88,25 @@ export default function AdminEvents() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Gestion des événements</h1>
-          <p className="text-gray-500">Créez, modifiez et gérez vos événements</p>
+          <p className="text-gray-500">
+            {events.length} événement{events.length > 1 ? 's' : ''} au total
+          </p>
         </div>
-        <Link href="/admin/events/create">
-          <Button variant="primary">
-            <FaPlus className="mr-2" />
-            Nouvel événement
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <button
+            onClick={loadEvents}
+            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            title="Rafraîchir"
+          >
+            <FaSync className={loading ? 'animate-spin' : ''} />
+          </button>
+          <Link href="/admin/events/create">
+            <Button variant="primary">
+              <FaPlus className="mr-2" />
+              Nouvel événement
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Barre de recherche */}
@@ -159,29 +174,29 @@ export default function AdminEvents() {
                       </span>
                       <span className="flex items-center gap-1">
                         <FaTicketAlt className="text-dice-blue" />
-                        {event.available_tickets} disponibles
+                        {event.available_tickets || 0} disponibles
                       </span>
                       <span className="flex items-center gap-1">
                         <span className="font-semibold text-dice-blue">
-                          {event.price} {event.currency}
+                          {event.price} {event.currency || 'FCFA'}
                         </span>
                       </span>
                     </div>
                   </div>
                   <div className="flex gap-2">
                     <Link href={`/events/${event.id}`}>
-                      <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                      <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Voir sur le site">
                         <FaEye />
                       </button>
                     </Link>
                     <Link href={`/admin/events/edit/${event.id}`}>
-                      <button className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors">
+                      <button className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors" title="Modifier">
                         <FaEdit />
                       </button>
                     </Link>
                     <button
                       onClick={() => handleDelete(event.id)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Supprimer"
                     >
                       <FaTrash />
                     </button>
