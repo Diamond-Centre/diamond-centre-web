@@ -1,205 +1,393 @@
 /**
- * API client centralisé
+ * API client centralisé - Version avec gestion d'erreurs améliorée
  */
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
 
 export const api = {
-  // Auth
+  // ===== AUTH =====
   login: async (email, password) => {
-    const response = await fetch(`${API_URL}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    })
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.message || 'Erreur de connexion')
+    try {
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      })
+      
+      if (!response.ok) {
+        const text = await response.text()
+        try {
+          const error = JSON.parse(text)
+          throw new Error(error.message || 'Erreur de connexion')
+        } catch {
+          throw new Error(`Erreur ${response.status}: ${text.substring(0, 100)}`)
+        }
+      }
+      return response.json()
+    } catch (error) {
+      console.error('Login error:', error)
+      throw new Error('Impossible de se connecter au serveur. Vérifiez que le backend est en cours d\'exécution.')
     }
-    return response.json()
   },
 
   register: async (data) => {
-  // Les données attendues par le backend:
-  // { email, password, name, role? }
-  // role est optionnel, par défaut 'user' dans le backend
-  const response = await fetch(`${API_URL}/auth/register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      email: data.email,
-      password: data.password,
-      name: data.name
-      // Le champ 'role' n'est pas envoyé, le backend met 'user' par défaut
-    })
-  })
-  if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.message || 'Erreur d\'inscription')
-  }
-  return response.json()
-},
-
-  // Vérifier le token
-  verifyToken: async (token) => {
     try {
-      const response = await fetch(`${API_URL}/auth/verify`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const response = await fetch(`${API_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password,
+          name: data.name
+        })
       })
-      return response.ok
-    } catch {
-      return false
+      
+      if (!response.ok) {
+        const text = await response.text()
+        try {
+          const error = JSON.parse(text)
+          throw new Error(error.message || 'Erreur d\'inscription')
+        } catch {
+          throw new Error(`Erreur ${response.status}: ${text.substring(0, 100)}`)
+        }
+      }
+      return response.json()
+    } catch (error) {
+      console.error('Register error:', error)
+      throw new Error('Impossible de se connecter au serveur. Vérifiez que le backend est en cours d\'exécution.')
     }
   },
 
-  // Events
-  getEvents: async (token) => {
-    const response = await fetch(`${API_URL}/events`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
+  // ===== EVENTS =====
+  getPublicEvents: async () => {
+    try {
+      const response = await fetch(`${API_URL}/events`, {
+        headers: { 'Content-Type': 'application/json' }
+      })
+      
+      if (!response.ok) {
+        const text = await response.text()
+        try {
+          const error = JSON.parse(text)
+          throw new Error(error.message || 'Erreur lors du chargement des événements')
+        } catch {
+          throw new Error(`Erreur ${response.status}: ${text.substring(0, 100)}`)
+        }
       }
-    })
-    if (!response.ok) throw new Error('Erreur lors du chargement des événements')
-    return response.json()
+      return response.json()
+    } catch (error) {
+      console.error('GetPublicEvents error:', error)
+      return []
+    }
+  },
+
+  getEvents: async (token) => {
+    try {
+      const headers = token ? { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      } : { 'Content-Type': 'application/json' }
+      
+      const response = await fetch(`${API_URL}/events`, { headers })
+      
+      if (!response.ok) {
+        const text = await response.text()
+        try {
+          const error = JSON.parse(text)
+          throw new Error(error.message || 'Erreur lors du chargement des événements')
+        } catch {
+          throw new Error(`Erreur ${response.status}: ${text.substring(0, 100)}`)
+        }
+      }
+      return response.json()
+    } catch (error) {
+      console.error('GetEvents error:', error)
+      return []
+    }
   },
 
   createEvent: async (data, token) => {
-    const response = await fetch(`${API_URL}/events`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(data)
-    })
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.message || 'Erreur lors de la création')
-    }
-    return response.json()
-  },
-
-  getEventById: async (id, token) => {
-    const response = await fetch(`${API_URL}/events/${id}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
+    try {
+      const response = await fetch(`${API_URL}/events`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          title: data.title,
+          description: data.description,
+          price: Number(data.price),
+          currency: data.currency || 'XAF',
+          start_date: data.start_date,
+          end_date: data.end_date,
+          location: data.location,
+          category: data.category,
+          capacity: Number(data.capacity),
+          image_url: data.image_url || '',
+          status: 'published'
+        })
+      })
+      
+      if (!response.ok) {
+        const text = await response.text()
+        try {
+          const error = JSON.parse(text)
+          throw new Error(error.message || 'Erreur lors de la création')
+        } catch {
+          throw new Error(`Erreur ${response.status}: ${text.substring(0, 100)}`)
+        }
       }
-    })
-    if (!response.ok) throw new Error('Événement non trouvé')
-    return response.json()
+      return response.json()
+    } catch (error) {
+      console.error('CreateEvent error:', error)
+      throw new Error('Erreur lors de la création de l\'événement')
+    }
   },
 
   updateEvent: async (id, data, token) => {
+  try {
+    // Nettoyer les données avant l'envoi
+    const cleanData = {
+      title: data.title?.trim() || '',
+      description: data.description?.trim() || '',
+      price: Number(data.price) || 0,
+      currency: data.currency || 'XAF',
+      start_date: data.start_date || '',
+      end_date: data.end_date || '',
+      location: data.location?.trim() || '',
+      category: data.category || 'conférence',
+      capacity: Number(data.capacity) || 1,
+      image_url: data.image_url || ''
+    }
+
+    console.log('📤 Mise à jour événement ID:', id)
+    console.log('📤 Données envoyées:', cleanData)
+
     const response = await fetch(`${API_URL}/events/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify(data)
+      body: JSON.stringify(cleanData)
     })
+    
+    console.log('📥 Statut réponse:', response.status)
+    
     if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.message || 'Erreur lors de la mise à jour')
+      const text = await response.text()
+      console.error('❌ Réponse erreur:', text)
+      
+      // Essayer de parser le JSON
+      try {
+        const error = JSON.parse(text)
+        throw new Error(error.message || `Erreur ${response.status}`)
+      } catch {
+        // Si ce n'est pas du JSON, afficher le texte
+        if (response.status === 404) {
+          throw new Error(`La route /api/events/${id} n'existe pas. Vérifiez que le backend est bien configuré.`)
+        }
+        throw new Error(`Erreur ${response.status}: ${text.substring(0, 100)}`)
+      }
     }
     return response.json()
-  },
+  } catch (error) {
+    console.error('UpdateEvent error:', error)
+    throw new Error(error.message || 'Erreur lors de la mise à jour de l\'événement')
+  }
+},
+
 
   deleteEvent: async (id, token) => {
-    const response = await fetch(`${API_URL}/events/${id}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${token}`
+    try {
+      const response = await fetch(`${API_URL}/events/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (!response.ok) {
+        const text = await response.text()
+        try {
+          const error = JSON.parse(text)
+          throw new Error(error.message || 'Erreur lors de la suppression')
+        } catch {
+          throw new Error(`Erreur ${response.status}: ${text.substring(0, 100)}`)
+        }
       }
-    })
-    if (!response.ok) throw new Error('Erreur lors de la suppression')
-    return response.json()
+      return response.json()
+    } catch (error) {
+      console.error('DeleteEvent error:', error)
+      throw new Error('Erreur lors de la suppression de l\'événement')
+    }
   },
 
-  // Users
-  getUsers: async (token) => {
-    const response = await fetch(`${API_URL}/users`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
+  getEventById: async (id, token) => {
+    try {
+      const headers = token ? { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      } : { 'Content-Type': 'application/json' }
+      
+      const response = await fetch(`${API_URL}/events/${id}`, { headers })
+      
+      if (!response.ok) {
+        const text = await response.text()
+        try {
+          const error = JSON.parse(text)
+          throw new Error(error.message || 'Événement non trouvé')
+        } catch {
+          throw new Error(`Erreur ${response.status}: ${text.substring(0, 100)}`)
+        }
       }
-    })
-    if (!response.ok) throw new Error('Erreur lors du chargement des utilisateurs')
-    return response.json()
+      return response.json()
+    } catch (error) {
+      console.error('GetEventById error:', error)
+      return null
+    }
   },
 
-  // Tickets
+  // ===== TICKETS =====
   getTickets: async (token) => {
-    const response = await fetch(`${API_URL}/tickets`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
+    try {
+      const response = await fetch(`${API_URL}/tickets`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (!response.ok) {
+        const text = await response.text()
+        try {
+          const error = JSON.parse(text)
+          throw new Error(error.message || 'Erreur lors du chargement des tickets')
+        } catch {
+          throw new Error(`Erreur ${response.status}: ${text.substring(0, 100)}`)
+        }
       }
-    })
-    if (!response.ok) throw new Error('Erreur lors du chargement des tickets')
-    return response.json()
+      return response.json()
+    } catch (error) {
+      console.error('GetTickets error:', error)
+      return []
+    }
   },
 
   reserveTickets: async (data, token) => {
-    const response = await fetch(`${API_URL}/tickets/reserve`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(data)
-    })
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.message || 'Erreur lors de la réservation')
+    try {
+      const response = await fetch(`${API_URL}/tickets/reserve`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          event_id: data.eventId,
+          quantity: data.quantity || 1,
+          customer_name: data.customerName || data.name,
+          customer_email: data.customerEmail || data.email,
+          customer_phone: data.customerPhone || data.phone || ''
+        })
+      })
+      
+      if (!response.ok) {
+        const text = await response.text()
+        try {
+          const error = JSON.parse(text)
+          throw new Error(error.message || 'Erreur lors de la réservation')
+        } catch {
+          throw new Error(`Erreur ${response.status}: ${text.substring(0, 100)}`)
+        }
+      }
+      return response.json()
+    } catch (error) {
+      console.error('ReserveTickets error:', error)
+      throw new Error('Erreur lors de la réservation')
     }
-    return response.json()
   },
 
-  // Payments
+  // ===== PAYMENTS =====
   initiatePayment: async (data, token) => {
-    const response = await fetch(`${API_URL}/payments/initiate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(data)
-    })
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.message || 'Erreur lors de l\'initiation du paiement')
+    try {
+      const response = await fetch(`${API_URL}/payments/initiate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          ticket_id: data.ticketId,
+          method: data.method || 'mtn_momo',
+          phone: data.phone
+        })
+      })
+      
+      if (!response.ok) {
+        const text = await response.text()
+        try {
+          const error = JSON.parse(text)
+          throw new Error(error.message || 'Erreur lors de l\'initiation du paiement')
+        } catch {
+          throw new Error(`Erreur ${response.status}: ${text.substring(0, 100)}`)
+        }
+      }
+      return response.json()
+    } catch (error) {
+      console.error('InitiatePayment error:', error)
+      throw new Error('Erreur lors de l\'initiation du paiement')
     }
-    return response.json()
   },
 
   getPaymentStatus: async (id, token) => {
-    const response = await fetch(`${API_URL}/payments/${id}/status`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
+    try {
+      const response = await fetch(`${API_URL}/payments/${id}/status`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (!response.ok) {
+        const text = await response.text()
+        try {
+          const error = JSON.parse(text)
+          throw new Error(error.message || 'Erreur lors du chargement du statut')
+        } catch {
+          throw new Error(`Erreur ${response.status}: ${text.substring(0, 100)}`)
+        }
       }
-    })
-    if (!response.ok) throw new Error('Erreur lors du chargement du statut')
-    return response.json()
-  },
-
-  // Validation
-  validateTicket: async (qrCode, token) => {
-    const response = await fetch(`${API_URL}/validation/scan`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ qr_code: qrCode })
-    })
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.message || 'Erreur lors de la validation')
+      return response.json()
+    } catch (error) {
+      console.error('GetPaymentStatus error:', error)
+      throw new Error('Erreur lors du chargement du statut du paiement')
     }
-    return response.json()
   },
 
-  // Statistiques Admin
+  // ===== USERS =====
+  getUsers: async (token) => {
+    try {
+      const response = await fetch(`${API_URL}/users`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (!response.ok) {
+        const text = await response.text()
+        try {
+          const error = JSON.parse(text)
+          throw new Error(error.message || 'Erreur lors du chargement des utilisateurs')
+        } catch {
+          throw new Error(`Erreur ${response.status}: ${text.substring(0, 100)}`)
+        }
+      }
+      return response.json()
+    } catch (error) {
+      console.error('GetUsers error:', error)
+      return []
+    }
+  },
+
+  // ===== STATS =====
   getStats: async (token) => {
     try {
       const [events, users, tickets] = await Promise.all([

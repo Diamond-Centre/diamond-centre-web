@@ -1,5 +1,5 @@
 /**
- * Page de connexion - Version avec redirection garantie
+ * Page de connexion - Version simplifiée
  */
 'use client'
 
@@ -9,7 +9,7 @@ import { motion } from 'framer-motion'
 import { useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import * as yup from 'yup'
-import { api } from '@/lib/api'
+import { useAuth } from '@/hooks/useAuth'
 import { auth } from '@/lib/auth'
 import Button from '@/components/ui/Button'
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash, FaGoogle, FaFacebook } from 'react-icons/fa'
@@ -19,14 +19,14 @@ import toast from 'react-hot-toast'
 
 const loginSchema = yup.object().shape({
   email: yup.string().email('Email invalide').required('L\'email est requis'),
-  password: yup.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères').required('Le mot de passe est requis'),
-  rememberMe: yup.boolean()
+  password: yup.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères').required('Le mot de passe est requis')
 })
 
 export default function LoginPage() {
+  const { login, loading } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isChecking, setIsChecking] = useState(true)
 
   const {
     register,
@@ -36,64 +36,37 @@ export default function LoginPage() {
     resolver: yupResolver(loginSchema),
     defaultValues: {
       email: '',
-      password: '',
-      rememberMe: false
+      password: ''
     }
   })
 
-  // Vérification de l'authentification au chargement
+  // Vérifier si déjà connecté
   useEffect(() => {
     const token = auth.getToken()
     const user = auth.getUser()
     
-    console.log('🔍 Vérification auth:', { token: !!token, user })
-    
     if (token && user) {
-      // Redirection immédiate
       if (user.role === 'admin' || user.role === 'super_admin') {
-        console.log('🚀 Redirection vers /admin')
-        window.location.replace('/admin')
-        return
+        window.location.href = '/admin'
       } else {
-        console.log('🚀 Redirection vers /dashboard')
-        window.location.replace('/dashboard')
-        return
+        window.location.href = '/dashboard'
       }
     }
-    setIsLoading(false)
+    setIsChecking(false)
   }, [])
 
   const onSubmit = async (data) => {
     setIsSubmitting(true)
     try {
-      console.log('📤 Tentative de connexion:', data.email)
-      
-      const response = await api.login(data.email, data.password)
-      console.log('📥 Réponse du backend:', response)
-      
-      // Stocker les données
-      auth.setToken(response.access_token)
-      auth.setUser(response.user)
-      
-      toast.success('Connexion réussie !')
-      
-      // Redirection immédiate avec window.location.replace
-      if (response.user.role === 'admin' || response.user.role === 'super_admin') {
-        console.log('🚀 Redirection vers /admin')
-        window.location.replace('/admin')
-      } else {
-        console.log('🚀 Redirection vers /dashboard')
-        window.location.replace('/dashboard')
-      }
+      await login(data.email, data.password)
     } catch (error) {
-      console.error('❌ Erreur de connexion:', error)
-      toast.error(error.message || 'Email ou mot de passe incorrect')
+      // Erreur déjà gérée dans useAuth
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  if (isLoading) {
+  if (isChecking) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-dice-blue border-t-transparent" />
@@ -175,7 +148,7 @@ export default function LoginPage() {
                     <input
                       type="email"
                       placeholder="admin@diamondcentre.com"
-                      className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-dice-blue/30 focus:border-dice-blue outline-none transition-all text-sm placeholder-gray-400"
+                      className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-dice-blue/30 focus:border-dice-blue outline-none transition-all text-sm"
                       {...register('email')}
                     />
                   </div>
@@ -205,32 +178,13 @@ export default function LoginPage() {
                   {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>}
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <input
-                      id="rememberMe"
-                      type="checkbox"
-                      className="h-4 w-4 text-dice-blue focus:ring-dice-blue/30 border-gray-300 rounded"
-                      {...register('rememberMe')}
-                    />
-                    <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-600">
-                      Se souvenir de moi
-                    </label>
-                  </div>
-                  <div className="text-sm">
-                    <Link href="/auth/forgot-password" className="text-dice-blue hover:underline font-medium">
-                      Mot de passe oublié ?
-                    </Link>
-                  </div>
-                </div>
-
                 <Button
                   type="submit"
                   variant="primary"
                   size="medium"
                   fullWidth
-                  loading={isSubmitting}
-                  disabled={isSubmitting}
+                  loading={isSubmitting || loading}
+                  disabled={isSubmitting || loading}
                   className="text-base py-2.5 bg-dice-blue hover:bg-dice-blue-dark rounded-xl"
                 >
                   {isSubmitting ? 'Connexion...' : 'Se connecter'}
@@ -249,16 +203,16 @@ export default function LoginPage() {
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => toast.info('Connexion avec Google bientôt disponible')}
-                  disabled={isSubmitting}
-                  className="flex items-center justify-center gap-2.5 py-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isSubmitting || loading}
+                  className="flex items-center justify-center gap-2.5 py-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
                 >
                   <FaGoogle className="text-red-500 text-lg" />
                   <span className="text-sm font-medium text-gray-700">Google</span>
                 </button>
                 <button
                   onClick={() => toast.info('Connexion avec Facebook bientôt disponible')}
-                  disabled={isSubmitting}
-                  className="flex items-center justify-center gap-2.5 py-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isSubmitting || loading}
+                  className="flex items-center justify-center gap-2.5 py-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
                 >
                   <FaFacebook className="text-blue-600 text-lg" />
                   <span className="text-sm font-medium text-gray-700">Facebook</span>

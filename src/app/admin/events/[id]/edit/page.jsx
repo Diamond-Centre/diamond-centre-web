@@ -1,277 +1,400 @@
-/**
- * Modification d'événement - Admin
- */
 'use client'
 
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { useForm } from 'react-hook-form'
-import { yupResolver } from '@hookform/resolvers/yup'
-import * as yup from 'yup'
-import { FaArrowLeft, FaSave } from 'react-icons/fa'
-import { api } from '@/lib/api'
-import { auth } from '@/lib/auth'
+import { 
+  FaArrowLeft, 
+  FaSave, 
+  FaCalendar, 
+  FaClock, 
+  FaMapMarker, 
+  FaTag, 
+  FaUsers,
+  FaTrash
+} from 'react-icons/fa'
+import toast from 'react-hot-toast'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
+import Card from '@/components/ui/Card'
+import ImageUploader from '@/components/ui/ImageUploader'
 
-const eventSchema = yup.object().shape({
-  title: yup.string().required('Le titre est requis').min(3, 'Titre trop court'),
-  description: yup.string().required('La description est requise').min(10, 'Description trop courte'),
-  price: yup.number().required('Le prix est requis').min(0, 'Le prix doit être positif'),
-  currency: yup.string().default('XAF'),
-  start_date: yup.string().required('La date de début est requise'),
-  end_date: yup.string().required('La date de fin est requise'),
-  location: yup.string().required('Le lieu est requis'),
-  category: yup.string().required('La catégorie est requise'),
-  capacity: yup.number().required('La capacité est requise').min(1, 'Capacité minimale de 1'),
-  image_url: yup.string().url('URL invalide').nullable(),
-})
-
-export default function EditEvent() {
+export default function EditEventPage() {
   const router = useRouter()
   const params = useParams()
-  const id = params.id
-  const [loading, setLoading] = useState(false)
-  const [loadingEvent, setLoadingEvent] = useState(true)
-  const [error, setError] = useState(null)
+  const eventId = params.id
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors }
-  } = useForm({
-    resolver: yupResolver(eventSchema),
-    defaultValues: {
-      currency: 'XAF',
-      category: 'conférence',
-      capacity: 50,
-      price: 0
-    }
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    price: '',
+    currency: 'XAF',
+    date: '',
+    time: '',
+    location: '',
+    category: 'conference',
+    capacity: '',
+    image_url: '',
+    status: 'published'
   })
 
   useEffect(() => {
-    const token = auth.getToken()
-    if (!token) {
-      router.push('/auth/login')
-      return
+    if (eventId) {
+      fetchEvent()
     }
-    loadEvent()
-  }, [id])
+  }, [eventId])
 
-  const loadEvent = async () => {
+  const fetchEvent = async () => {
     try {
-      const token = auth.getToken()
-      const event = await api.getEventById(id, token)
-      reset({
-        title: event.title,
-        description: event.description,
-        price: event.price,
-        currency: event.currency || 'XAF',
-        start_date: event.start_date,
-        end_date: event.end_date,
-        location: event.location,
-        category: event.category,
-        capacity: event.capacity,
-        image_url: event.image_url || ''
+      const response = await fetch(`/api/admin/events/${eventId}`, {
+        credentials: 'include'
       })
-    } catch (error) {
-      setError(error.message)
-    } finally {
-      setLoadingEvent(false)
-    }
-  }
 
-  const onSubmit = async (data) => {
-    try {
-      setLoading(true)
-      setError(null)
-      
-      const token = auth.getToken()
-      
-      const formattedData = {
-        ...data,
-        price: Number(data.price),
-        capacity: Number(data.capacity)
+      if (response.ok) {
+        const data = await response.json()
+        setFormData({
+          title: data.title || '',
+          description: data.description || '',
+          price: data.price || '',
+          currency: data.currency || 'XAF',
+          date: data.date || '',
+          time: data.time || '',
+          location: data.location || '',
+          category: data.category || 'conference',
+          capacity: data.capacity || '',
+          image_url: data.image_url || '',
+          status: data.status || 'published'
+        })
+      } else if (response.status === 404) {
+        toast.error('Événement non trouvé')
+        router.push('/admin/events')
+      } else {
+        toast.error('Erreur lors du chargement')
       }
-
-      await api.updateEvent(id, formattedData, token)
-      router.push('/admin/events')
-    } catch (err) {
-      setError(err.message)
+    } catch (error) {
+      console.error('Erreur fetch:', error)
+      toast.error('Erreur lors du chargement')
     } finally {
       setLoading(false)
     }
   }
 
-  if (loadingEvent) {
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleImageChange = (url) => {
+    setFormData(prev => ({ ...prev, image_url: url }))
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setSaving(true)
+
+    if (!formData.title || !formData.date || !formData.location) {
+      toast.error('Veuillez remplir tous les champs obligatoires')
+      setSaving(false)
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/admin/events/${eventId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          ...formData,
+          price: parseFloat(formData.price) || 0,
+          capacity: parseInt(formData.capacity) || 0
+        })
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        toast.success('Événement modifié avec succès !')
+        router.push('/admin/events')
+      } else if (response.status === 401) {
+        toast.error('Session expirée, veuillez vous reconnecter')
+        router.push('/auth/login')
+      } else {
+        toast.error(data.error || 'Erreur lors de la modification')
+      }
+    } catch (error) {
+      console.error('Erreur modification:', error)
+      toast.error('Erreur lors de la modification')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!confirm('Voulez-vous vraiment supprimer cet événement ? Cette action est irréversible.')) return
+
+    try {
+      const response = await fetch(`/api/admin/events?id=${eventId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+
+      if (response.ok) {
+        toast.success('Événement supprimé')
+        router.push('/admin/events')
+      } else {
+        toast.error('Erreur lors de la suppression')
+      }
+    } catch (error) {
+      console.error('Erreur suppression:', error)
+      toast.error('Erreur lors de la suppression')
+    }
+  }
+
+  if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-dice-blue border-t-transparent" />
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-dice-blue" />
       </div>
     )
   }
 
   return (
-    <div className="p-6">
-      <div className="flex items-center gap-4 mb-6">
+    <div>
+      <div className="flex items-center gap-4 mb-8">
         <button
-          onClick={() => router.back()}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          onClick={() => router.push('/admin/events')}
+          className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
         >
-          <FaArrowLeft className="text-gray-600" />
+          <FaArrowLeft className="text-xl" />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Modifier l'événement</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+            Modifier l'événement
+          </h1>
           <p className="text-gray-500">Modifiez les informations de l'événement</p>
         </div>
       </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 mb-6">
-          {error}
-        </div>
-      )}
+      <Card variant="hover" className="p-6 md:p-8">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Image - occupe toute la largeur */}
+            <div className="md:col-span-2">
+              <ImageUploader
+                value={formData.image_url}
+                onChange={handleImageChange}
+                label="Image de l'événement"
+              />
+            </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Informations générales</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Titre */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Titre de l'événement *
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FaTag className="text-gray-400" />
+                </div>
+                <Input
+                  name="title"
+                  value={formData.title}
+                  onChange={handleChange}
+                  placeholder="Ex: Conférence sur l'IA"
+                  className="pl-10"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Description
+              </label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                rows="4"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-dice-blue/30 focus:border-dice-blue outline-none transition-all resize-y"
+                placeholder="Description détaillée de l'événement..."
+              />
+            </div>
+
+            {/* Statut */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Titre *
+                Statut
+              </label>
+              <select
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-dice-blue/30 focus:border-dice-blue outline-none transition-all bg-white"
+              >
+                <option value="published">Publié</option>
+                <option value="draft">Brouillon</option>
+              </select>
+            </div>
+
+            {/* Prix et Devise */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Prix
               </label>
               <Input
-                {...register('title')}
-                placeholder="Titre de l'événement"
-                error={errors.title?.message}
+                name="price"
+                type="number"
+                value={formData.price}
+                onChange={handleChange}
+                placeholder="0"
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Catégorie *
+                Devise
               </label>
               <select
-                {...register('category')}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
+                name="currency"
+                value={formData.currency}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-dice-blue/30 focus:border-dice-blue outline-none transition-all bg-white"
               >
-                <option value="conférence">Conférence</option>
-                <option value="séminaire">Séminaire</option>
+                <option value="XAF">XAF</option>
+                <option value="EUR">EUR</option>
+                <option value="USD">USD</option>
+              </select>
+            </div>
+
+            {/* Date et Heure */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Date *
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FaCalendar className="text-gray-400" />
+                </div>
+                <Input
+                  name="date"
+                  type="date"
+                  value={formData.date}
+                  onChange={handleChange}
+                  className="pl-10"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Heure
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FaClock className="text-gray-400" />
+                </div>
+                <Input
+                  name="time"
+                  type="time"
+                  value={formData.time}
+                  onChange={handleChange}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            {/* Lieu et Catégorie */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Lieu *
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FaMapMarker className="text-gray-400" />
+                </div>
+                <Input
+                  name="location"
+                  value={formData.location}
+                  onChange={handleChange}
+                  placeholder="Yaoundé, Douala..."
+                  className="pl-10"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Catégorie
+              </label>
+              <select
+                name="category"
+                value={formData.category}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-dice-blue/30 focus:border-dice-blue outline-none transition-all bg-white"
+              >
+                <option value="conference">Conférence</option>
+                <option value="seminaire">Séminaire</option>
                 <option value="formation">Formation</option>
                 <option value="atelier">Atelier</option>
               </select>
             </div>
-          </div>
 
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description *
-            </label>
-            <textarea
-              {...register('description')}
-              rows={4}
-              placeholder="Description complète de l'événement"
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
-            />
-            {errors.description && (
-              <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            {/* Capacité */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Prix (FCFA) *
+                Capacité
               </label>
-              <Input
-                {...register('price')}
-                type="number"
-                placeholder="0"
-                error={errors.price?.message}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Capacité *
-              </label>
-              <Input
-                {...register('capacity')}
-                type="number"
-                placeholder="50"
-                error={errors.capacity?.message}
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FaUsers className="text-gray-400" />
+                </div>
+                <Input
+                  name="capacity"
+                  type="number"
+                  value={formData.capacity}
+                  onChange={handleChange}
+                  placeholder="100"
+                  className="pl-10"
+                />
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Date de début *
-              </label>
-              <Input
-                {...register('start_date')}
-                type="date"
-                error={errors.start_date?.message}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Date de fin *
-              </label>
-              <Input
-                {...register('end_date')}
-                type="date"
-                error={errors.end_date?.message}
-              />
-            </div>
+          {/* Boutons */}
+          <div className="flex flex-wrap gap-4 pt-4 border-t border-gray-200">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.push('/admin/events')}
+            >
+              Annuler
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              onClick={handleDelete}
+            >
+              <FaTrash className="mr-2" />
+              Supprimer
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              loading={saving}
+              disabled={saving}
+              className="bg-gradient-to-r from-dice-blue to-purple-600 ml-auto"
+            >
+              <FaSave className="mr-2" />
+              {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
+            </Button>
           </div>
-
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Lieu *
-            </label>
-            <Input
-              {...register('location')}
-              placeholder="Abidjan, Plateau"
-              error={errors.location?.message}
-            />
-          </div>
-
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              URL de l'image
-            </label>
-            <Input
-              {...register('image_url')}
-              placeholder="https://example.com/image.jpg"
-              error={errors.image_url?.message}
-            />
-          </div>
-        </div>
-
-        <div className="flex gap-4 justify-end">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => router.back()}
-          >
-            Annuler
-          </Button>
-          <Button
-            type="submit"
-            variant="primary"
-            loading={loading}
-            disabled={loading}
-          >
-            <FaSave className="mr-2" />
-            Mettre à jour
-          </Button>
-        </div>
-      </form>
+        </form>
+      </Card>
     </div>
   )
 }

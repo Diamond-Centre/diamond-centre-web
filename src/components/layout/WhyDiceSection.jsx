@@ -1,12 +1,12 @@
 /**
  * Section "Pourquoi Dice" avec glassmorphisme bleu Diamond Centre
- * et effet aquarium au survol
+ * et effet hover "carte projet" (fond plein + bouton flèche) au survol
  */
 'use client'
 
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { FaArrowRight, FaUsers, FaVideo, FaHeadset } from 'react-icons/fa'
+import { FaArrowRight, FaArrowUp, FaUsers, FaVideo, FaHeadset } from 'react-icons/fa'
 import { GiDiamondRing } from 'react-icons/gi'
 import Section from '@/components/ui/Section'
 import Card from '@/components/ui/Card'
@@ -75,6 +75,17 @@ const stats = [
   { label: 'Satisfaction', value: '98%' },
   { label: 'Experts', value: '20+' }
 ]
+
+// Petit composant réutilisable pour le bouton flèche qui apparaît au hover
+function HoverArrowButton() {
+  return (
+    <div className="absolute top-4 right-4 z-20">
+      <div className="w-11 h-11 rounded-full bg-white shadow-lg flex items-center justify-center scale-0 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all duration-300 ease-out">
+        <FaArrowUp className="rotate-45 text-[#0a89f2] text-base" />
+      </div>
+    </div>
+  )
+}
 
 export default function WhyDiceSection() {
   return (
@@ -150,26 +161,17 @@ export default function WhyDiceSection() {
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
             >
-              <div className="glass-card-dice rounded-2xl p-6 border border-dice-blue/20 shadow-xl backdrop-blur-md bg-dice-blue/10 hover:bg-dice-blue/15 transition-all duration-300 h-full relative overflow-hidden group">
-                {/* Effet aquarium au survol */}
-                <div className="absolute inset-0 rounded-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-                  <div className="absolute inset-0 bg-gradient-to-br from-dice-blue/30 via-transparent to-cyan-400/20 rounded-2xl" />
-                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent rounded-2xl animate-pulse" />
-                </div>
-                
-                {/* Reflet lumineux */}
-                <div className="absolute top-0 left-0 right-0 h-1/2 pointer-events-none opacity-40">
-                  <div className="absolute inset-0 bg-gradient-to-b from-dice-blue/10 to-transparent rounded-t-2xl" />
-                </div>
+              <div className="glass-card-dice rounded-2xl p-6 shadow-xl h-full relative overflow-hidden group">
+                <HoverArrowButton />
 
                 <div className="relative z-10">
                   <div className={`w-14 h-14 bg-gradient-to-r ${values.communaute.color} rounded-2xl flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
                     <values.communaute.icon className="text-2xl text-white" />
                   </div>
-                  <h3 className="text-lg font-bold text-gray-800 mb-2">
+                  <h3 className="text-lg font-bold text-gray-800 group-hover:text-white mb-2 transition-colors duration-300">
                     {values.communaute.title}
                   </h3>
-                  <p className="text-gray-600 text-sm">
+                  <p className="text-gray-600 group-hover:text-white/90 text-sm transition-colors duration-300">
                     {values.communaute.description}
                   </p>
                 </div>
@@ -184,26 +186,17 @@ export default function WhyDiceSection() {
               viewport={{ once: true }}
               transition={{ delay: 0.2 }}
             >
-              <div className="glass-card-dice rounded-2xl p-6 border border-dice-blue/20 shadow-xl backdrop-blur-md bg-dice-blue/10 hover:bg-dice-blue/15 transition-all duration-300 h-full relative overflow-hidden group">
-                {/* Effet aquarium au survol */}
-                <div className="absolute inset-0 rounded-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-                  <div className="absolute inset-0 bg-gradient-to-br from-dice-blue/30 via-transparent to-cyan-400/20 rounded-2xl" />
-                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent rounded-2xl animate-pulse" />
-                </div>
-                
-                {/* Reflet lumineux */}
-                <div className="absolute top-0 left-0 right-0 h-1/2 pointer-events-none opacity-40">
-                  <div className="absolute inset-0 bg-gradient-to-b from-dice-blue/10 to-transparent rounded-t-2xl" />
-                </div>
+              <div className="glass-card-dice rounded-2xl p-6 shadow-xl h-full relative overflow-hidden group">
+                <HoverArrowButton />
 
                 <div className="relative z-10 flex flex-col h-full">
                   <div className={`w-14 h-14 bg-gradient-to-r ${values.excellence.color} rounded-2xl flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
                     <values.excellence.icon className="text-2xl text-white" />
                   </div>
-                  <h3 className="text-lg font-bold text-gray-800 mb-2">
+                  <h3 className="text-lg font-bold text-gray-800 group-hover:text-white mb-2 transition-colors duration-300">
                     {values.excellence.title}
                   </h3>
-                  <p className="text-gray-600 text-sm">
+                  <p className="text-gray-600 group-hover:text-white/90 text-sm transition-colors duration-300">
                     {values.excellence.description}
                   </p>
                 </div>
@@ -218,26 +211,17 @@ export default function WhyDiceSection() {
               viewport={{ once: true }}
               transition={{ delay: 0.3 }}
             >
-              <div className="glass-card-dice rounded-2xl p-6 border border-dice-blue/20 shadow-xl backdrop-blur-md bg-dice-blue/10 hover:bg-dice-blue/15 transition-all duration-300 h-full relative overflow-hidden group">
-                {/* Effet aquarium au survol */}
-                <div className="absolute inset-0 rounded-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-                  <div className="absolute inset-0 bg-gradient-to-br from-dice-blue/30 via-transparent to-cyan-400/20 rounded-2xl" />
-                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent rounded-2xl animate-pulse" />
-                </div>
-                
-                {/* Reflet lumineux */}
-                <div className="absolute top-0 left-0 right-0 h-1/2 pointer-events-none opacity-40">
-                  <div className="absolute inset-0 bg-gradient-to-b from-dice-blue/10 to-transparent rounded-t-2xl" />
-                </div>
+              <div className="glass-card-dice rounded-2xl p-6 shadow-xl h-full relative overflow-hidden group">
+                <HoverArrowButton />
 
                 <div className="relative z-10">
                   <div className={`w-14 h-14 bg-gradient-to-r ${values.flexibilite.color} rounded-2xl flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
                     <values.flexibilite.icon className="text-2xl text-white" />
                   </div>
-                  <h3 className="text-lg font-bold text-gray-800 mb-2">
+                  <h3 className="text-lg font-bold text-gray-800 group-hover:text-white mb-2 transition-colors duration-300">
                     {values.flexibilite.title}
                   </h3>
-                  <p className="text-gray-600 text-sm">
+                  <p className="text-gray-600 group-hover:text-white/90 text-sm transition-colors duration-300">
                     {values.flexibilite.description}
                   </p>
                 </div>
@@ -252,26 +236,17 @@ export default function WhyDiceSection() {
               viewport={{ once: true }}
               transition={{ delay: 0.4 }}
             >
-              <div className="glass-card-dice rounded-2xl p-6 border border-dice-blue/20 shadow-xl backdrop-blur-md bg-dice-blue/10 hover:bg-dice-blue/15 transition-all duration-300 h-full relative overflow-hidden group">
-                {/* Effet aquarium au survol */}
-                <div className="absolute inset-0 rounded-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-                  <div className="absolute inset-0 bg-gradient-to-br from-dice-blue/30 via-transparent to-cyan-400/20 rounded-2xl" />
-                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent rounded-2xl animate-pulse" />
-                </div>
-                
-                {/* Reflet lumineux */}
-                <div className="absolute top-0 left-0 right-0 h-1/2 pointer-events-none opacity-40">
-                  <div className="absolute inset-0 bg-gradient-to-b from-dice-blue/10 to-transparent rounded-t-2xl" />
-                </div>
+              <div className="glass-card-dice rounded-2xl p-6 shadow-xl h-full relative overflow-hidden group">
+                <HoverArrowButton />
 
                 <div className="relative z-10">
                   <div className={`w-14 h-14 bg-gradient-to-r ${values.accompagnement.color} rounded-2xl flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
                     <values.accompagnement.icon className="text-2xl text-white" />
                   </div>
-                  <h3 className="text-lg font-bold text-gray-800 mb-2">
+                  <h3 className="text-lg font-bold text-gray-800 group-hover:text-white mb-2 transition-colors duration-300">
                     {values.accompagnement.title}
                   </h3>
-                  <p className="text-gray-600 text-sm">
+                  <p className="text-gray-600 group-hover:text-white/90 text-sm transition-colors duration-300">
                     {values.accompagnement.description}
                   </p>
                 </div>
@@ -324,7 +299,7 @@ export default function WhyDiceSection() {
         </motion.div>
       </div>
 
-      {/* Styles globaux pour le glassmorphisme bleu Diamond Centre et effet aquarium */}
+      {/* Styles globaux : glassmorphisme + hover "carte projet" plein bleu #0a89f2 */}
       <style jsx global>{`
         .glass-card-dice {
           background: rgba(10, 137, 242, 0.08);
@@ -334,101 +309,20 @@ export default function WhyDiceSection() {
           box-shadow: 
             0 8px 32px rgba(10, 137, 242, 0.06),
             inset 0 1px 0 rgba(10, 137, 242, 0.1);
-          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                      box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                      transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                      border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
+        /* Au survol : le fond devient un bleu plein #0a89f2, comme la carte de référence */
         .glass-card-dice:hover {
-          background: rgba(10, 137, 242, 0.15);
+          background: #0a89f2;
+          border-color: #0a89f2;
           box-shadow: 
-            0 12px 48px rgba(10, 137, 242, 0.15),
-            inset 0 1px 0 rgba(10, 137, 242, 0.2),
-            0 0 60px rgba(10, 137, 242, 0.05);
-          transform: translateY(-4px);
-        }
-
-        /* Reflet supérieur */
-        .glass-card-dice::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 50%;
-          background: linear-gradient(
-            to bottom,
-            rgba(10, 137, 242, 0.08),
-            transparent
-          );
-          pointer-events: none;
-          border-radius: 16px 16px 0 0;
-          opacity: 0.5;
-          transition: opacity 0.4s ease;
-        }
-
-        .glass-card-dice:hover::before {
-          opacity: 0.8;
-        }
-
-        /* Effet aquarium - vagues lumineuses */
-        .glass-card-dice .aquarium-effect {
-          position: absolute;
-          inset: 0;
-          border-radius: 16px;
-          pointer-events: none;
-          opacity: 0;
-          transition: opacity 0.7s ease;
-          background: 
-            radial-gradient(circle at 20% 30%, rgba(10, 137, 242, 0.15) 0%, transparent 50%),
-            radial-gradient(circle at 80% 70%, rgba(6, 182, 212, 0.1) 0%, transparent 50%);
-          animation: aquariumPulse 4s ease-in-out infinite;
-        }
-
-        .glass-card-dice:hover .aquarium-effect {
-          opacity: 1;
-        }
-
-        /* Animation aquarium */
-        @keyframes aquariumPulse {
-          0%, 100% {
-            opacity: 0.6;
-            transform: scale(1);
-          }
-          50% {
-            opacity: 1;
-            transform: scale(1.02);
-          }
-        }
-
-        /* Effet de brillance mobile */
-        @keyframes shimmer {
-          0% {
-            transform: translateX(-100%) rotate(25deg);
-          }
-          100% {
-            transform: translateX(200%) rotate(25deg);
-          }
-        }
-
-        .glass-card-dice::after {
-          content: '';
-          position: absolute;
-          top: -50%;
-          left: -50%;
-          width: 200%;
-          height: 200%;
-          background: linear-gradient(
-            to bottom right,
-            transparent 40%,
-            rgba(255, 255, 255, 0.05) 50%,
-            transparent 60%
-          );
-          transform: rotate(25deg) translateX(-100%);
-          transition: transform 0.8s ease;
-          pointer-events: none;
-        }
-
-        .glass-card-dice:hover::after {
-          transform: rotate(25deg) translateX(100%);
+            0 16px 40px rgba(10, 137, 242, 0.35),
+            inset 0 1px 0 rgba(255, 255, 255, 0.15);
+          transform: translateY(-6px);
         }
       `}</style>
     </section>

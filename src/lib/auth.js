@@ -2,42 +2,44 @@
  * Gestion de l'authentification
  */
 export const auth = {
-  // Stocker le token
   setToken: (token) => {
     if (typeof window !== 'undefined') {
+      console.log('💾 Stockage du token:', token ? '✅' : '❌')
       localStorage.setItem('token', token)
-      // Stocker aussi dans un cookie pour le middleware
       document.cookie = `token=${token}; path=/; max-age=86400; SameSite=Lax`
     }
   },
 
-  // Récupérer le token
   getToken: () => {
     if (typeof window !== 'undefined') {
-      // D'abord essayer localStorage
+      // localStorage d'abord
       const token = localStorage.getItem('token')
       if (token) return token
       
-      // Sinon essayer les cookies
+      // Cookies ensuite
       const cookies = document.cookie.split('; ')
       const cookie = cookies.find(row => row.startsWith('token='))
-      return cookie ? cookie.split('=')[1] : null
+      if (cookie) {
+        const value = cookie.split('=')[1]
+        localStorage.setItem('token', value)
+        return value
+      }
+      return null
     }
     return null
   },
 
-  // Stocker l'utilisateur
   setUser: (user) => {
     if (typeof window !== 'undefined') {
+      console.log('💾 Stockage de l\'utilisateur:', user ? '✅' : '❌')
       localStorage.setItem('user', JSON.stringify(user))
       document.cookie = `user=${encodeURIComponent(JSON.stringify(user))}; path=/; max-age=86400; SameSite=Lax`
     }
   },
 
-  // Récupérer l'utilisateur
   getUser: () => {
     if (typeof window !== 'undefined') {
-      // D'abord essayer localStorage
+      // localStorage d'abord
       const user = localStorage.getItem('user')
       if (user) {
         try {
@@ -47,12 +49,15 @@ export const auth = {
         }
       }
       
-      // Sinon essayer les cookies
+      // Cookies ensuite
       const cookies = document.cookie.split('; ')
       const cookie = cookies.find(row => row.startsWith('user='))
       if (cookie) {
         try {
-          return JSON.parse(decodeURIComponent(cookie.split('=')[1]))
+          const value = decodeURIComponent(cookie.split('=')[1])
+          const userData = JSON.parse(value)
+          localStorage.setItem('user', JSON.stringify(userData))
+          return userData
         } catch {
           return null
         }
@@ -62,20 +67,22 @@ export const auth = {
     return null
   },
 
-  // Vérifier si l'utilisateur est authentifié
   isAuthenticated: () => {
-    return !!auth.getToken()
+    const token = auth.getToken()
+    const user = auth.getUser()
+    const isAuth = !!(token && user)
+    console.log('🔍 isAuthenticated:', isAuth)
+    return isAuth
   },
 
-  // Vérifier si l'utilisateur est admin
   isAdmin: () => {
     const user = auth.getUser()
     return user && (user.role === 'admin' || user.role === 'super_admin')
   },
 
-  // Déconnexion
   logout: () => {
     if (typeof window !== 'undefined') {
+      console.log('🚪 Déconnexion')
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       document.cookie = 'token=; path=/; max-age=0'

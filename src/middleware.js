@@ -5,39 +5,50 @@ export function middleware(request) {
   const userCookie = request.cookies.get('user')?.value
   const { pathname } = request.nextUrl
 
-  console.log('🔍 Middleware:', { pathname, token: !!token, userCookie: !!userCookie })
+  // Routes publiques
+  const publicRoutes = ['/', '/auth/login', '/auth/register']
+  const isPublicRoute = publicRoutes.some(route => pathname === route)
+  
+  // Route admin
+  const isAdminRoute = pathname.startsWith('/admin')
+  
+  // Route dashboard
+  const isDashboardRoute = pathname.startsWith('/dashboard')
 
-  // Si l'utilisateur est sur la page login et déjà connecté
-  if (pathname === '/auth/login' && token && userCookie) {
-    try {
-      const user = JSON.parse(decodeURIComponent(userCookie))
-      if (user.role === 'admin' || user.role === 'super_admin') {
-        console.log('➡️ Redirection admin depuis login')
-        return NextResponse.redirect(new URL('/admin', request.url))
-      }
-      return NextResponse.redirect(new URL('/dashboard', request.url))
-    } catch {
-      // Ignorer
-    }
-  }
-
-  // Si l'utilisateur essaie d'accéder à /admin sans être admin
-  if (pathname.startsWith('/admin')) {
-    if (!token) {
-      console.log('❌ Pas de token, redirection vers login')
-      return NextResponse.redirect(new URL('/auth/login', request.url))
-    }
+  // Si connecté et sur /auth
+  if (token && pathname.startsWith('/auth/')) {
     if (userCookie) {
       try {
         const user = JSON.parse(decodeURIComponent(userCookie))
-        if (user.role !== 'admin' && user.role !== 'super_admin') {
-          console.log('❌ Pas admin, redirection vers dashboard')
-          return NextResponse.redirect(new URL('/dashboard', request.url))
+        if (user.role === 'admin' || user.role === 'super_admin') {
+          return NextResponse.redirect(new URL('/admin', request.url))
         }
-        console.log('✅ Admin authentifié')
+        return NextResponse.redirect(new URL('/dashboard', request.url))
       } catch {
-        return NextResponse.redirect(new URL('/auth/login', request.url))
+        // Ignorer
       }
+    }
+  }
+
+  // Si non connecté et sur /admin
+  if (!token && isAdminRoute) {
+    return NextResponse.redirect(new URL('/auth/login', request.url))
+  }
+
+  // Si non connecté et sur /dashboard
+  if (!token && isDashboardRoute) {
+    return NextResponse.redirect(new URL('/auth/login', request.url))
+  }
+
+  // Vérification admin
+  if (isAdminRoute && token && userCookie) {
+    try {
+      const user = JSON.parse(decodeURIComponent(userCookie))
+      if (user.role !== 'admin' && user.role !== 'super_admin') {
+        return NextResponse.redirect(new URL('/dashboard', request.url))
+      }
+    } catch {
+      return NextResponse.redirect(new URL('/auth/login', request.url))
     }
   }
 
@@ -45,5 +56,5 @@ export function middleware(request) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/auth/:path*', '/dashboard/:path*']
+  matcher: ['/admin/:path*', '/dashboard/:path*', '/auth/:path*']
 }

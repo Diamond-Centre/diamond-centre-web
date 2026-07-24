@@ -1,61 +1,45 @@
 /**
- * Graphique des utilisateurs par mois
+ * Graphique des utilisateurs - Version simplifiée
  */
 'use client'
 
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend
-} from 'recharts'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 export default function UsersChart({ data }) {
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg">
-          <p className="text-sm font-medium text-gray-800">{label}</p>
-          <p className="text-sm text-purple-600 font-bold">
-            {payload[0].value} utilisateurs
-          </p>
+  if (!data || data.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">Utilisateurs inscrits</h3>
+        <div className="h-80 flex items-center justify-center text-gray-400">
+          Aucune donnée disponible
         </div>
-      )
-    }
-    return null
+      </div>
+    )
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-800">Utilisateurs par mois</h3>
-        <span className="text-xs text-gray-400">2026</span>
-      </div>
-      <div className="h-72">
+    <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+      <h3 className="text-lg font-semibold text-gray-800 mb-4">Utilisateurs inscrits</h3>
+      <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis dataKey="month" stroke="#9ca3af" />
-            <YAxis stroke="#9ca3af" />
-            <Tooltip content={<CustomTooltip />} />
-            <Area
-              type="monotone"
-              dataKey="count"
-              stroke="#8b5cf6"
-              fill="url(#colorUsers)"
-              strokeWidth={2}
-              name="Utilisateurs"
+            <XAxis dataKey="month" stroke="#9ca3af" fontSize={12} />
+            <YAxis stroke="#9ca3af" fontSize={12} />
+            <Tooltip 
+              content={({ active, payload, label }) => {
+                if (active && payload && payload.length) {
+                  return (
+                    <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg">
+                      <p className="text-sm font-medium text-gray-800">{label}</p>
+                      <p className="text-sm text-green-600 font-bold">{payload[0].value} utilisateurs</p>
+                    </div>
+                  )
+                }
+                return null
+              }}
             />
-            <defs>
-              <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
-              </linearGradient>
-            </defs>
+            <Area type="monotone" dataKey="count" stroke="#22c55e" fill="#22c55e" fillOpacity={0.2} />
           </AreaChart>
         </ResponsiveContainer>
       </div>
