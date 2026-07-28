@@ -1,42 +1,53 @@
 /**
- * Page d'inscription - Version avec tous les champs requis
+ * Page d'inscription - Version corrigée
  */
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
+import { useAuth } from '@/hooks/useAuth'
 import { api } from '@/lib/api'
-import { auth } from '@/lib/auth'
 import { 
-  FaEnvelope, FaLock, FaEye, FaEyeSlash, FaGoogle, FaUser
+  FaEnvelope, FaLock, FaEye, FaEyeSlash, FaGoogle, 
+  FaUser, FaPhoneAlt, FaVenusMars,
+  FaImage, FaTimes, FaSpinner
 } from 'react-icons/fa'
 import { GiDiamondRing } from 'react-icons/gi'
 import toast from 'react-hot-toast'
 import Button from '@/components/ui/Button'
 import Navbar from '@/components/layout/Navbar'
+import Image from 'next/image'
 
 export default function RegisterPage() {
   const router = useRouter()
+  const { register: registerUser, isAuthenticated, loading } = useAuth()
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'user',  // ← Ajout du champ role
+    telephone: '',
+    sexe: '',
+    picture: '',
     acceptTerms: false
   })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
   const [passwordStrength, setPasswordStrength] = useState(0)
+  const [imageFile, setImageFile] = useState(null)
+  const [imagePreview, setImagePreview] = useState(null)
+  const [error, setError] = useState(null)
+  const fileInputRef = useRef(null)
 
   useEffect(() => {
-    if (auth.isAuthenticated()) {
+    if (isAuthenticated) {
       router.push('/dashboard')
     }
-  }, [router])
+  }, [isAuthenticated, router])
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -72,40 +83,76 @@ export default function RegisterPage() {
     return 'Très fort'
   }
 
+  const handleImageChange = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Veuillez sélectionner une image')
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('L\'image ne doit pas dépasser 5MB')
+      return
+    }
+
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
+
+    setIsUploading(true)
+    try {
+      const result = await api.uploadImage(file)
+      setFormData(prev => ({ ...prev, picture: result.url }))
+      toast.success('Photo téléchargée avec succès')
+    } catch (error) {
+      toast.error('Erreur lors du téléchargement de la photo')
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const removeImage = () => {
+    setImageFile(null)
+    setImagePreview(null)
+    setFormData(prev => ({ ...prev, picture: '' }))
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
   const handleRegister = async (e) => {
     e.preventDefault()
+    setError(null)
     
-    // Validation des champs
-    if (!formData.name || !formData.email || !formData.password) {
+    const { confirmPassword, acceptTerms, ...userData } = formData
+    
+    if (!userData.name || !userData.email || !userData.password) {
       toast.error('Veuillez remplir tous les champs obligatoires')
       return
     }
     
-    if (formData.password !== formData.confirmPassword) {
+    if (userData.password !== confirmPassword) {
       toast.error('Les mots de passe ne correspondent pas')
       return
     }
     
-    if (!formData.acceptTerms) {
+    if (!acceptTerms) {
       toast.error('Veuillez accepter les conditions d\'utilisation')
       return
     }
 
     setIsLoading(true)
     try {
-      // Envoyer les données exactes attendues par le backend
-      const payload = {
-        email: formData.email,
-        password: formData.password,
-        name: formData.name,
-        role: formData.role // 'user' par défaut
-      }
-      
-      console.log('📤 Envoi au backend:', payload)
-      
-      const response = await api.register(payload)
-      
-      console.log('📥 Réponse du backend:', response)
+      // Envoyer avec des valeurs par défaut pour les champs optionnels
+      await registerUser({
+        email: userData.email.trim(),
+        password: userData.password,
+        name: userData.name.trim(),
+        telephone: userData.telephone?.trim() || '0000000000',
+        sexe: userData.sexe || 'non_precise',
+        picture: userData.picture || 'https://ui-avatars.com/api/?name=User&background=0a89f2&color=fff&size=128'
+      })
       
       toast.success('Inscription réussie ! Connectez-vous pour continuer.')
       
@@ -114,11 +161,16 @@ export default function RegisterPage() {
       }, 1500)
       
     } catch (error) {
-      console.error('❌ Erreur d\'inscription:', error)
+      console.error('Erreur:', error)
+      setError(error.message)
       toast.error(error.message || 'Erreur lors de l\'inscription')
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleGoogleRegister = async () => {
+    toast.info("L'inscription Google sera bientôt disponible")
   }
 
   return (
@@ -148,7 +200,7 @@ export default function RegisterPage() {
             </h1>
 
             <p className="text-white/80 text-base md:text-lg mb-6 leading-relaxed max-w-sm">
-              Créez votre compte en moins d'une minute et accédez à toutes nos formations, certifications et ressources.
+              Créez votre compte en moins d'une minute et accédez à toutes nos formations.
             </p>
 
             <div className="flex items-center gap-4 text-sm text-white/70">
@@ -167,7 +219,7 @@ export default function RegisterPage() {
           </motion.div>
         </div>
 
-        {/* Panneau droit - Formulaire */}
+        {/* Panneau droit */}
         <div className="w-full md:w-1/2 p-6 md:p-10 lg:p-14 flex flex-col justify-center h-full bg-white">
           <motion.div
             initial={{ opacity: 0, x: 20 }}
@@ -185,21 +237,72 @@ export default function RegisterPage() {
               </p>
             </div>
 
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-600 text-sm mb-4">
+                {error}
+              </div>
+            )}
+
             <form onSubmit={handleRegister} className="space-y-3.5">
-              {/* Nom complet */}
+              {/* Photo de profil */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nom complet</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Photo de profil</label>
+                <div className="mt-2">
+                  {isUploading ? (
+                    <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl border-2 border-dashed border-dice-blue">
+                      <FaSpinner className="animate-spin text-dice-blue text-xl" />
+                      <span className="text-sm text-gray-500">Téléchargement...</span>
+                    </div>
+                  ) : imagePreview ? (
+                    <div className="relative inline-block">
+                      <div className="relative w-24 h-24 rounded-full overflow-hidden border-4 border-dice-blue shadow-lg">
+                        <Image
+                          src={imagePreview}
+                          alt="Photo"
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={removeImage}
+                        className="absolute -top-1 -right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
+                      >
+                        <FaTimes className="text-xs" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div 
+                      className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-dice-blue hover:bg-dice-blue/5 transition-all cursor-pointer"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <FaImage className="text-4xl text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-500">Ajouter une photo</p>
+                      <p className="text-xs text-gray-400">PNG, JPG, JPEG • Max 5MB</p>
+                    </div>
+                  )}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+                </div>
+              </div>
+
+              {/* Nom */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nom complet *</label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FaUser className="h-4 w-4 text-gray-400" />
-                  </div>
+                  <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
                     placeholder="Jean Dupont"
-                    className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-dice-blue/30 focus:border-dice-blue outline-none transition-all text-sm placeholder-gray-400"
+                    className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-dice-blue/30 focus:border-dice-blue outline-none transition-all text-sm"
                     required
                   />
                 </div>
@@ -207,45 +310,92 @@ export default function RegisterPage() {
 
               {/* Email */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FaEnvelope className="h-4 w-4 text-gray-400" />
-                  </div>
+                  <FaEnvelope className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
                     type="email"
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
                     placeholder="exemple@gmail.com"
-                    className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-dice-blue/30 focus:border-dice-blue outline-none transition-all text-sm placeholder-gray-400"
+                    className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-dice-blue/30 focus:border-dice-blue outline-none transition-all text-sm"
                     required
                   />
                 </div>
               </div>
 
+              {/* Téléphone */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
+                <div className="relative">
+                  <FaPhoneAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="tel"
+                    name="telephone"
+                    value={formData.telephone}
+                    onChange={handleChange}
+                    placeholder="+237 690142918"
+                    className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-dice-blue/30 focus:border-dice-blue outline-none transition-all text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Sexe */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Sexe</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="relative flex items-center justify-center py-2.5 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-100">
+                    <input
+                      type="radio"
+                      name="sexe"
+                      value="homme"
+                      checked={formData.sexe === 'homme'}
+                      onChange={handleChange}
+                      className="sr-only peer"
+                    />
+                    <span className="peer-checked:text-dice-blue peer-checked:font-semibold flex items-center gap-2 text-sm">
+                      <FaVenusMars className="text-blue-500" /> Homme
+                    </span>
+                    <div className="absolute inset-0 border-2 border-transparent peer-checked:border-dice-blue rounded-xl" />
+                  </label>
+                  <label className="relative flex items-center justify-center py-2.5 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-100">
+                    <input
+                      type="radio"
+                      name="sexe"
+                      value="femme"
+                      checked={formData.sexe === 'femme'}
+                      onChange={handleChange}
+                      className="sr-only peer"
+                    />
+                    <span className="peer-checked:text-dice-blue peer-checked:font-semibold flex items-center gap-2 text-sm">
+                      <FaVenusMars className="text-pink-500" /> Femme
+                    </span>
+                    <div className="absolute inset-0 border-2 border-transparent peer-checked:border-dice-blue rounded-xl" />
+                  </label>
+                </div>
+              </div>
+
               {/* Mot de passe */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe *</label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FaLock className="h-4 w-4 text-gray-400" />
-                  </div>
+                  <FaLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     name="password"
                     value={formData.password}
                     onChange={handlePasswordChange}
                     placeholder="••••••••"
-                    className="w-full pl-9 pr-9 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-dice-blue/30 focus:border-dice-blue outline-none transition-all text-sm placeholder-gray-400"
+                    className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-dice-blue/30 focus:border-dice-blue outline-none transition-all text-sm"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
-                    {showPassword ? <FaEyeSlash className="h-4 w-4" /> : <FaEye className="h-4 w-4" />}
+                    {showPassword ? <FaEyeSlash /> : <FaEye />}
                   </button>
                 </div>
                 {formData.password && (
@@ -262,32 +412,27 @@ export default function RegisterPage() {
 
               {/* Confirmation */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Confirmer</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Confirmer *</label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FaLock className="h-4 w-4 text-gray-400" />
-                  </div>
+                  <FaLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
                     type={showConfirmPassword ? 'text' : 'password'}
                     name="confirmPassword"
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     placeholder="••••••••"
-                    className="w-full pl-9 pr-9 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-dice-blue/30 focus:border-dice-blue outline-none transition-all text-sm"
+                    className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-dice-blue/30 focus:border-dice-blue outline-none transition-all text-sm"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
-                    {showConfirmPassword ? <FaEyeSlash className="h-4 w-4" /> : <FaEye className="h-4 w-4" />}
+                    {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
                   </button>
                 </div>
               </div>
-
-              {/* Rôle - Champ caché mais envoyé */}
-              <input type="hidden" name="role" value={formData.role} />
 
               {/* Conditions */}
               <div className="flex items-start">
@@ -301,31 +446,25 @@ export default function RegisterPage() {
                 />
                 <label className="ml-2.5 text-sm text-gray-600">
                   J'accepte les{' '}
-                  <Link href="/terms" className="text-dice-blue hover:underline">
-                    conditions
-                  </Link>
+                  <Link href="/terms" className="text-dice-blue hover:underline">conditions</Link>
                   {' '}et la{' '}
-                  <Link href="/privacy" className="text-dice-blue hover:underline">
-                    confidentialité
-                  </Link>
+                  <Link href="/privacy" className="text-dice-blue hover:underline">confidentialité</Link>
                 </label>
               </div>
 
-              {/* Bouton d'inscription */}
               <Button
                 type="submit"
                 variant="primary"
                 size="medium"
                 fullWidth
-                loading={isLoading}
-                disabled={isLoading}
+                loading={isLoading || loading || isUploading}
+                disabled={isLoading || loading || isUploading}
                 className="text-base py-2.5 bg-dice-blue hover:bg-dice-blue-dark rounded-xl"
               >
-                Créer un compte
+                {isUploading ? 'Téléchargement...' : 'Créer un compte'}
               </Button>
             </form>
 
-            {/* Séparateur */}
             <div className="relative my-4">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-200" />
@@ -335,20 +474,14 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* Google */}
             <button
-              onClick={() => toast.info('Inscription avec Google bientôt disponible')}
-              disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2.5 py-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleGoogleRegister}
+              disabled={isLoading || loading}
+              className="w-full flex items-center justify-center gap-2.5 py-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50"
             >
               <FaGoogle className="text-red-500 text-lg" />
-              <span className="text-base font-medium text-gray-700">S'inscrire avec Google</span>
+              <span className="text-base font-medium text-gray-700">Google</span>
             </button>
-
-            {/* Footer */}
-            <div className="mt-5 text-center text-sm text-gray-400">
-              <p>© 2026 Diamond Centre. Tous droits réservés.</p>
-            </div>
           </motion.div>
         </div>
       </div>

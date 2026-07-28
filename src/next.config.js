@@ -3,11 +3,24 @@ const nextConfig = {
   images: {
     domains: ['localhost', 'images.unsplash.com'],
     formats: ['image/avif', 'image/webp'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '3000',
+        pathname: '/images/**',
+      },
+    ],
   },
-  // ❌ À SUPPRIMER - Server Actions sont désormais activés par défaut
-  // experimental: {
-  //   serverActions: true,
-  // },
+  experimental: {
+    serverActions: true,
+  },
   async redirects() {
     return [
       {

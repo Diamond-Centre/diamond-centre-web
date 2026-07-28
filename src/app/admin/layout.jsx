@@ -1,5 +1,5 @@
 /**
- * Layout Admin - Navigation avec élément actif uniquement
+ * Layout Admin - Navigation simplifiée
  */
 'use client'
 
@@ -8,14 +8,13 @@ import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { auth } from '@/lib/auth'
 import { 
-  FaHome, FaCalendar, FaTicketAlt, FaPlus,
+  FaHome, FaCalendar, FaTicketAlt,
   FaSignOutAlt, FaGem
 } from 'react-icons/fa'
 
 const menuItems = [
   { href: '/admin', icon: FaHome, label: 'Dashboard' },
   { href: '/admin/events', icon: FaCalendar, label: 'Événements' },
-  { href: '/admin/events/create', icon: FaPlus, label: 'Créer' },
   { href: '/admin/tickets', icon: FaTicketAlt, label: 'Tickets' },
 ]
 
@@ -64,10 +63,11 @@ export default function AdminLayout({ children }) {
             <span className="text-lg font-bold text-gray-800">DC Admin</span>
           </div>
           
-          {/* Menu */}
+          {/* Menu - Uniquement Dashboard, Événements, Tickets */}
           <nav className="space-y-1">
             {menuItems.map((item) => {
-              const isActive = pathname === item.href
+              const isActive = pathname === item.href || 
+                               (item.href !== '/admin' && pathname?.startsWith(item.href))
               return (
                 <Link
                   key={item.href}
