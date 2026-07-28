@@ -1,5 +1,5 @@
 /**
- * Modal de réservation avec paiement et QR code
+ * Modal de réservation - Synchronisé avec le backend admin
  */
 'use client'
 
@@ -9,12 +9,12 @@ import {
   FaTimes, FaTicketAlt, FaUser, FaEnvelope, FaPhone, 
   FaCreditCard, FaMobileAlt, FaQrcode, FaCheckCircle,
   FaSpinner, FaArrowRight, FaCalendar, FaMapMarker,
-  FaClock, FaEuroSign, FaDownload
+  FaClock, FaEuroSign, FaDownload, FaVenusMars, FaTag,
+  FaExclamationTriangle
 } from 'react-icons/fa'
 import { api } from '@/lib/api'
 import { auth } from '@/lib/auth'
 import Button from '@/components/ui/Button'
-import Image from 'next/image'
 import toast from 'react-hot-toast'
 
 export default function ReservationModal({ 
@@ -23,34 +23,38 @@ export default function ReservationModal({
   event,
   onSuccess 
 }) {
-  const [step, setStep] = useState('form') // form | payment | success
+  const [step, setStep] = useState('form')
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
+    customer_name: '',
+    customer_email: '',
+    customer_phone: '',
     quantity: 1
   })
   const [ticket, setTicket] = useState(null)
   const [payment, setPayment] = useState(null)
   const [qrCode, setQrCode] = useState(null)
   const [countdown, setCountdown] = useState(0)
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false)
 
   const maxTickets = Math.min(5, event?.available_tickets || 10)
+  const hasPromotion = event?.promotion && event.promotion.pourcentage > 0
+  const promoPrice = hasPromotion 
+    ? Math.round(event.price - (event.price * event.promotion.pourcentage) / 100)
+    : event?.price || 0
 
   useEffect(() => {
-    // Remplir les données utilisateur si connecté
     const user = auth.getUser()
     if (user) {
       setFormData(prev => ({
         ...prev,
-        name: user.name || '',
-        email: user.email || '',
+        customer_name: user.name || '',
+        customer_email: user.email || '',
+        customer_phone: user.telephone || ''
       }))
     }
   }, [isOpen])
 
-  // Timer pour le paiement
   useEffect(() => {
     if (payment?.status === 'pending' && countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
@@ -58,38 +62,78 @@ export default function ReservationModal({
     }
   }, [countdown, payment])
 
-  // Dans le handleSubmit, améliorer la vérification du token
-const handleSubmit = async (e) => {
-  e.preventDefault()
-  if (!formData.name || !formData.email || !formData.phone) {
-    toast.error('Veuillez remplir tous les champs')
-    return
+  const handleClose = () => {
+    if (step === 'payment' && payment?.status === 'pending') {
+      setShowCloseConfirm(true)
+    } else {
+      onClose()
+      resetModal()
+    }
   }
 
-  // Vérification directe du token
-  const token = auth.getToken()
-  const userData = auth.getUser()
-  
-  console.log('🔍 Vérification token:', { token: !!token, user: !!userData })
-
-  if (!token || !userData) {
-    toast.error('Veuillez vous connecter pour réserver')
-    // Rediriger vers la page de connexion
-    setTimeout(() => {
-      window.location.href = '/auth/login'
-    }, 1500)
-    return
+  const handleConfirmClose = () => {
+    setShowCloseConfirm(false)
+    onClose()
+    resetModal()
+    toast.success('Paiement annulé', {
+      icon: 'ℹ️',
+      duration: 3000
+    })
   }
 
-  setLoading(true)
-  try {
-    // ... reste du code
-  } catch (error) {
-    // ...
-  } finally {
-    setLoading(false)
+  const resetModal = () => {
+    setStep('form')
+    setTicket(null)
+    setPayment(null)
+    setQrCode(null)
+    setCountdown(0)
+    setShowCloseConfirm(false)
   }
-}
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!formData.customer_name || !formData.customer_email || !formData.customer_phone) {
+      toast.error('Veuillez remplir tous les champs')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const token = auth.getToken()
+      if (!token) {
+        toast.error('Veuillez vous connecter pour réserver')
+        return
+      }
+
+      // 1. Réserver les tickets
+      const reservation = await api.reserveTickets({
+        eventId: event.id,
+        quantity: formData.quantity,
+        customerName: formData.customer_name,
+        customerEmail: formData.customer_email,
+        customerPhone: formData.customer_phone
+      }, token)
+
+      setTicket(reservation)
+      toast.success('Réservation effectuée !')
+
+      // 2. Initier le paiement
+      const paymentData = await api.initiatePayment({
+        ticketId: reservation.id,
+        method: 'mtn_momo',
+        phone: formData.customer_phone
+      }, token)
+
+      setPayment(paymentData)
+      setCountdown(300)
+      setStep('payment')
+
+    } catch (error) {
+      toast.error(error.message || 'Erreur lors de la réservation')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const checkPaymentStatus = async () => {
     if (!payment) return
@@ -100,6 +144,7 @@ const handleSubmit = async (e) => {
       
       if (status.status === 'successful') {
         setStep('success')
+        
         // Générer le QR code
         const qrData = await api.validateTicket(
           ticket?.qr_codes?.[0]?.code || `dc_${ticket?.id}_${Date.now()}`,
@@ -107,12 +152,24 @@ const handleSubmit = async (e) => {
         )
         setQrCode(qrData)
         toast.success('Paiement confirmé !')
-        if (onSuccess) onSuccess(ticket)
+        
+        // Notifier le parent avec les données du ticket
+        if (onSuccess) {
+          onSuccess({
+            ...ticket,
+            qrCode: qrData,
+            payment: status,
+            customer_name: formData.customer_name,
+            quantity: formData.quantity
+          })
+        }
       } else if (status.status === 'failed') {
         toast.error('Le paiement a échoué')
         setStep('form')
+        setTicket(null)
+        setPayment(null)
       } else {
-        // En attente, vérifier à nouveau dans 3 secondes
+        // Continuer à vérifier
         setTimeout(checkPaymentStatus, 3000)
       }
     } catch (error) {
@@ -122,39 +179,34 @@ const handleSubmit = async (e) => {
 
   const handlePayment = async () => {
     setLoading(true)
-    // Simuler un paiement (à remplacer par l'appel réel)
     await new Promise(resolve => setTimeout(resolve, 2000))
     await checkPaymentStatus()
     setLoading(false)
   }
 
   const handleDownloadQR = () => {
-    // Créer un canvas avec le QR code
     const canvas = document.createElement('canvas')
     canvas.width = 300
     canvas.height = 300
     const ctx = canvas.getContext('2d')
     
-    // Fond blanc
     ctx.fillStyle = 'white'
     ctx.fillRect(0, 0, 300, 300)
     
-    // Dessiner le QR code (simplifié)
     ctx.fillStyle = '#0a89f2'
     ctx.font = 'bold 20px Arial'
     ctx.textAlign = 'center'
     ctx.fillText('🎫', 150, 100)
     ctx.font = '14px Arial'
-    ctx.fillText(qrCode?.ticket_id || ticket?.id || 'TICKET', 150, 150)
+    ctx.fillText(`Ticket #${ticket?.id || 'N/A'}`, 150, 150)
     ctx.fillStyle = '#1a1a2e'
     ctx.font = '12px Arial'
     ctx.fillText(event?.title || 'Événement', 150, 180)
-    ctx.fillText(formData.name, 150, 200)
+    ctx.fillText(formData.customer_name, 150, 200)
     ctx.fillStyle = '#0a89f2'
     ctx.font = 'bold 18px Arial'
     ctx.fillText(qrCode?.qr_code || ticket?.qr_codes?.[0]?.code || 'DC-XXXX', 150, 240)
     
-    // Télécharger
     const link = document.createElement('a')
     link.download = `ticket-${ticket?.id || 'event'}.png`
     link.href = canvas.toDataURL()
@@ -166,16 +218,14 @@ const handleSubmit = async (e) => {
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        {/* Overlay */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          onClick={onClose}
+          onClick={handleClose}
           className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         />
 
-        {/* Modal */}
         <motion.div
           initial={{ scale: 0.9, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -190,14 +240,12 @@ const handleSubmit = async (e) => {
                 {step === 'payment' && 'Paiement en cours'}
                 {step === 'success' && 'Réservation confirmée !'}
               </h3>
-              <p className="text-sm text-gray-500">
-                {event?.title}
-              </p>
+              <p className="text-sm text-gray-500">{event?.title}</p>
             </div>
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              disabled={step === 'payment' && payment?.status === 'pending'}
+              disabled={step === 'success'}
             >
               <FaTimes className="text-gray-500" />
             </button>
@@ -214,17 +262,41 @@ const handleSubmit = async (e) => {
                     <span>{new Date(event?.start_date).toLocaleDateString('fr-FR')}</span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-600">
+                    <FaClock className="text-dice-blue" />
+                    <span>{event?.start_time || '09:00'} - {event?.end_time || '17:00'}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-600">
                     <FaMapMarker className="text-dice-blue" />
                     <span>{event?.location}</span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-600">
-                    <FaEuroSign className="text-dice-blue" />
-                    <span>{event?.price} {event?.currency || 'FCFA'} / personne</span>
+                    {hasPromotion ? (
+                      <div className="flex items-center gap-2">
+                        <FaEuroSign className="text-dice-blue" />
+                        <span className="font-bold text-dice-blue">{promoPrice} FCFA</span>
+                        <span className="text-gray-400 line-through text-sm">{event?.price} FCFA</span>
+                        <span className="text-xs bg-green-500 text-white px-2 py-0.5 rounded-full">
+                          -{event?.promotion?.pourcentage}%
+                        </span>
+                      </div>
+                    ) : (
+                      <>
+                        <FaEuroSign className="text-dice-blue" />
+                        <span className="font-bold text-dice-blue">{event?.price} FCFA</span>
+                      </>
+                    )}
+                    <span className="text-gray-400 text-xs">/ personne</span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-600">
                     <FaTicketAlt className="text-dice-blue" />
                     <span>{event?.available_tickets || 0} places disponibles</span>
                   </div>
+                  {hasPromotion && event?.promotion?.sexe && (
+                    <div className="flex items-center gap-2 text-green-600">
+                      <FaVenusMars className="text-green-500" />
+                      <span className="text-xs">Ciblé: {event.promotion.sexe === 'tous' ? 'Tous' : event.promotion.sexe === 'homme' ? 'Hommes' : 'Femmes'}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Formulaire */}
@@ -236,8 +308,8 @@ const handleSubmit = async (e) => {
                     <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
                       type="text"
-                      value={formData.name}
-                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                      value={formData.customer_name}
+                      onChange={(e) => setFormData(prev => ({ ...prev, customer_name: e.target.value }))}
                       className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
                       placeholder="Jean Dupont"
                       required
@@ -253,8 +325,8 @@ const handleSubmit = async (e) => {
                     <FaEnvelope className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
                       type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                      value={formData.customer_email}
+                      onChange={(e) => setFormData(prev => ({ ...prev, customer_email: e.target.value }))}
                       className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
                       placeholder="jean@email.com"
                       required
@@ -270,8 +342,8 @@ const handleSubmit = async (e) => {
                     <FaPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
                       type="tel"
-                      value={formData.phone}
-                      onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                      value={formData.customer_phone}
+                      onChange={(e) => setFormData(prev => ({ ...prev, customer_phone: e.target.value }))}
                       className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
                       placeholder="670000000"
                       required
@@ -317,9 +389,15 @@ const handleSubmit = async (e) => {
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Total</span>
                     <span className="font-bold text-dice-blue text-lg">
-                      {(event?.price || 0) * formData.quantity} {event?.currency || 'FCFA'}
+                      {(hasPromotion ? promoPrice : (event?.price || 0)) * formData.quantity} FCFA
                     </span>
                   </div>
+                  {hasPromotion && (
+                    <div className="flex justify-between text-xs text-green-600 mt-1">
+                      <span>Économie réalisée</span>
+                      <span>{(event?.price - promoPrice) * formData.quantity} FCFA</span>
+                    </div>
+                  )}
                 </div>
 
                 <Button
@@ -352,17 +430,23 @@ const handleSubmit = async (e) => {
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Montant</span>
                     <span className="font-semibold text-dice-blue">
-                      {(event?.price || 0) * formData.quantity} {event?.currency || 'FCFA'}
+                      {(hasPromotion ? promoPrice : (event?.price || 0)) * formData.quantity} FCFA
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Numéro</span>
-                    <span className="font-semibold">{formData.phone}</span>
+                    <span className="font-semibold">{formData.customer_phone}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Référence</span>
                     <span className="font-semibold text-xs text-gray-500">
                       {payment?.reference || 'MTN-REF-XXXX'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Ticket</span>
+                    <span className="font-semibold text-xs text-gray-500">
+                      #{ticket?.id || 'N/A'}
                     </span>
                   </div>
                 </div>
@@ -416,6 +500,12 @@ const handleSubmit = async (e) => {
                   <p className="text-sm text-gray-500">
                     Votre réservation a été validée avec succès
                   </p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Ticket #{ticket?.id} - {formData.quantity} place{formData.quantity > 1 ? 's' : ''}
+                  </p>
+                  <p className="text-xs text-green-600 mt-1">
+                    ✅ Le ticket est visible dans la section Tickets du dashboard admin
+                  </p>
                 </div>
 
                 {/* QR Code */}
@@ -428,6 +518,9 @@ const handleSubmit = async (e) => {
                           <div className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
                             {qrCode?.qr_code || ticket?.qr_codes?.[0]?.code || 'DC-XXXX'}
                           </div>
+                          <div className="text-[10px] text-gray-400 mt-1">
+                            #{ticket?.id}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -435,9 +528,11 @@ const handleSubmit = async (e) => {
                   
                   <div className="space-y-1 text-sm text-gray-600 text-left">
                     <p><span className="font-medium">Événement:</span> {event?.title}</p>
-                    <p><span className="font-medium">Nom:</span> {formData.name}</p>
+                    <p><span className="font-medium">Nom:</span> {formData.customer_name}</p>
                     <p><span className="font-medium">Places:</span> {formData.quantity}</p>
-                    <p><span className="font-medium">Référence:</span> #{ticket?.id}</p>
+                    <p><span className="font-medium">Ticket:</span> #{ticket?.id}</p>
+                    <p><span className="font-medium">Statut:</span> <span className="text-green-600">Payé</span></p>
+                    <p><span className="font-medium">Date:</span> {new Date().toLocaleDateString('fr-FR')}</p>
                   </div>
                 </div>
 
@@ -452,8 +547,16 @@ const handleSubmit = async (e) => {
                   </Button>
                   <Button
                     onClick={() => {
+                      if (onSuccess) {
+                        onSuccess({
+                          ...ticket,
+                          qrCode: qrCode,
+                          customer_name: formData.customer_name,
+                          quantity: formData.quantity
+                        })
+                      }
                       onClose()
-                      if (onSuccess) onSuccess(ticket)
+                      resetModal()
                     }}
                     variant="primary"
                     className="flex-1"
@@ -478,6 +581,54 @@ const handleSubmit = async (e) => {
           </div>
         </motion.div>
       </div>
+
+      {/* Confirmation de fermeture */}
+      <AnimatePresence>
+        {showCloseConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70"
+          >
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              className="max-w-sm w-full bg-white rounded-2xl shadow-2xl p-6"
+            >
+              <div className="text-center">
+                <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <FaExclamationTriangle className="text-2xl text-yellow-600" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-800 mb-2">
+                  Annuler le paiement ?
+                </h3>
+                <p className="text-sm text-gray-600 mb-6">
+                  Votre paiement est en cours. Si vous fermez cette fenêtre, 
+                  la transaction sera annulée.
+                </p>
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() => setShowCloseConfirm(false)}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    Continuer
+                  </Button>
+                  <Button
+                    onClick={handleConfirmClose}
+                    variant="danger"
+                    className="flex-1"
+                  >
+                    Annuler
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </AnimatePresence>
   )
 }

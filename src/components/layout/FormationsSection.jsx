@@ -1,11 +1,9 @@
 /**
- * Section des formations - Carrousel 3D "Choose Your Perfect Studio"
- * Avec glassmorphisme tendant vers le bleu Diamond Centre
- * Cartes en coverflow 3D + navigation par flèches
+ * Section des formations - Carrousel 3D avec boucle infinie
  */
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -102,16 +100,51 @@ export default function FormationsSection({
   const [active, setActive] = useState(0)
   const total = displayFormations.length
   const touchStartX = useRef(null)
+  const autoPlayInterval = useRef(null)
+
+  // Boucle infinie sans pause - changement toutes les 3 secondes
+  useEffect(() => {
+    if (loading || total === 0) return
+
+    // Démarrer l'auto-play
+    autoPlayInterval.current = setInterval(() => {
+      setActive((prev) => (prev + 1) % total)
+    }, 3000)
+
+    // Nettoyer l'intervalle au démontage
+    return () => {
+      if (autoPlayInterval.current) {
+        clearInterval(autoPlayInterval.current)
+      }
+    }
+  }, [loading, total])
+
+  // Réinitialiser l'auto-play quand l'utilisateur interagit
+  const resetAutoPlay = useCallback(() => {
+    if (autoPlayInterval.current) {
+      clearInterval(autoPlayInterval.current)
+      autoPlayInterval.current = setInterval(() => {
+        setActive((prev) => (prev + 1) % total)
+      }, 3000)
+    }
+  }, [total])
 
   const goTo = useCallback(
     (index) => {
-      setActive(((index % total) + total) % total)
+      const newIndex = ((index % total) + total) % total
+      setActive(newIndex)
+      resetAutoPlay()
     },
-    [total]
+    [total, resetAutoPlay]
   )
 
-  const next = useCallback(() => goTo(active + 1), [active, goTo])
-  const prev = useCallback(() => goTo(active - 1), [active, goTo])
+  const next = useCallback(() => {
+    goTo(active + 1)
+  }, [active, goTo])
+
+  const prev = useCallback(() => {
+    goTo(active - 1)
+  }, [active, goTo])
 
   // Distance circulaire la plus courte entre une carte et la carte active
   const getOffset = (index) => {
@@ -124,6 +157,7 @@ export default function FormationsSection({
   const onTouchStart = (e) => {
     touchStartX.current = e.touches[0].clientX
   }
+  
   const onTouchEnd = (e) => {
     if (touchStartX.current === null) return
     const delta = e.changedTouches[0].clientX - touchStartX.current
@@ -278,20 +312,20 @@ export default function FormationsSection({
               })}
             </div>
 
-            {/* Flèche précédente */}
+            {/* Flèche précédente - Bleu Diamond Centre */}
             <button
               onClick={prev}
               aria-label="Studio précédent"
-              className="absolute left-1 md:left-6 top-1/2 -translate-y-1/2 z-20 w-11 h-11 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-orange-400 to-orange-500 text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center"
+              className="absolute left-1 md:left-6 top-1/2 -translate-y-1/2 z-20 w-11 h-11 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-dice-blue to-dice-blue-dark text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center"
             >
               <FaChevronLeft />
             </button>
 
-            {/* Flèche suivante */}
+            {/* Flèche suivante - Bleu Diamond Centre */}
             <button
               onClick={next}
               aria-label="Studio suivant"
-              className="absolute right-1 md:right-6 top-1/2 -translate-y-1/2 z-20 w-11 h-11 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-orange-400 to-orange-500 text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center"
+              className="absolute right-1 md:right-6 top-1/2 -translate-y-1/2 z-20 w-11 h-11 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-dice-blue to-dice-blue-dark text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center"
             >
               <FaChevronRight />
             </button>

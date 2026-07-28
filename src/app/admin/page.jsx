@@ -1,5 +1,5 @@
 /**
- * Dashboard Admin - Synchronisé avec le backend
+ * Dashboard Admin - Synchronisé avec les événements réels
  */
 'use client'
 
@@ -12,7 +12,7 @@ import {
   FaCalendar, FaUsers, FaTicketAlt, FaChartLine,
   FaPlus, FaEye, FaEdit, FaTrash, FaDollarSign,
   FaArrowUp, FaArrowDown, FaMinus, FaSync,
-  FaSpinner
+  FaSpinner, FaTag, FaClock, FaMoneyBillWave
 } from 'react-icons/fa'
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie,
@@ -28,6 +28,7 @@ export default function AdminPage() {
   const [refreshing, setRefreshing] = useState(false)
   const [stats, setStats] = useState(null)
   const [events, setEvents] = useState([])
+  const [users, setUsers] = useState([])
   const [user, setUser] = useState(null)
   const [error, setError] = useState(null)
 
@@ -51,11 +52,20 @@ export default function AdminPage() {
       
       // Charger les événements
       const eventsData = await api.getEvents(token)
-      setEvents(eventsData)
+      setEvents(eventsData || [])
       
-      // Charger les statistiques
-      const statsData = await api.getStats(token)
-      setStats(statsData)
+      // Charger les utilisateurs
+      try {
+        const usersData = await api.getUsers(token)
+        setUsers(usersData || [])
+      } catch (err) {
+        console.warn('Impossible de charger les utilisateurs:', err)
+        setUsers([])
+      }
+      
+      // Calculer les statistiques à partir des événements réels
+      const calculatedStats = calculateStats(eventsData || [], users || [])
+      setStats(calculatedStats)
       
     } catch (error) {
       console.error('Erreur chargement dashboard:', error)
@@ -63,6 +73,105 @@ export default function AdminPage() {
     } finally {
       setLoading(false)
       setRefreshing(false)
+    }
+  }
+
+  const calculateStats = (eventsList, usersList) => {
+    // Mois de l'année
+    const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aou', 'Sep', 'Oct', 'Nov', 'Déc']
+    
+    // Initialiser les données par mois
+    const eventsByMonth = months.map(month => ({
+      month,
+      count: 0
+    }))
+
+    const revenueByMonth = months.map(month => ({
+      month,
+      revenue: 0
+    }))
+
+    // Remplir les données à partir des événements
+    eventsList.forEach(event => {
+      if (event.start_date) {
+        const eventMonth = new Date(event.start_date).toLocaleString('fr-FR', { month: 'short' })
+        const monthIndex = months.indexOf(eventMonth)
+        if (monthIndex !== -1) {
+          eventsByMonth[monthIndex].count += 1
+          revenueByMonth[monthIndex].revenue += (event.price || 0)
+        }
+      }
+    })
+
+    // Statistiques de base
+    const totalEvents = eventsList.length
+    const totalUsers = usersList.length
+    const totalRevenue = eventsList.reduce((sum, e) => sum + (e.price || 0), 0)
+    
+    // Événements par statut
+    const publishedEvents = eventsList.filter(e => e.status === 'published').length
+    const draftEvents = eventsList.filter(e => e.status === 'draft').length
+    const cancelledEvents = eventsList.filter(e => e.status === 'cancelled').length
+    
+    // Événements à venir
+    const now = new Date()
+    const upcomingEvents = eventsList.filter(e => new Date(e.start_date) > now).length
+    
+    // Prix moyen
+    const averagePrice = totalEvents > 0 
+      ? Math.round(eventsList.reduce((sum, e) => sum + (e.price || 0), 0) / totalEvents) 
+      : 0
+
+    // Catégories
+    const categoriesMap = eventsList.reduce((acc, event) => {
+      const cat = event.category || 'autre'
+      if (!acc[cat]) acc[cat] = 0
+      acc[cat]++
+      return acc
+    }, {})
+    
+    const categoriesData = Object.entries(categoriesMap).map(([name, count]) => ({
+      name,
+      count,
+      percentage: totalEvents > 0 ? Math.round((count / totalEvents) * 100) : 0
+    }))
+
+    // Utilisateurs par mois (si disponibles)
+    const usersByMonth = months.map(month => {
+      const count = usersList.filter(u => {
+        if (!u.created_at) return false
+        const userMonth = new Date(u.created_at).toLocaleString('fr-FR', { month: 'short' })
+        return userMonth === month
+      }).length
+      return { month, count }
+    })
+
+    // Événements avec promotion
+    const eventsWithPromotion = eventsList.filter(e => e.promotion && e.promotion.pourcentage > 0).length
+    const promotionRate = totalEvents > 0 ? Math.round((eventsWithPromotion / totalEvents) * 100) : 0
+
+    // Derniers événements créés
+    const recentEvents = [...eventsList]
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      .slice(0, 5)
+
+    return {
+      totalEvents,
+      totalUsers,
+      totalRevenue,
+      publishedEvents,
+      draftEvents,
+      cancelledEvents,
+      upcomingEvents,
+      averagePrice,
+      eventsByMonth,
+      revenueByMonth,
+      categories: categoriesData,
+      usersByMonth,
+      eventsWithPromotion,
+      promotionRate,
+      recentEvents,
+      totalTickets: eventsList.reduce((sum, e) => sum + (e.available_tickets || 0), 0)
     }
   }
 
@@ -96,66 +205,33 @@ export default function AdminPage() {
     )
   }
 
-  // Statistiques pour les cartes avec données réelles
+  // Statistiques pour les cartes
   const statCards = [
     {
       title: 'Total Événements',
-      value: stats?.totalEvents || events.length || 0,
+      value: stats?.totalEvents || 0,
       icon: FaCalendar,
-      color: 'from-blue-500 to-blue-600',
-      change: stats?.eventsChange || '+0%',
-      trend: stats?.eventsTrend || 'up'
+      color: 'from-blue-500 to-blue-600'
     },
     {
       title: 'Utilisateurs',
       value: stats?.totalUsers || 0,
       icon: FaUsers,
-      color: 'from-green-500 to-green-600',
-      change: stats?.usersChange || '+0%',
-      trend: stats?.usersTrend || 'up'
+      color: 'from-green-500 to-green-600'
     },
     {
-      title: 'Tickets Vendus',
+      title: 'Tickets Disponibles',
       value: stats?.totalTickets || 0,
       icon: FaTicketAlt,
-      color: 'from-purple-500 to-purple-600',
-      change: stats?.ticketsChange || '+0%',
-      trend: stats?.ticketsTrend || 'up'
+      color: 'from-purple-500 to-purple-600'
     },
     {
       title: 'Revenus Totaux',
       value: `${(stats?.totalRevenue || 0).toLocaleString()} FCFA`,
       icon: FaDollarSign,
-      color: 'from-orange-500 to-orange-600',
-      change: stats?.revenueChange || '+0%',
-      trend: stats?.revenueTrend || 'up'
+      color: 'from-orange-500 to-orange-600'
     }
   ]
-
-  // Données pour les graphiques (à partir des événements réels)
-  const revenueData = stats?.revenueByMonth || []
-  const eventsData = stats?.eventsByMonth || []
-  const categoriesData = stats?.categories || []
-  const usersData = stats?.usersByMonth || []
-
-  // Statistiques supplémentaires à partir des données réelles
-  const totalEvents = events.length
-  const publishedEvents = events.filter(e => e.status === 'published').length
-  const draftEvents = events.filter(e => e.status === 'draft').length
-  const upcomingEvents = events.filter(e => new Date(e.start_date) > new Date()).length
-
-  const averagePrice = totalEvents > 0 
-    ? Math.round(events.reduce((sum, e) => sum + (e.price || 0), 0) / totalEvents) 
-    : 0
-
-  const completionRate = stats?.totalTickets > 0 
-    ? Math.round(((stats?.totalTickets || 0) / (stats?.totalTickets || 1)) * 100) 
-    : 0
-
-  // Derniers événements créés
-  const recentEvents = [...events]
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-    .slice(0, 5)
 
   const customTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -164,6 +240,20 @@ export default function AdminPage() {
           <p className="text-sm font-medium text-gray-800">{label}</p>
           <p className="text-sm text-dice-blue font-bold">
             {payload[0].value}
+          </p>
+        </div>
+      )
+    }
+    return null
+  }
+
+  const revenueTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg">
+          <p className="text-sm font-medium text-gray-800">{label}</p>
+          <p className="text-sm text-dice-blue font-bold">
+            {payload[0].value.toLocaleString()} FCFA
           </p>
         </div>
       )
@@ -180,7 +270,7 @@ export default function AdminPage() {
           <p className="text-gray-500">
             Bienvenue {user?.name || 'Admin'} ! 
             <span className="ml-2 text-xs text-gray-400">
-              {events.length} événements au total
+              {stats?.totalEvents || 0} événements au total
             </span>
           </p>
         </div>
@@ -210,22 +300,22 @@ export default function AdminPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
           <p className="text-sm text-gray-500">Total</p>
-          <p className="text-xl font-bold text-dice-blue">{totalEvents}</p>
+          <p className="text-xl font-bold text-dice-blue">{stats?.totalEvents || 0}</p>
           <p className="text-xs text-gray-400">événements créés</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
           <p className="text-sm text-gray-500">Publiés</p>
-          <p className="text-xl font-bold text-green-500">{publishedEvents}</p>
+          <p className="text-xl font-bold text-green-500">{stats?.publishedEvents || 0}</p>
           <p className="text-xs text-gray-400">en ligne</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-          <p className="text-sm text-gray-500">Brouillons</p>
-          <p className="text-xl font-bold text-yellow-500">{draftEvents}</p>
-          <p className="text-xs text-gray-400">en attente</p>
+          <p className="text-sm text-gray-500">Avec promotion</p>
+          <p className="text-xl font-bold text-purple-500">{stats?.eventsWithPromotion || 0}</p>
+          <p className="text-xs text-gray-400">{stats?.promotionRate || 0}% des événements</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
           <p className="text-sm text-gray-500">À venir</p>
-          <p className="text-xl font-bold text-purple-500">{upcomingEvents}</p>
+          <p className="text-xl font-bold text-orange-500">{stats?.upcomingEvents || 0}</p>
           <p className="text-xs text-gray-400">prochains événements</p>
         </div>
       </div>
@@ -246,31 +336,12 @@ export default function AdminPage() {
                 <stat.icon className="text-white text-xl" />
               </div>
             </div>
-            {stat.change && (
-              <div className="mt-2 flex items-center gap-1">
-                {stat.trend === 'up' ? (
-                  <FaArrowUp className="text-green-500 text-xs" />
-                ) : stat.trend === 'down' ? (
-                  <FaArrowDown className="text-red-500 text-xs" />
-                ) : (
-                  <FaMinus className="text-gray-400 text-xs" />
-                )}
-                <span className={`text-xs font-medium ${
-                  stat.trend === 'up' ? 'text-green-500' : 
-                  stat.trend === 'down' ? 'text-red-500' : 
-                  'text-gray-400'
-                }`}>
-                  {stat.change}
-                </span>
-                <span className="text-xs text-gray-400">vs mois précédent</span>
-              </div>
-            )}
           </div>
         ))}
       </div>
 
       {/* Derniers événements créés */}
-      {recentEvents.length > 0 && (
+      {stats?.recentEvents && stats.recentEvents.length > 0 && (
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm mb-8">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-800">Derniers événements créés</h3>
@@ -279,7 +350,7 @@ export default function AdminPage() {
             </Link>
           </div>
           <div className="space-y-3">
-            {recentEvents.map((event) => (
+            {stats.recentEvents.map((event) => (
               <div key={event.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-10 h-10 bg-dice-blue/10 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -289,6 +360,9 @@ export default function AdminPage() {
                     <p className="text-sm font-medium text-gray-800 truncate">{event.title}</p>
                     <p className="text-xs text-gray-500">
                       {new Date(event.start_date).toLocaleDateString('fr-FR')} • {event.location}
+                      {event.promotion && event.promotion.pourcentage > 0 && (
+                        <span className="ml-2 text-green-600">-{event.promotion.pourcentage}%</span>
+                      )}
                     </p>
                   </div>
                 </div>
@@ -312,47 +386,84 @@ export default function AdminPage() {
 
       {/* Graphiques */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Revenus mensuels */}
+        {/* Revenus mensuels - Graphique en barres */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-800">Revenus mensuels</h3>
-            <span className="text-xs text-gray-400">
-              {stats?.totalRevenue ? `${stats.totalRevenue.toLocaleString()} FCFA` : '0 FCFA'} total
+            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+              <FaMoneyBillWave className="text-dice-blue" />
+              Revenus mensuels
+            </h3>
+            <span className="text-sm font-bold text-dice-blue">
+              Total: {stats?.totalRevenue ? `${stats.totalRevenue.toLocaleString()} FCFA` : '0 FCFA'}
             </span>
           </div>
-          <div className="h-72">
+          <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={revenueData}>
+              <BarChart data={stats?.revenueByMonth || []} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="month" stroke="#9ca3af" />
-                <YAxis stroke="#9ca3af" />
-                <Tooltip content={customTooltip} />
-                <Bar dataKey="revenue" fill="#0a89f2" radius={[4, 4, 0, 0]} />
+                <XAxis 
+                  dataKey="month" 
+                  stroke="#9ca3af"
+                  tick={{ fontSize: 12 }}
+                />
+                <YAxis 
+                  stroke="#9ca3af"
+                  tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                  tick={{ fontSize: 12 }}
+                />
+                <Tooltip content={revenueTooltip} />
+                <Bar 
+                  dataKey="revenue" 
+                  fill="#0a89f2" 
+                  radius={[4, 4, 0, 0]}
+                  name="Revenus"
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Événements par mois */}
+        {/* Événements par mois - Graphique en ligne */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-800">Événements par mois</h3>
-            <span className="text-xs text-gray-400">{totalEvents} événements</span>
+            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+              <FaCalendar className="text-dice-blue" />
+              Événements par mois
+            </h3>
+            <span className="text-sm font-bold text-dice-blue">
+              Total: {stats?.totalEvents || 0} événements
+            </span>
           </div>
-          <div className="h-72">
+          <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={eventsData}>
+              <LineChart data={stats?.eventsByMonth || []} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="month" stroke="#9ca3af" />
-                <YAxis stroke="#9ca3af" />
+                <XAxis 
+                  dataKey="month" 
+                  stroke="#9ca3af"
+                  tick={{ fontSize: 12 }}
+                />
+                <YAxis 
+                  stroke="#9ca3af"
+                  tick={{ fontSize: 12 }}
+                  allowDecimals={false}
+                />
                 <Tooltip content={customTooltip} />
                 <Line 
                   type="monotone" 
                   dataKey="count" 
                   stroke="#0a89f2" 
-                  strokeWidth={2}
-                  dot={{ fill: '#0a89f2', strokeWidth: 2 }}
-                  activeDot={{ r: 6 }}
+                  strokeWidth={3}
+                  dot={{ 
+                    fill: '#0a89f2', 
+                    strokeWidth: 2,
+                    r: 5
+                  }}
+                  activeDot={{ 
+                    r: 8,
+                    fill: '#0a89f2'
+                  }}
+                  name="Événements"
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -371,7 +482,7 @@ export default function AdminPage() {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={categoriesData}
+                  data={stats?.categories || []}
                   cx="50%"
                   cy="50%"
                   innerRadius={60}
@@ -379,7 +490,7 @@ export default function AdminPage() {
                   paddingAngle={5}
                   dataKey="count"
                 >
-                  {categoriesData.map((entry, index) => (
+                  {(stats?.categories || []).map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
@@ -402,7 +513,7 @@ export default function AdminPage() {
           </div>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={usersData}>
+              <AreaChart data={stats?.usersByMonth || []}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis dataKey="month" stroke="#9ca3af" />
                 <YAxis stroke="#9ca3af" />
@@ -413,6 +524,7 @@ export default function AdminPage() {
                   stroke="#8b5cf6" 
                   fill="url(#colorUsers)"
                   strokeWidth={2}
+                  name="Utilisateurs"
                 />
                 <defs>
                   <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
@@ -430,30 +542,30 @@ export default function AdminPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
           <p className="text-sm text-gray-500">Prix moyen</p>
-          <p className="text-xl font-bold text-dice-blue">{averagePrice.toLocaleString()} FCFA</p>
+          <p className="text-xl font-bold text-dice-blue">{stats?.averagePrice?.toLocaleString() || 0} FCFA</p>
           <p className="text-xs text-gray-400">par événement</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-          <p className="text-sm text-gray-500">Taux de remplissage</p>
-          <p className="text-xl font-bold text-green-500">{completionRate}%</p>
-          <p className="text-xs text-gray-400">des places vendues</p>
+          <p className="text-sm text-gray-500">Taux de promotion</p>
+          <p className="text-xl font-bold text-purple-500">{stats?.promotionRate || 0}%</p>
+          <p className="text-xs text-gray-400">des événements</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
           <p className="text-sm text-gray-500">Catégorie populaire</p>
           <p className="text-xl font-bold text-gray-800">
-            {categoriesData.length > 0 ? categoriesData[0]?.name : '-'}
+            {stats?.categories && stats.categories.length > 0 ? stats.categories[0]?.name : '-'}
           </p>
           <p className="text-xs text-gray-400">
-            {categoriesData.length > 0 ? categoriesData[0]?.percentage : 0}% des événements
+            {stats?.categories && stats.categories.length > 0 ? stats.categories[0]?.percentage : 0}% des événements
           </p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
           <p className="text-sm text-gray-500">Mois actif</p>
           <p className="text-xl font-bold text-gray-800">
-            {eventsData.reduce((max, curr) => curr.count > max.count ? curr : max, { month: '-', count: 0 }).month}
+            {stats?.eventsByMonth?.reduce((max, curr) => curr.count > max.count ? curr : max, { month: '-', count: 0 }).month}
           </p>
           <p className="text-xs text-gray-400">
-            {eventsData.reduce((max, curr) => curr.count > max.count ? curr : max, { month: '-', count: 0 }).count} événements
+            {stats?.eventsByMonth?.reduce((max, curr) => curr.count > max.count ? curr : max, { month: '-', count: 0 }).count} événements
           </p>
         </div>
       </div>
@@ -468,20 +580,7 @@ export default function AdminPage() {
               </div>
               <div>
                 <h4 className="font-medium text-gray-800 group-hover:text-dice-blue transition-colors">Voir les événements</h4>
-                <p className="text-sm text-gray-500">{events.length} événements créés</p>
-              </div>
-            </div>
-          </div>
-        </Link>
-        <Link href="/admin/tickets">
-          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md hover:border-dice-blue transition-all cursor-pointer group">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center group-hover:bg-purple-500/20 transition-colors">
-                <FaTicketAlt className="text-purple-500" />
-              </div>
-              <div>
-                <h4 className="font-medium text-gray-800 group-hover:text-purple-500 transition-colors">Gérer les tickets</h4>
-                <p className="text-sm text-gray-500">{stats?.totalTickets || 0} tickets vendus</p>
+                <p className="text-sm text-gray-500">{stats?.totalEvents || 0} événements créés</p>
               </div>
             </div>
           </div>
@@ -495,6 +594,19 @@ export default function AdminPage() {
               <div>
                 <h4 className="font-medium text-gray-800 group-hover:text-green-500 transition-colors">Créer un événement</h4>
                 <p className="text-sm text-gray-500">Ajouter au calendrier</p>
+              </div>
+            </div>
+          </div>
+        </Link>
+        <Link href="/admin/tickets">
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md hover:border-dice-blue transition-all cursor-pointer group">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center group-hover:bg-purple-500/20 transition-colors">
+                <FaTicketAlt className="text-purple-500" />
+              </div>
+              <div>
+                <h4 className="font-medium text-gray-800 group-hover:text-purple-500 transition-colors">Tickets</h4>
+                <p className="text-sm text-gray-500">{stats?.totalTickets || 0} tickets disponibles</p>
               </div>
             </div>
           </div>

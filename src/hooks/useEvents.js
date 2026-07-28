@@ -1,5 +1,5 @@
 /**
- * Hook de gestion des événements
+ * Hook de gestion des événements - Avec rafraîchissement
  */
 import { useState, useCallback } from 'react'
 import { api } from '@/lib/api'
@@ -17,7 +17,7 @@ export function useEvents() {
     try {
       console.log('📤 Chargement des événements publics...')
       const data = await api.getPublicEvents()
-      console.log('📥 Événements reçus:', data)
+      console.log('📥 Événements reçus:', data?.length || 0)
       setEvents(data || [])
       return data
     } catch (err) {
@@ -38,7 +38,7 @@ export function useEvents() {
       const token = auth.getToken()
       console.log('📤 Chargement des événements avec token...')
       const data = await api.getEvents(token)
-      console.log('📥 Événements reçus:', data)
+      console.log('📥 Événements reçus:', data?.length || 0)
       setEvents(data || [])
       return data
     } catch (err) {
@@ -72,6 +72,7 @@ export function useEvents() {
     try {
       const token = auth.getToken()
       const result = await api.createEvent(data, token)
+      // Recharger après création
       await fetchEvents()
       return result
     } catch (err) {
@@ -88,6 +89,7 @@ export function useEvents() {
     try {
       const token = auth.getToken()
       const result = await api.updateEvent(id, data, token)
+      // Recharger après mise à jour
       await fetchEvents()
       return result
     } catch (err) {
@@ -104,6 +106,7 @@ export function useEvents() {
     try {
       const token = auth.getToken()
       await api.deleteEvent(id, token)
+      // Recharger après suppression
       await fetchEvents()
       return true
     } catch (err) {

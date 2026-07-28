@@ -1,11 +1,13 @@
 /**
  * Section "Pourquoi Dice" avec glassmorphisme bleu Diamond Centre
  * et effet hover "carte projet" (fond plein + bouton flèche) au survol
+ * avec Counter-Up sur les statistiques
  */
 'use client'
 
 import Link from 'next/link'
-import { motion } from 'framer-motion'
+import { motion, useInView } from 'framer-motion'
+import { useEffect, useRef, useState } from 'react'
 import { FaArrowRight, FaArrowUp, FaUsers, FaVideo, FaHeadset } from 'react-icons/fa'
 import { GiDiamondRing } from 'react-icons/gi'
 import Section from '@/components/ui/Section'
@@ -68,20 +70,83 @@ const sponsors = [
   }
 ]
 
-// Statistiques
-const stats = [
-  { label: 'Participants', value: '5 000+' },
-  { label: 'Formations', value: '50+' },
-  { label: 'Satisfaction', value: '98%' },
-  { label: 'Experts', value: '20+' }
+// Statistiques avec leurs valeurs numériques pour le Counter-Up
+const statsData = [
+  { label: 'Participants', value: 5000, suffix: '+' },
+  { label: 'Formations', value: 50, suffix: '+' },
+  { label: 'Satisfaction', value: 98, suffix: '%' },
+  { label: 'Experts', value: 20, suffix: '+' }
 ]
+
+// Composant Counter-Up
+function CounterUp({ targetValue, suffix = '', duration = 2000, startOnView = true }) {
+  const [count, setCount] = useState(0)
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true, amount: 0.5 })
+  const [hasStarted, setHasStarted] = useState(false)
+
+  useEffect(() => {
+    if (startOnView && isInView && !hasStarted) {
+      setHasStarted(true)
+      let startTime = null
+      const startValue = 0
+      
+      const animate = (timestamp) => {
+        if (!startTime) startTime = timestamp
+        const progress = Math.min((timestamp - startTime) / duration, 1)
+        const easedProgress = 1 - Math.pow(1 - progress, 3) // easeOutCubic
+        const currentValue = Math.floor(easedProgress * targetValue)
+        setCount(currentValue)
+        
+        if (progress < 1) {
+          requestAnimationFrame(animate)
+        } else {
+          setCount(targetValue)
+        }
+      }
+      
+      requestAnimationFrame(animate)
+    }
+  }, [isInView, targetValue, duration, startOnView, hasStarted])
+
+  // Si l'animation ne doit pas démarrer à la vue, démarrer immédiatement
+  useEffect(() => {
+    if (!startOnView && !hasStarted) {
+      setHasStarted(true)
+      let startTime = null
+      const startValue = 0
+      
+      const animate = (timestamp) => {
+        if (!startTime) startTime = timestamp
+        const progress = Math.min((timestamp - startTime) / duration, 1)
+        const easedProgress = 1 - Math.pow(1 - progress, 3)
+        const currentValue = Math.floor(easedProgress * targetValue)
+        setCount(currentValue)
+        
+        if (progress < 1) {
+          requestAnimationFrame(animate)
+        } else {
+          setCount(targetValue)
+        }
+      }
+      
+      requestAnimationFrame(animate)
+    }
+  }, [targetValue, duration, startOnView, hasStarted])
+
+  return (
+    <span ref={ref}>
+      {count.toLocaleString()}{suffix}
+    </span>
+  )
+}
 
 // Petit composant réutilisable pour le bouton flèche qui apparaît au hover
 function HoverArrowButton() {
   return (
     <div className="absolute top-4 right-4 z-20">
       <div className="w-11 h-11 rounded-full bg-white shadow-lg flex items-center justify-center scale-0 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all duration-300 ease-out">
-        <FaArrowUp className="rotate-45 text-[#0a89f2] text-base" />
+        <FaArrowUp className="rotate-45 text-dice-blue text-base" />
       </div>
     </div>
   )
@@ -270,7 +335,7 @@ export default function WhyDiceSection() {
           </div>
         </div>
 
-        {/* Statistiques avec animation */}
+        {/* Statistiques avec Counter-Up */}
         <motion.div 
           className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-6 p-8 bg-gradient-to-br from-gray-50 to-gray-100 rounded-3xl border border-gray-200"
           initial={{ opacity: 0, y: 20 }}
@@ -278,7 +343,7 @@ export default function WhyDiceSection() {
           viewport={{ once: true }}
           transition={{ delay: 0.3 }}
         >
-          {stats.map((stat, index) => (
+          {statsData.map((stat, index) => (
             <motion.div 
               key={index}
               initial={{ opacity: 0, y: 20 }}
@@ -288,10 +353,10 @@ export default function WhyDiceSection() {
               className="text-center relative"
             >
               <div className="text-3xl md:text-4xl font-bold text-dice-blue">
-                {stat.value}
+                <CounterUp targetValue={stat.value} suffix={stat.suffix} duration={2000} />
               </div>
               <div className="text-sm text-gray-600">{stat.label}</div>
-              {index < stats.length - 1 && (
+              {index < statsData.length - 1 && (
                 <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 w-px h-8 bg-gray-300" />
               )}
             </motion.div>

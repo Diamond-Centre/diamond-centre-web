@@ -1,5 +1,5 @@
 /**
- * Hook d'authentification - Version corrigée
+ * Hook d'authentification - Version mise à jour
  */
 import { useState, useEffect } from 'react'
 import { api } from '@/lib/api'
@@ -14,8 +14,6 @@ export function useAuth() {
   useEffect(() => {
     const token = auth.getToken()
     const storedUser = auth.getUser()
-    
-    console.log('🔍 useAuth init:', { token: !!token, user: !!storedUser })
     
     if (token && storedUser) {
       setUser(storedUser)
@@ -55,6 +53,8 @@ export function useAuth() {
   const register = async (userData) => {
     setLoading(true)
     try {
+      // Les données doivent déjà être au bon format pour le backend
+      // { email, password, name, telephone, sexe, picture, role }
       const response = await api.register(userData)
       toast.success('Inscription réussie ! Connectez-vous pour continuer.')
       window.location.href = '/auth/login'
@@ -75,23 +75,6 @@ export function useAuth() {
     window.location.href = '/'
   }
 
-  // Fonction pour forcer la vérification de l'authentification
-  const checkAuth = () => {
-    const token = auth.getToken()
-    const userData = auth.getUser()
-    const isAuth = !!(token && userData)
-    
-    if (isAuth && !isAuthenticated) {
-      setUser(userData)
-      setIsAuthenticated(true)
-    } else if (!isAuth && isAuthenticated) {
-      setUser(null)
-      setIsAuthenticated(false)
-    }
-    
-    return isAuth
-  }
-
   return {
     user,
     loading,
@@ -99,6 +82,6 @@ export function useAuth() {
     login,
     register,
     logout,
-    checkAuth
+    isAdmin: () => user?.role === 'admin' || user?.role === 'super_admin'
   }
 }
