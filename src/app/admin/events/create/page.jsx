@@ -1,5 +1,5 @@
 /**
- * Création d'événement - Admin avec promotions
+ * Création d'événement - Admin (version avec soumission manuelle)
  */
 'use client'
 
@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import * as yup from 'yup'
-import { FaArrowLeft, FaSave, FaImage, FaTimes, FaUpload, FaSpinner, FaTag } from 'react-icons/fa'
+import { FaArrowLeft, FaSave, FaImage, FaTimes, FaUpload, FaTag } from 'react-icons/fa'
 import { api } from '@/lib/api'
 import { auth } from '@/lib/auth'
 import Button from '@/components/ui/Button'
@@ -23,6 +23,8 @@ const eventSchema = yup.object().shape({
   currency: yup.string().default('XAF'),
   start_date: yup.string().required('La date de début est requise'),
   end_date: yup.string().required('La date de fin est requise'),
+  start_time: yup.string().required('L\'heure de début est requise'),
+  end_time: yup.string().required('L\'heure de fin est requise'),
   location: yup.string().required('Le lieu est requis'),
   category: yup.string().required('La catégorie est requise'),
   capacity: yup.number().required('La capacité est requise').min(1, 'Capacité minimale de 1'),
@@ -46,12 +48,38 @@ export default function CreateEvent() {
   const [imagePreview, setImagePreview] = useState(null)
   const fileInputRef = useRef(null)
 
+  // États pour les champs du formulaire
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    price: 0,
+    currency: 'XAF',
+    start_date: '',
+    end_date: '',
+    start_time: '09:00',
+    end_time: '17:00',
+    location: '',
+    category: 'conférence',
+    capacity: 50,
+    image_url: '',
+    hasPromotion: false,
+    promotion: {
+      nombre: '',
+      sexe: 'tous',
+      pourcentage: '',
+      duree: '',
+      description: ''
+    }
+  })
+
+  const [errors, setErrors] = useState({})
+
   const {
     register,
     handleSubmit,
     setValue,
     watch,
-    formState: { errors }
+    formState: { errors: formErrors }
   } = useForm({
     resolver: yupResolver(eventSchema),
     defaultValues: {
@@ -60,6 +88,8 @@ export default function CreateEvent() {
       capacity: 50,
       price: 0,
       image_url: '',
+      start_time: '09:00',
+      end_time: '17:00',
       hasPromotion: false,
       promotion: {
         nombre: '',
@@ -108,24 +138,62 @@ export default function CreateEvent() {
     }
   }
 
-  const onSubmit = async (data) => {
+  // Fonction de soumission manuelle
+  const handleFormSubmit = async (e) => {
+    e.preventDefault()
+    console.log('🚀🚀🚀 SOUMISSION MANUELLE !!! 🚀🚀🚀')
+    
+    // Récupérer les données du formulaire
+    const data = {
+      title: document.getElementById('title')?.value || '',
+      description: document.getElementById('description')?.value || '',
+      price: Number(document.getElementById('price')?.value) || 0,
+      currency: document.getElementById('currency')?.value || 'XAF',
+      start_date: document.getElementById('start_date')?.value || '',
+      end_date: document.getElementById('end_date')?.value || '',
+      start_time: document.getElementById('start_time')?.value || '09:00',
+      end_time: document.getElementById('end_time')?.value || '17:00',
+      location: document.getElementById('location')?.value || '',
+      category: document.getElementById('category')?.value || 'conférence',
+      capacity: Number(document.getElementById('capacity')?.value) || 50,
+      hasPromotion: document.getElementById('hasPromotion')?.checked || false,
+      promotion: {
+        nombre: document.getElementById('promotion_nombre')?.value || '',
+        sexe: document.getElementById('promotion_sexe')?.value || 'tous',
+        pourcentage: document.getElementById('promotion_pourcentage')?.value || '',
+        duree: document.getElementById('promotion_duree')?.value || '',
+        description: document.getElementById('promotion_description')?.value || ''
+      }
+    }
+
+    console.log('📋 Données récupérées:', data)
+    
     try {
       setLoading(true)
       setError(null)
       
       const token = auth.getToken()
+      console.log('🔑 Token présent:', token ? 'Oui' : 'Non')
       
-      let finalImageUrl = ''
+      if (!token) {
+        toast.error('Vous devez être connecté')
+        setLoading(false)
+        return
+      }
 
+      let finalImageUrl = ''
+      
       if (imageFile) {
         setUploading(true)
         try {
+          console.log('📤 Upload de l\'image...')
           const uploadResult = await api.uploadImage(imageFile)
           finalImageUrl = uploadResult.url
+          console.log('✅ Image uploadée:', finalImageUrl)
           toast.success('Image téléchargée avec succès')
         } catch (err) {
+          console.error('❌ Erreur upload image:', err)
           toast.error(err.message || 'Erreur lors du téléchargement de l\'image')
-          console.error(err)
           setUploading(false)
           setLoading(false)
           return
@@ -135,33 +203,40 @@ export default function CreateEvent() {
       }
 
       const formattedData = {
-        title: data.title,
-        description: data.description,
+        title: data.title.trim(),
+        description: data.description.trim(),
         price: Number(data.price),
         currency: data.currency || 'XAF',
         start_date: data.start_date,
         end_date: data.end_date,
-        location: data.location,
+        start_time: data.start_time || '09:00',
+        end_time: data.end_time || '17:00',
+        location: data.location.trim(),
         category: data.category,
         capacity: Number(data.capacity),
         image_url: finalImageUrl,
-        status: 'published',
-        hasPromotion: data.hasPromotion || false,
-        promotion: data.hasPromotion ? {
-          nombre: Number(data.promotion.nombre) || 0,
-          sexe: data.promotion.sexe || 'tous',
-          pourcentage: Number(data.promotion.pourcentage) || 0,
-          duree: Number(data.promotion.duree) || 0,
-          description: data.promotion.description || ''
-        } : undefined
+        status: 'published'
       }
 
-      console.log('📤 Création événement:', {
-        ...formattedData,
-        promotion: formattedData.promotion ? 'Présente' : 'Aucune'
-      })
+      if (data.hasPromotion && data.promotion) {
+        const promo = data.promotion
+        const pourcentage = Number(promo.pourcentage)
+        if (pourcentage > 0) {
+          formattedData.promotion = {
+            nombre: Number(promo.nombre) || 0,
+            sexe: promo.sexe || 'tous',
+            pourcentage: pourcentage,
+            duree: Number(promo.duree) || 0,
+            description: promo.description || ''
+          }
+        }
+      }
+
+      console.log('📤 Envoi au backend:', JSON.stringify(formattedData, null, 2))
       
       const result = await api.createEvent(formattedData, token)
+      
+      console.log('✅ Événement créé:', result)
       
       toast.success('Événement créé avec succès !')
       
@@ -170,7 +245,7 @@ export default function CreateEvent() {
       }, 1000)
       
     } catch (err) {
-      console.error('❌ Erreur création:', err)
+      console.error('❌ Erreur:', err)
       setError(err.message)
       toast.error(err.message || 'Erreur lors de la création')
     } finally {
@@ -199,7 +274,7 @@ export default function CreateEvent() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={handleFormSubmit} className="space-y-6">
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Informations générales</h2>
           
@@ -208,10 +283,12 @@ export default function CreateEvent() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Titre *
               </label>
-              <Input
-                {...register('title')}
+              <input
+                id="title"
+                name="title"
                 placeholder="Titre de l'événement"
-                error={errors.title?.message}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
+                required
               />
             </div>
 
@@ -220,11 +297,12 @@ export default function CreateEvent() {
                 Catégorie *
               </label>
               <select
-                {...register('category')}
+                id="category"
+                name="category"
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
               >
                 <option value="conférence">Conférence</option>
-                <option value="séminaire">Séminairesss</option>
+                <option value="séminaire">Séminaire</option>
                 <option value="formation">Formation</option>
                 <option value="atelier">Atelier</option>
               </select>
@@ -236,14 +314,13 @@ export default function CreateEvent() {
               Description *
             </label>
             <textarea
-              {...register('description')}
+              id="description"
+              name="description"
               rows={4}
               placeholder="Description complète de l'événement"
               className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
+              required
             />
-            {errors.description && (
-              <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>
-            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -251,11 +328,13 @@ export default function CreateEvent() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Prix (FCFA) *
               </label>
-              <Input
-                {...register('price')}
+              <input
+                id="price"
+                name="price"
                 type="number"
                 placeholder="0"
-                error={errors.price?.message}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
+                required
               />
             </div>
 
@@ -263,11 +342,13 @@ export default function CreateEvent() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Capacité *
               </label>
-              <Input
-                {...register('capacity')}
+              <input
+                id="capacity"
+                name="capacity"
                 type="number"
                 placeholder="50"
-                error={errors.capacity?.message}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
+                required
               />
             </div>
           </div>
@@ -277,10 +358,12 @@ export default function CreateEvent() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Date de début *
               </label>
-              <Input
-                {...register('start_date')}
+              <input
+                id="start_date"
+                name="start_date"
                 type="date"
-                error={errors.start_date?.message}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
+                required
               />
             </div>
 
@@ -288,10 +371,40 @@ export default function CreateEvent() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Date de fin *
               </label>
-              <Input
-                {...register('end_date')}
+              <input
+                id="end_date"
+                name="end_date"
                 type="date"
-                error={errors.end_date?.message}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Heure de début *
+              </label>
+              <input
+                id="start_time"
+                name="start_time"
+                type="time"
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Heure de fin *
+              </label>
+              <input
+                id="end_time"
+                name="end_time"
+                type="time"
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
+                required
               />
             </div>
           </div>
@@ -300,10 +413,12 @@ export default function CreateEvent() {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Lieu *
             </label>
-            <Input
-              {...register('location')}
+            <input
+              id="location"
+              name="location"
               placeholder="Abidjan, Plateau"
-              error={errors.location?.message}
+              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
+              required
             />
           </div>
 
@@ -367,25 +482,28 @@ export default function CreateEvent() {
             </div>
             <label className="flex items-center gap-2 cursor-pointer">
               <input
+                id="hasPromotion"
+                name="hasPromotion"
                 type="checkbox"
-                {...register('hasPromotion')}
                 className="w-4 h-4 text-dice-blue rounded focus:ring-dice-blue"
               />
               <span className="text-sm text-gray-600">Activer une promotion</span>
             </label>
           </div>
 
-          {watchHasPromotion && (
+          {/* La section promotion sera affichée via JS */}
+          <div id="promotionFields" style={{ display: 'none' }}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Nombre de places *
                 </label>
-                <Input
-                  {...register('promotion.nombre')}
+                <input
+                  id="promotion_nombre"
+                  name="promotion_nombre"
                   type="number"
                   placeholder="50"
-                  required={watchHasPromotion}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
                 />
               </div>
 
@@ -394,7 +512,8 @@ export default function CreateEvent() {
                   Sexe ciblé
                 </label>
                 <select
-                  {...register('promotion.sexe')}
+                  id="promotion_sexe"
+                  name="promotion_sexe"
                   className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
                 >
                   <option value="tous">Tous</option>
@@ -407,11 +526,12 @@ export default function CreateEvent() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Pourcentage de réduction (%) *
                 </label>
-                <Input
-                  {...register('promotion.pourcentage')}
+                <input
+                  id="promotion_pourcentage"
+                  name="promotion_pourcentage"
                   type="number"
                   placeholder="20"
-                  required={watchHasPromotion}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
                 />
               </div>
 
@@ -419,11 +539,12 @@ export default function CreateEvent() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Durée (jours) *
                 </label>
-                <Input
-                  {...register('promotion.duree')}
+                <input
+                  id="promotion_duree"
+                  name="promotion_duree"
                   type="number"
                   placeholder="7"
-                  required={watchHasPromotion}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
                 />
               </div>
 
@@ -431,13 +552,15 @@ export default function CreateEvent() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Description de la promotion
                 </label>
-                <Input
-                  {...register('promotion.description')}
+                <input
+                  id="promotion_description"
+                  name="promotion_description"
                   placeholder="Description de la promotion"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
                 />
               </div>
             </div>
-          )}
+          </div>
         </div>
 
         <div className="flex gap-4 justify-end">
@@ -459,6 +582,26 @@ export default function CreateEvent() {
           </Button>
         </div>
       </form>
+
+      {/* Script pour afficher/masquer les champs de promotion */}
+      <script dangerouslySetInnerHTML={{
+        __html: `
+          document.addEventListener('DOMContentLoaded', function() {
+            const checkbox = document.getElementById('hasPromotion');
+            const promotionFields = document.getElementById('promotionFields');
+            
+            if (checkbox && promotionFields) {
+              checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                  promotionFields.style.display = 'block';
+                } else {
+                  promotionFields.style.display = 'none';
+                }
+              });
+            }
+          });
+        `
+      }} />
     </div>
   )
 }
