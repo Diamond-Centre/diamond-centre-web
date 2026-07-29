@@ -85,55 +85,44 @@ export const api = {
     return response.json()
   },
 
-  // Dans createEvent et updateEvent, ajouter les champs d'heure
+  // lib/api.js - createEvent avec logs
 createEvent: async (data, token) => {
-  const payload = {
-    title: data.title,
-    description: data.description,
-    price: Number(data.price),
-    currency: data.currency || 'XAF',
-    start_date: data.start_date,
-    end_date: data.end_date,
-    start_time: data.start_time || '09:00',
-    end_time: data.end_time || '17:00',
-    location: data.location,
-    category: data.category,
-    capacity: Number(data.capacity),
-    image_url: data.image_url || '',
-    status: data.status || 'published'
-  }
+  try {
+    console.log('📤 API createEvent appelée')
+    console.log('📤 Token:', token ? 'Présent' : 'Absent')
+    console.log('📤 Données:', JSON.stringify(data, null, 2))
 
-  // N'ajouter la promotion que si elle est activée ET que TOUS les champs requis sont remplis
-  if (data.hasPromotion && data.promotion) {
-    const promo = data.promotion
-    const nombre = Number(promo.nombre)
-    const pourcentage = Number(promo.pourcentage)
-    const duree = Number(promo.duree)
-    
-    if (nombre > 0 && pourcentage > 0 && duree > 0) {
-      payload.promotion = {
-        nombre: nombre,
-        sexe: promo.sexe || 'tous',
-        pourcentage: pourcentage,
-        duree: duree,
-        description: promo.description || ''
+    const response = await fetch(`${API_URL}/events`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(data)
+    })
+
+    console.log('📥 Statut réponse:', response.status)
+    console.log('📥 Headers:', Object.fromEntries(response.headers.entries()))
+
+    const text = await response.text()
+    console.log('📥 Corps réponse:', text)
+
+    if (!response.ok) {
+      let errorMessage = `Erreur ${response.status}`
+      try {
+        const error = JSON.parse(text)
+        errorMessage = error.message || error.error || errorMessage
+      } catch {
+        errorMessage = `Erreur ${response.status}: ${text.substring(0, 100)}`
       }
+      throw new Error(errorMessage)
     }
-  }
 
-  const response = await fetch(`${API_URL}/events`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify(payload)
-  })
-  if (!response.ok) {
-    const error = await response.json()
+    return JSON.parse(text)
+  } catch (error) {
+    console.error('❌ CreateEvent error:', error)
     throw new Error(error.message || 'Erreur lors de la création')
   }
-  return response.json()
 },
 
 updateEvent: async (id, data, token) => {

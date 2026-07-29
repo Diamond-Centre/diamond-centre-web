@@ -1,46 +1,22 @@
 /**
- * Modification d'événement - Admin avec suppression des promotions
+ * Modification d'événement - Admin (version simplifiée)
  */
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { useForm } from 'react-hook-form'
-import { yupResolver } from '@hookform/resolvers/yup'
-import * as yup from 'yup'
-import { FaArrowLeft, FaSave, FaImage, FaTimes, FaUpload, FaSpinner, FaTag } from 'react-icons/fa'
+import { FaArrowLeft, FaSave, FaImage, FaTimes, FaUpload, FaTag } from 'react-icons/fa'
 import { api } from '@/lib/api'
 import { auth } from '@/lib/auth'
 import Button from '@/components/ui/Button'
-import Input from '@/components/ui/Input'
 import toast from 'react-hot-toast'
 import Image from 'next/image'
-
-const eventSchema = yup.object().shape({
-  title: yup.string().required('Le titre est requis').min(3, 'Titre trop court'),
-  description: yup.string().required('La description est requise').min(10, 'Description trop courte'),
-  price: yup.number().required('Le prix est requis').min(0, 'Le prix doit être positif'),
-  currency: yup.string().default('XAF'),
-  start_date: yup.string().required('La date de début est requise'),
-  end_date: yup.string().required('La date de fin est requise'),
-  location: yup.string().required('Le lieu est requis'),
-  category: yup.string().required('La catégorie est requise'),
-  capacity: yup.number().required('La capacité est requise').min(1, 'Capacité minimale de 1'),
-  image_url: yup.string().nullable(),
-  hasPromotion: yup.boolean(),
-  promotion: yup.object().shape({
-    nombre: yup.number().nullable(),
-    sexe: yup.string().nullable(),
-    pourcentage: yup.number().nullable(),
-    duree: yup.number().nullable(),
-    description: yup.string().nullable()
-  })
-})
 
 export default function EditEvent() {
   const router = useRouter()
   const params = useParams()
   const id = params.id
+  
   const [loading, setLoading] = useState(false)
   const [loadingEvent, setLoadingEvent] = useState(true)
   const [uploading, setUploading] = useState(false)
@@ -49,34 +25,32 @@ export default function EditEvent() {
   const [imagePreview, setImagePreview] = useState(null)
   const [currentImage, setCurrentImage] = useState(null)
   const [removeExistingImage, setRemoveExistingImage] = useState(false)
+  const [hasPromotion, setHasPromotion] = useState(false)
   const fileInputRef = useRef(null)
 
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    watch,
-    formState: { errors }
-  } = useForm({
-    resolver: yupResolver(eventSchema),
-    defaultValues: {
-      currency: 'XAF',
-      category: 'conférence',
-      capacity: 50,
-      price: 0,
-      image_url: '',
-      hasPromotion: false,
-      promotion: {
-        nombre: '',
-        sexe: '',
-        pourcentage: '',
-        duree: '',
-        description: ''
-      }
+  // États pour les champs du formulaire
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    price: 0,
+    currency: 'XAF',
+    start_date: '',
+    end_date: '',
+    start_time: '09:00',
+    end_time: '17:00',
+    location: '',
+    category: 'conférence',
+    capacity: 50,
+    image_url: '',
+    hasPromotion: false,
+    promotion: {
+      nombre: '',
+      sexe: 'tous',
+      pourcentage: '',
+      duree: '',
+      description: ''
     }
   })
-
-  const watchHasPromotion = watch('hasPromotion')
 
   useEffect(() => {
     const token = auth.getToken()
@@ -101,28 +75,32 @@ export default function EditEvent() {
       
       setCurrentImage(event.image_url || null)
       
-      setValue('title', event.title || '')
-      setValue('description', event.description || '')
-      setValue('price', event.price || 0)
-      setValue('currency', event.currency || 'XAF')
-      setValue('start_date', event.start_date || '')
-      setValue('end_date', event.end_date || '')
-      setValue('location', event.location || '')
-      setValue('category', event.category || 'conférence')
-      setValue('capacity', event.capacity || 50)
-      setValue('image_url', event.image_url || '')
+      const hasPromo = event.promotion && event.promotion.pourcentage && Number(event.promotion.pourcentage) > 0
       
-      // Charger la promotion si présente
-      if (event.promotion && event.promotion.pourcentage && event.promotion.pourcentage > 0) {
-        setValue('hasPromotion', true)
-        setValue('promotion.nombre', event.promotion.nombre || '')
-        setValue('promotion.sexe', event.promotion.sexe || '')
-        setValue('promotion.pourcentage', event.promotion.pourcentage || '')
-        setValue('promotion.duree', event.promotion.duree || '')
-        setValue('promotion.description', event.promotion.description || '')
-      } else {
-        setValue('hasPromotion', false)
-      }
+      setFormData({
+        title: event.title || '',
+        description: event.description || '',
+        price: event.price || 0,
+        currency: event.currency || 'XAF',
+        start_date: event.start_date || '',
+        end_date: event.end_date || '',
+        start_time: event.start_time || '09:00',
+        end_time: event.end_time || '17:00',
+        location: event.location || '',
+        category: event.category || 'conférence',
+        capacity: event.capacity || 50,
+        image_url: event.image_url || '',
+        hasPromotion: hasPromo,
+        promotion: {
+          nombre: hasPromo ? event.promotion.nombre || '' : '',
+          sexe: hasPromo ? event.promotion.sexe || 'tous' : 'tous',
+          pourcentage: hasPromo ? event.promotion.pourcentage || '' : '',
+          duree: hasPromo ? event.promotion.duree || '' : '',
+          description: hasPromo ? event.promotion.description || '' : ''
+        }
+      })
+      
+      setHasPromotion(hasPromo)
       
     } catch (error) {
       console.error('Erreur chargement:', error)
@@ -150,7 +128,6 @@ export default function EditEvent() {
     setImageFile(file)
     setImagePreview(URL.createObjectURL(file))
     setRemoveExistingImage(true)
-    setValue('image_url', '')
   }
 
   const removeImage = () => {
@@ -158,102 +135,113 @@ export default function EditEvent() {
     setImagePreview(null)
     setRemoveExistingImage(true)
     setCurrentImage(null)
-    setValue('image_url', '')
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
   }
 
- const onSubmit = async (data) => {
-  try {
-    setLoading(true)
-    setError(null)
-    
-    const token = auth.getToken()
-    if (!token) {
-      toast.error('Vous devez être connecté')
-      return
+  const handleInputChange = (e) => {
+    const { id, value, type, checked } = e.target
+    if (type === 'checkbox') {
+      setFormData(prev => ({ ...prev, [id]: checked }))
+      if (id === 'hasPromotion') {
+        setHasPromotion(checked)
+      }
+    } else if (id && id.startsWith('promotion_')) {
+      const field = id.replace('promotion_', '')
+      setFormData(prev => ({
+        ...prev,
+        promotion: { ...prev.promotion, [field]: value }
+      }))
+    } else {
+      setFormData(prev => ({ ...prev, [id]: value }))
     }
+  }
 
-    let finalImageUrl = ''
-
-    if (imageFile) {
-      setUploading(true)
-      try {
-        const uploadResult = await api.uploadImage(imageFile)
-        finalImageUrl = uploadResult.url
-        toast.success('Image téléchargée avec succès')
-      } catch (err) {
-        toast.error(err.message || 'Erreur lors du téléchargement de l\'image')
-        console.error(err)
-        setUploading(false)
+  const handleFormSubmit = async (e) => {
+    e.preventDefault()
+    
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const token = auth.getToken()
+      if (!token) {
+        toast.error('Vous devez être connecté')
         setLoading(false)
         return
-      } finally {
-        setUploading(false)
       }
-    } 
-    else if (removeExistingImage) {
-      finalImageUrl = ''
-    } 
-    else if (currentImage) {
-      finalImageUrl = currentImage
-    }
 
-    // Construire les données de promotion UNIQUEMENT si activée
-    let promotionData = undefined
-    if (data.hasPromotion) {
-      const promo = data.promotion
-      // Vérifier que le pourcentage est valide (supérieur à 0)
-      if (promo.pourcentage && Number(promo.pourcentage) > 0) {
-        promotionData = {
-          nombre: Number(promo.nombre) || 0,
-          sexe: promo.sexe === '' ? 'tous' : promo.sexe,
-          pourcentage: Number(promo.pourcentage),
-          duree: Number(promo.duree) || 0,
-          description: promo.description || ''
+      let finalImageUrl = ''
+
+      if (imageFile) {
+        setUploading(true)
+        try {
+          const uploadResult = await api.uploadImage(imageFile)
+          finalImageUrl = uploadResult.url
+        } catch (err) {
+          toast.error(err.message || 'Erreur lors du téléchargement de l\'image')
+          setUploading(false)
+          setLoading(false)
+          return
+        } finally {
+          setUploading(false)
+        }
+      } 
+      else if (removeExistingImage) {
+        finalImageUrl = ''
+      } 
+      else if (currentImage) {
+        finalImageUrl = currentImage
+      }
+
+      // Construire les données de promotion
+      let promotionData = undefined
+      if (formData.hasPromotion) {
+        const promo = formData.promotion
+        if (promo.pourcentage && Number(promo.pourcentage) > 0) {
+          promotionData = {
+            nombre: Number(promo.nombre) || 0,
+            sexe: promo.sexe || 'tous',
+            pourcentage: Number(promo.pourcentage),
+            duree: Number(promo.duree) || 0,
+            description: promo.description || ''
+          }
         }
       }
-    }
-    // Si hasPromotion est false, promotionData reste undefined
-    // donc la promotion sera supprimée de l'événement
 
-    const formattedData = {
-      title: data.title.trim(),
-      description: data.description.trim(),
-      price: Number(data.price),
-      currency: data.currency || 'XAF',
-      start_date: data.start_date,
-      end_date: data.end_date,
-      location: data.location.trim(),
-      category: data.category,
-      capacity: Number(data.capacity),
-      image_url: finalImageUrl,
-      hasPromotion: data.hasPromotion || false,
-      promotion: promotionData
-    }
+      const formattedData = {
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        price: Number(formData.price),
+        currency: formData.currency || 'XAF',
+        start_date: formData.start_date,
+        end_date: formData.end_date,
+        start_time: formData.start_time || '09:00',
+        end_time: formData.end_time || '17:00',
+        location: formData.location.trim(),
+        category: formData.category,
+        capacity: Number(formData.capacity),
+        image_url: finalImageUrl,
+        hasPromotion: formData.hasPromotion || false,
+        promotion: promotionData
+      }
 
-    console.log('📤 Mise à jour événement:', {
-      ...formattedData,
-      promotion: promotionData ? 'Présente' : 'Supprimée'
-    })
-    
-    const result = await api.updateEvent(id, formattedData, token)
-    
-    toast.success('Événement mis à jour avec succès !')
-    
-    setTimeout(() => {
-      router.push('/admin/events')
-    }, 1000)
-    
-  } catch (err) {
-    console.error('❌ Erreur mise à jour:', err)
-    setError(err.message)
-    toast.error(err.message || 'Erreur lors de la mise à jour')
-  } finally {
-    setLoading(false)
+      await api.updateEvent(id, formattedData, token)
+      
+      toast.success('Événement mis à jour avec succès')
+      
+      setTimeout(() => {
+        router.push('/admin/events')
+      }, 1000)
+      
+    } catch (err) {
+      setError(err.message)
+      toast.error(err.message || 'Erreur lors de la mise à jour')
+    } finally {
+      setLoading(false)
+    }
   }
-}
 
   if (loadingEvent) {
     return (
@@ -284,7 +272,7 @@ export default function EditEvent() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={handleFormSubmit} className="space-y-6">
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Informations générales</h2>
           
@@ -293,10 +281,14 @@ export default function EditEvent() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Titre *
               </label>
-              <Input
-                {...register('title')}
+              <input
+                id="title"
+                name="title"
+                value={formData.title}
+                onChange={handleInputChange}
                 placeholder="Titre de l'événement"
-                error={errors.title?.message}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
+                required
               />
             </div>
 
@@ -305,7 +297,10 @@ export default function EditEvent() {
                 Catégorie *
               </label>
               <select
-                {...register('category')}
+                id="category"
+                name="category"
+                value={formData.category}
+                onChange={handleInputChange}
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
               >
                 <option value="conférence">Conférence</option>
@@ -321,14 +316,15 @@ export default function EditEvent() {
               Description *
             </label>
             <textarea
-              {...register('description')}
+              id="description"
+              name="description"
+              value={formData.description}
+              onChange={handleInputChange}
               rows={4}
               placeholder="Description complète de l'événement"
               className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
+              required
             />
-            {errors.description && (
-              <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>
-            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -336,11 +332,15 @@ export default function EditEvent() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Prix (FCFA) *
               </label>
-              <Input
-                {...register('price')}
+              <input
+                id="price"
+                name="price"
                 type="number"
+                value={formData.price}
+                onChange={handleInputChange}
                 placeholder="0"
-                error={errors.price?.message}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
+                required
               />
             </div>
 
@@ -348,11 +348,15 @@ export default function EditEvent() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Capacité *
               </label>
-              <Input
-                {...register('capacity')}
+              <input
+                id="capacity"
+                name="capacity"
                 type="number"
+                value={formData.capacity}
+                onChange={handleInputChange}
                 placeholder="50"
-                error={errors.capacity?.message}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
+                required
               />
             </div>
           </div>
@@ -362,10 +366,14 @@ export default function EditEvent() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Date de début *
               </label>
-              <Input
-                {...register('start_date')}
+              <input
+                id="start_date"
+                name="start_date"
                 type="date"
-                error={errors.start_date?.message}
+                value={formData.start_date}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
+                required
               />
             </div>
 
@@ -373,10 +381,46 @@ export default function EditEvent() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Date de fin *
               </label>
-              <Input
-                {...register('end_date')}
+              <input
+                id="end_date"
+                name="end_date"
                 type="date"
-                error={errors.end_date?.message}
+                value={formData.end_date}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Heure de début *
+              </label>
+              <input
+                id="start_time"
+                name="start_time"
+                type="time"
+                value={formData.start_time}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Heure de fin *
+              </label>
+              <input
+                id="end_time"
+                name="end_time"
+                type="time"
+                value={formData.end_time}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
+                required
               />
             </div>
           </div>
@@ -385,10 +429,14 @@ export default function EditEvent() {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Lieu *
             </label>
-            <Input
-              {...register('location')}
+            <input
+              id="location"
+              name="location"
+              value={formData.location}
+              onChange={handleInputChange}
               placeholder="Abidjan, Plateau"
-              error={errors.location?.message}
+              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
+              required
             />
           </div>
 
@@ -480,25 +528,31 @@ export default function EditEvent() {
             </div>
             <label className="flex items-center gap-2 cursor-pointer">
               <input
+                id="hasPromotion"
+                name="hasPromotion"
                 type="checkbox"
-                {...register('hasPromotion')}
+                checked={formData.hasPromotion}
+                onChange={handleInputChange}
                 className="w-4 h-4 text-dice-blue rounded focus:ring-dice-blue"
               />
               <span className="text-sm text-gray-600">Activer une promotion</span>
             </label>
           </div>
 
-          {watchHasPromotion && (
+          {formData.hasPromotion && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Nombre de places *
                 </label>
-                <Input
-                  {...register('promotion.nombre')}
+                <input
+                  id="promotion_nombre"
+                  name="promotion_nombre"
                   type="number"
+                  value={formData.promotion.nombre}
+                  onChange={handleInputChange}
                   placeholder="50"
-                  required={watchHasPromotion}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
                 />
               </div>
 
@@ -507,10 +561,13 @@ export default function EditEvent() {
                   Sexe ciblé
                 </label>
                 <select
-                  {...register('promotion.sexe')}
+                  id="promotion_sexe"
+                  name="promotion_sexe"
+                  value={formData.promotion.sexe}
+                  onChange={handleInputChange}
                   className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
                 >
-                  <option value="">Tous</option>
+                  <option value="tous">Tous</option>
                   <option value="homme">Homme</option>
                   <option value="femme">Femme</option>
                 </select>
@@ -520,11 +577,14 @@ export default function EditEvent() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Pourcentage de réduction (%) *
                 </label>
-                <Input
-                  {...register('promotion.pourcentage')}
+                <input
+                  id="promotion_pourcentage"
+                  name="promotion_pourcentage"
                   type="number"
+                  value={formData.promotion.pourcentage}
+                  onChange={handleInputChange}
                   placeholder="20"
-                  required={watchHasPromotion}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
                 />
               </div>
 
@@ -532,11 +592,14 @@ export default function EditEvent() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Durée (jours) *
                 </label>
-                <Input
-                  {...register('promotion.duree')}
+                <input
+                  id="promotion_duree"
+                  name="promotion_duree"
                   type="number"
+                  value={formData.promotion.duree}
+                  onChange={handleInputChange}
                   placeholder="7"
-                  required={watchHasPromotion}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
                 />
               </div>
 
@@ -544,9 +607,13 @@ export default function EditEvent() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Description de la promotion
                 </label>
-                <Input
-                  {...register('promotion.description')}
+                <input
+                  id="promotion_description"
+                  name="promotion_description"
+                  value={formData.promotion.description}
+                  onChange={handleInputChange}
                   placeholder="Description de la promotion"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
                 />
               </div>
             </div>
