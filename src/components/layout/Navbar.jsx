@@ -1,5 +1,5 @@
 /**
- * Barre de navigation principale - Version ultra-simplifiée sans déconnexion
+ * Barre de navigation principale - Version simplifiée avec auth
  */
 'use client'
 
@@ -9,7 +9,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FaBars, FaTimes, FaUser, FaCog } from 'react-icons/fa'
 import { GiDiamondRing } from 'react-icons/gi'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from '@/hooks/useAuth'  // Vérifier l'import
 import Button from '@/components/ui/Button'
 
 const navLinks = [
@@ -20,7 +20,7 @@ const navLinks = [
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
-  const { user, isAuthenticated } = useAuth()
+  const { user, isAuthenticated } = useAuth()  // S'assurer que useAuth est bien défini
   const pathname = usePathname()
   const router = useRouter()
 
@@ -67,7 +67,7 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* Actions - Version ultra-simplifiée */}
+          {/* Actions */}
           <div className="hidden md:flex items-center gap-2">
             {isAuthenticated ? (
               <button
