@@ -18,25 +18,44 @@ export const api = {
     return response.json()
   },
 
- register: async (data) => {
-  // Le backend attend: email, password, name, telephone, sexe, picture, role
+ // lib/api.js - register (version avec "admin" par défaut)
+register: async (data) => {
+  console.log('📤 Register - Données reçues:', data)
+  
+  // Tous les champs sont obligatoires
+  const payload = {
+    email: data.email,
+    password: data.password,
+    name: data.name,
+    role: 'client',  // ← Toujours "admin" car c'est le seul accepté
+    telephone: data.telephone || '+237000000000',
+    sexe: data.sexe || 'non_precise',
+    picture: data.picture || 'https://ui-avatars.com/api/?name=User&background=0a89f2&color=fff&size=128'
+  }
+  
+  console.log('📤 Register - Payload envoyé:', JSON.stringify(payload, null, 2))
+  
   const response = await fetch(`${API_URL}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      email: data.email,
-      password: data.password,
-      name: data.name,
-      telephone: data.telephone || '',
-      sexe: data.sexe || '',
-      picture: data.picture || '',
-      role: data.role || 'user'  // 'user' par défaut, 'admin' pour admin
-    })
+    body: JSON.stringify(payload)
   })
+  
+  console.log('📥 Register - Statut:', response.status)
+  
   if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.message || 'Erreur d\'inscription')
+    const text = await response.text()
+    console.error('❌ Register - Erreur:', text)
+    let errorMessage
+    try {
+      const error = JSON.parse(text)
+      errorMessage = error.message || error.error || 'Erreur d\'inscription'
+    } catch {
+      errorMessage = `Erreur ${response.status}: ${text.substring(0, 100)}`
+    }
+    throw new Error(errorMessage)
   }
+  
   return response.json()
 },
 
@@ -239,30 +258,32 @@ updateEvent: async (id, data, token) => {
 },
 
 // ===== TICKETS =====
-getTickets: async (token) => {
-  try {
-    const response = await fetch(`${API_URL}/tickets`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    })
-    
-    if (!response.ok) {
-      const text = await response.text()
-      console.error('❌ Erreur tickets:', text)
-      try {
-        const error = JSON.parse(text)
-        throw new Error(error.message || 'Erreur lors du chargement des tickets')
-      } catch {
-        throw new Error(`Erreur ${response.status}: ${text.substring(0, 100)}`)
-      }
+// Récupérer les tickets de l'utilisateur connecté
+getUserTickets: async (token) => {
+  const response = await fetch(`${API_URL}/tickets/user`, {
+    headers: {
+      'Authorization': `Bearer ${token}`
     }
-    return response.json()
-  } catch (error) {
-    console.error('GetTickets error:', error)
-    return []
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.message || 'Erreur lors du chargement des tickets')
   }
+  return response.json()
+},
+
+// Récupérer tous les tickets (admin)
+getTickets: async (token) => {
+  const response = await fetch(`${API_URL}/tickets`, {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.message || 'Erreur lors du chargement des tickets')
+  }
+  return response.json()
 },
 
 getTicket: async (id, token) => {
@@ -385,6 +406,20 @@ reserveTickets: async (data, token) => {
     return response.json()
   },
 
+  deleteTicket: async (id, token) => {
+  const response = await fetch(`${API_URL}/tickets/${id}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.message || 'Erreur lors de la suppression')
+  }
+  return response.json()
+  },
+
   // ===== USERS =====
   getUsers: async (token) => {
     const response = await fetch(`${API_URL}/users`, {
@@ -398,6 +433,7 @@ reserveTickets: async (data, token) => {
     }
     return response.json()
   },
+  
 
   // ===== STATS =====
   getStats: async (token) => {

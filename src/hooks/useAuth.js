@@ -1,9 +1,9 @@
 /**
- * Hook d'authentification - Version mise à jour
+ * Hook d'authentification
  */
 import { useState, useEffect } from 'react'
-import { api } from '@/lib/api'
 import { auth } from '@/lib/auth'
+import { api } from '@/lib/api'
 import toast from 'react-hot-toast'
 
 export function useAuth() {
@@ -53,8 +53,6 @@ export function useAuth() {
   const register = async (userData) => {
     setLoading(true)
     try {
-      // Les données doivent déjà être au bon format pour le backend
-      // { email, password, name, telephone, sexe, picture, role }
       const response = await api.register(userData)
       toast.success('Inscription réussie ! Connectez-vous pour continuer.')
       window.location.href = '/auth/login'

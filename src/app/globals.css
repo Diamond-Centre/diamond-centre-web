@@ -144,6 +144,11 @@ body {
   background-clip: text;
 }
 
+/* app/globals.css - Ajouter */
+.font-google-sans {
+  font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
 /* ============================================================
    SECTION "NOS ÉVÈNEMENTS À VENIR" — COVER FLOW
    ============================================================ */

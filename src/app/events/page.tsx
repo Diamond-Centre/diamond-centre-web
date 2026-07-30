@@ -1,15 +1,14 @@
 /**
- * Page publique des événements - Style uniforme pour recherche et tri
+ * Page publique des événements - Avec réservation
  */
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
 import { 
   FaCalendar, FaMapMarker, FaClock, FaSearch, 
   FaTicketAlt, FaTag, FaUser, FaUsers, FaInfoCircle,
-  FaClock as FaClockIcon, FaCalendarAlt, FaVenusMars, FaCalendarCheck,
-  FaChevronDown, FaChevronUp, FaTimes
+  FaClock as FaClockIcon, FaCalendarAlt, FaVenusMars, FaCalendarCheck
 } from 'react-icons/fa'
 import { useEvents } from '@/hooks/useEvents'
 import { useAuth } from '@/hooks/useAuth'
@@ -58,37 +57,10 @@ export default function EventsPage() {
   const [sortBy, setSortBy] = useState('created_at')
   const [selectedEvent, setSelectedEvent] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  const [isSearchFocused, setIsSearchFocused] = useState(false)
-  const dropdownRef = useRef(null)
-  const searchInputRef = useRef(null)
 
   useEffect(() => {
     fetchPublicEvents()
   }, [fetchPublicEvents])
-
-  // Fermer le dropdown au clic extérieur
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsDropdownOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
-  // Gestion de la touche Escape pour la recherche
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && searchTerm) {
-        setSearchTerm('')
-        searchInputRef.current?.blur()
-      }
-    }
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [searchTerm])
 
   const filteredEvents = events?.filter(event => {
     const matchSearch = event.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -226,9 +198,15 @@ export default function EventsPage() {
     return format(new Date(date), 'dd MMMM yyyy', { locale: fr })
   }
 
-  // Gestion du succès de réservation
+  // Dans la page des événements, gérer le succès de la réservation
   const handleReservationSuccess = (ticketData) => {
-    toast.success('Ticket réservé avec succès ! Visible dans le dashboard admin.')
+    console.log('✅ Réservation réussie:', ticketData)
+    console.log('🎫 Ticket ID:', ticketData.id)
+    console.log('📧 Client:', ticketData.customer_name)
+    console.log('📅 Événement:', ticketData.event_title)
+    console.log('🔢 QR Code:', ticketData.qrCode?.qr_code)
+    
+    toast.success('Ticket réservé avec succès ! Retrouvez-le dans "Mes tickets".')
     fetchPublicEvents()
   }
 
@@ -236,18 +214,6 @@ export default function EventsPage() {
   const getSortLabel = () => {
     const option = sortOptions.find(opt => opt.value === sortBy)
     return option ? option.label : 'Plus récent'
-  }
-
-  // Sélectionner une option de tri
-  const handleSortSelect = (value) => {
-    setSortBy(value)
-    setIsDropdownOpen(false)
-  }
-
-  // Effacer la recherche
-  const clearSearch = () => {
-    setSearchTerm('')
-    searchInputRef.current?.focus()
   }
 
   if (loading) {
@@ -287,9 +253,6 @@ export default function EventsPage() {
 
   const eventRows = getEventsByRow()
 
-  // Trouver l'index de l'option sélectionnée
-  const selectedIndex = sortOptions.findIndex(opt => opt.value === sortBy)
-
   return (
     <>
       <Navbar />
@@ -308,82 +271,29 @@ export default function EventsPage() {
           {/* Barre de recherche, filtres et tri */}
           <div className="mb-8">
             <div className="flex flex-col md:flex-row gap-4">
-              {/* Barre de recherche stylisée */}
               <div className="flex-1 relative">
-                <div className={`relative transition-all duration-300 ${
-                  isSearchFocused ? 'ring-2 ring-dice-blue/30' : ''
-                }`}>
-                  <FaSearch className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-300 ${
-                    isSearchFocused ? 'text-dice-blue' : 'text-gray-400'
-                  }`} />
-                  <input
-                    ref={searchInputRef}
-                    type="text"
-                    placeholder="Rechercher un événement..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    onFocus={() => setIsSearchFocused(true)}
-                    onBlur={() => setIsSearchFocused(false)}
-                    className="w-full pl-11 pr-12 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-dice-blue focus:outline-none transition-all duration-300 text-sm placeholder-gray-400"
-                  />
-                  {searchTerm && (
-                    <button
-                      onClick={clearSearch}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-dice-blue transition-colors duration-300"
-                    >
-                      <FaTimes className="text-sm" />
-                    </button>
-                  )}
-                </div>
+                <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Rechercher un événement..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full px-4 py-2.5 pl-10 border border-gray-200 rounded-xl focus:ring-2 focus:ring-dice-blue focus:border-transparent bg-white"
+                />
               </div>
               
-              {/* Liste déroulante personnalisée avec flèches */}
-              <div className="relative" ref={dropdownRef}>
-                <button
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="flex items-center justify-between gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-dice-blue focus:border-transparent text-sm min-w-[160px] hover:border-dice-blue transition-colors"
+              <div className="flex gap-2 items-center">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-dice-blue focus:border-transparent text-sm min-w-[140px]"
                 >
-                  <span className="text-gray-700">{getSortLabel()}</span>
-                  <div className="flex items-center">
-                    {isDropdownOpen ? (
-                      <FaChevronUp className="text-dice-blue text-sm transition-transform duration-200" />
-                    ) : (
-                      <FaChevronDown className="text-dice-blue text-sm transition-transform duration-200" />
-                    )}
-                  </div>
-                </button>
-
-                <AnimatePresence>
-                  {isDropdownOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute right-0 mt-2 w-full bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-50"
-                    >
-                      {sortOptions.map((option, index) => {
-                        const isSelected = option.value === sortBy
-                        return (
-                          <button
-                            key={option.value}
-                            onClick={() => handleSortSelect(option.value)}
-                            className={`w-full px-4 py-2.5 text-left text-sm transition-colors flex items-center justify-between ${
-                              isSelected
-                                ? 'bg-dice-blue text-white'
-                                : 'hover:bg-dice-blue/10 text-gray-700'
-                            }`}
-                          >
-                            <span>{option.label}</span>
-                            {isSelected && (
-                              <span className="text-white">✓</span>
-                            )}
-                          </button>
-                        )
-                      })}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                  {sortOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -411,7 +321,7 @@ export default function EventsPage() {
               {sortedEvents.length} événement{sortedEvents.length > 1 ? 's' : ''} trouvé{sortedEvents.length > 1 ? 's' : ''}
             </div>
             <div className="text-xs text-gray-400">
-              Tri : <span className="font-medium text-dice-blue">{getSortLabel()}</span>
+              Tri : <span className="font-medium">{getSortLabel()}</span>
             </div>
           </div>
 
@@ -576,18 +486,18 @@ export default function EventsPage() {
                                     <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-green-600">
                                       <span className="flex items-center gap-1">
                                         <FaVenusMars className="text-green-500" />
-                                        Ciblé: {sexeLabel}
+                                        {sexeLabel}
                                       </span>
                                       {event.promotion.duree && (
                                         <span className="flex items-center gap-1">
                                           <FaClockIcon className="text-green-500" />
-                                          {event.promotion.duree} jours
+                                          {event.promotion.duree}j
                                         </span>
                                       )}
                                       {event.promotion.nombre && (
                                         <span className="flex items-center gap-1">
                                           <FaTicketAlt className="text-green-500" />
-                                          {event.promotion.nombre} places
+                                          {event.promotion.nombre}
                                         </span>
                                       )}
                                     </div>
@@ -602,44 +512,38 @@ export default function EventsPage() {
                             <div className="flex-shrink-0 mt-3" style={{ minHeight: event.formateur ? 'auto' : '0px' }}>
                               {event.formateur && (
                                 <div className="p-2 bg-blue-50 border border-blue-200 rounded-lg">
-                                  <p className="text-xs text-blue-700">
+                                  <p className="text-xs text-blue-700 truncate">
                                     <FaUser className="inline mr-1 text-blue-500" />
-                                    Formateur: {event.formateur.nom || event.formateur.name || 'À confirmer'}
+                                    {event.formateur.nom || event.formateur.name || 'À confirmer'}
                                   </p>
-                                  {event.formateur.specialite && (
-                                    <p className="text-xs text-blue-600 mt-1">
-                                      <FaInfoCircle className="inline mr-1 text-blue-500" />
-                                      Spécialité: {event.formateur.specialite}
-                                    </p>
-                                  )}
                                 </div>
                               )}
                             </div>
 
                             {/* Prix et bouton - mt-auto pour pousser vers le bas */}
-                            <div className="mt-auto pt-4 border-t border-gray-100 flex-shrink-0">
-                              <div className="flex items-center justify-between mb-3">
+                            <div className="mt-auto pt-3 border-t border-gray-100 flex-shrink-0">
+                              <div className="flex items-center justify-between">
                                 <div>
                                   {getPriceDisplay(event)}
                                   <span className="text-xs text-gray-400 ml-1">
-                                    / personne
+                                    / pers.
                                   </span>
                                 </div>
                                 <div className="text-xs text-gray-400">
-                                  {placesRestantes > 0 ? `${placesRestantes} places` : 'Complet'}
+                                  {placesRestantes > 0 ? `${placesRestantes} pl.` : 'Complet'}
                                 </div>
                               </div>
 
                               <Button 
                                 variant="primary" 
                                 fullWidth 
-                                className="mt-2"
+                                className="mt-2 text-sm py-2"
                                 onClick={() => openReservation(event)}
                                 disabled={isPast || isFull}
                               >
                                 {isPast ? 'Terminé' : isFull ? 'Complet' : 'Réserver'}
                                 {!isPast && !isFull && (
-                                  <FaTicketAlt className="ml-2" />
+                                  <FaTicketAlt className="ml-1.5 text-xs" />
                                 )}
                               </Button>
                             </div>
@@ -657,17 +561,18 @@ export default function EventsPage() {
 
       {/* Modal de réservation */}
       <ReservationModal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false)
-          setSelectedEvent(null)
-        }}
-        event={selectedEvent}
-        onSuccess={(result) => {
-          fetchPublicEvents()
-          toast.success('Ticket créé avec succès ! Consultez-le dans le dashboard admin.')
-        }}
-      />
+      isOpen={isModalOpen}
+      onClose={() => {
+        setIsModalOpen(false)
+        setSelectedEvent(null)
+      }}
+      event={selectedEvent}
+      onSuccess={(ticketData) => {
+        console.log('✅ Réservation réussie:', ticketData)
+        fetchPublicEvents()
+        //toast.success('Ticket réservé avec succès !')
+      }}
+    />
     </>
   )
 }
