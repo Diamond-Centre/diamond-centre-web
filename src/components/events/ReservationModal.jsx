@@ -67,7 +67,8 @@ export default function ReservationModal({
   const [countdown, setCountdown] = useState(0)
   const [ticketCreated, setTicketCreated] = useState(false)
 
-  const maxTickets = Math.min(5, event?.available_tickets || 10)
+  const availablePlaces = Math.max(0, Number(event?.available_tickets ?? 0))
+  const maxTickets = Math.max(1, Math.min(10, availablePlaces || 1))
   const hasPromotion = event?.promotion && event.promotion.pourcentage > 0
   const promoPrice = hasPromotion 
     ? Math.round(event.price - (event.price * event.promotion.pourcentage) / 100)
@@ -77,6 +78,11 @@ export default function ReservationModal({
   useEffect(() => {
     if (isOpen) {
       checkAuth()
+      setFormData({ quantity: 1 })
+      setTicket(null)
+      setPayment(null)
+      setQrCode(null)
+      setTicketCreated(false)
     }
   }, [isOpen])
 
@@ -138,7 +144,13 @@ export default function ReservationModal({
         throw new Error(errorMessage)
       }
       
-      const result = JSON.parse(text)
+      const result = (() => {
+        try {
+          return JSON.parse(text)
+        } catch {
+          throw new Error(`Réponse invalide du serveur (${response.status})`)
+        }
+      })()
       
       auth.setToken(result.access_token)
       auth.setUser(result.user)
@@ -256,6 +268,23 @@ export default function ReservationModal({
       setStep('login')
       return
     }
+
+    if (!formData.quantity || formData.quantity < 1) {
+      toast.error('Indiquez le nombre de tickets souhaités')
+      return
+    }
+
+    if (availablePlaces <= 0) {
+      toast.error('Plus de places disponibles')
+      return
+    }
+
+    if (formData.quantity > availablePlaces) {
+      toast.error(
+        `Seulement ${availablePlaces} place${availablePlaces > 1 ? 's' : ''} disponible${availablePlaces > 1 ? 's' : ''}`
+      )
+      return
+    }
     
     setIsAuthenticated(true)
     setUser(storedUser)
@@ -273,18 +302,33 @@ export default function ReservationModal({
       const reservation = await api.reserveTickets({
         eventId: event.id,
         quantity: formData.quantity,
-        customerName: storedUser.name,
+        customerName: storedUser.name || storedUser.email || 'Client DiCe',
         customerEmail: storedUser.email,
-        customerPhone: storedUser.telephone || '+237000000000'
+        customerPhone:
+          String(storedUser.telephone || storedUser.phone || '').trim() ||
+          '+237000000000',
+        event_date: event.start_date || event.date || event.starts_at,
+        location: event.location || event.lieu,
+        time:
+          event.start_time && event.end_time
+            ? `${event.start_time} - ${event.end_time}`
+            : null,
       }, token)
 
       console.log('✅ Réservation créée:', reservation)
       setTicket(reservation)
 
+      const ticketId = reservation?.id ?? reservation?.ticket_id
+      if (!ticketId) {
+        throw new Error('La réservation n’a pas renvoyé d’identifiant de ticket')
+      }
+
       const paymentData = await api.initiatePayment({
-        ticketId: reservation.id,
+        ticketId,
         method: 'mtn_momo',
-        phone: storedUser.telephone || '+237000000000'
+        phone:
+          String(storedUser.telephone || storedUser.phone || '').trim() ||
+          '+237000000000',
       }, token)
 
       setPayment(paymentData)
@@ -299,40 +343,63 @@ export default function ReservationModal({
     }
   }
 
-  const checkPaymentStatus = async () => {
-    if (!payment) return
-    
+  const finishSuccessfulPayment = (status, paidTicket) => {
+    const source = paidTicket || ticket
+    const ticketsList =
+      Array.isArray(source?.tickets) && source.tickets.length
+        ? source.tickets
+        : [
+            {
+              id: source?.id,
+              qr_codes: source?.qr_codes || [],
+            },
+          ]
+
+    const firstQr = ticketsList[0]?.qr_codes?.[0]
+    const firstCode =
+      typeof firstQr === 'string' ? firstQr : firstQr?.code || null
+    const firstEntry =
+      typeof firstQr === 'object' && firstQr ? firstQr.entry_code : null
+
+    setTicket({ ...source, tickets: ticketsList })
+    setQrCode(
+      firstCode
+        ? { qr_code: firstCode, entry_code: firstEntry }
+        : null
+    )
+    setStep('success')
+    toast.success(
+      `${formData.quantity} ticket${formData.quantity > 1 ? 's' : ''} généré${formData.quantity > 1 ? 's' : ''} !`
+    )
+    setTicketCreated(true)
+
+    if (onSuccess) {
+      onSuccess({
+        ...source,
+        quantity: formData.quantity,
+        qrCode: firstCode,
+        entry_code: firstEntry,
+        payment: status,
+      })
+    }
+  }
+
+  const checkPaymentStatus = async (paymentRef = payment) => {
+    if (!paymentRef?.id) return
+
     try {
       const token = auth.getToken()
-      const status = await api.getPaymentStatus(payment.id, token)
-      
+      const status = await api.getPaymentStatus(paymentRef.id, token)
+
       if (status.status === 'successful') {
-        setStep('success')
-        
-        const qrData = await api.validateTicket(
-          ticket?.qr_codes?.[0]?.code || `dc_${ticket?.id}_${Date.now()}`,
-          token
-        )
-        setQrCode(qrData)
-        
-        // Toast de succès UNIQUEMENT après le paiement
-        toast.success('Réservation effectuée !')
-        setTicketCreated(true)
-        
-        if (onSuccess) {
-          onSuccess({
-            ...ticket,
-            qrCode: qrData,
-            payment: status
-          })
-        }
+        finishSuccessfulPayment(status, ticket)
       } else if (status.status === 'failed') {
         toast.error('Le paiement a échoué')
         setStep('form')
         setTicket(null)
         setPayment(null)
       } else {
-        setTimeout(checkPaymentStatus, 3000)
+        setTimeout(() => checkPaymentStatus(paymentRef), 3000)
       }
     } catch (error) {
       console.error('Erreur vérification paiement:', error)
@@ -340,11 +407,37 @@ export default function ReservationModal({
   }
 
   const handlePayment = async () => {
+    if (!payment?.reference) {
+      toast.error('Paiement introuvable')
+      return
+    }
+
     setLoading(true)
-    toast.loading('Traitement du paiement...', { duration: 2000 })
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    await checkPaymentStatus()
-    setLoading(false)
+    const toastId = toast.loading('Traitement du paiement...')
+    try {
+      await api.confirmMtnPayment({
+        reference: payment.reference,
+        status: 'successful',
+        transaction_id: `TXN-${Date.now()}`,
+      })
+
+      const token = auth.getToken()
+      const status = await api.getPaymentStatus(payment.id, token)
+
+      if (status.status === 'successful') {
+        toast.dismiss(toastId)
+        finishSuccessfulPayment(status, ticket)
+      } else {
+        toast.dismiss(toastId)
+        await checkPaymentStatus(payment)
+      }
+    } catch (error) {
+      console.error('Erreur paiement:', error)
+      toast.dismiss(toastId)
+      toast.error(error.message || 'Erreur lors du paiement')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleDownloadQR = () => {
@@ -353,6 +446,13 @@ export default function ReservationModal({
     canvas.height = 300
     const ctx = canvas.getContext('2d')
     
+    const firstTicket = ticket?.tickets?.[0] || ticket
+    const qr = firstTicket?.qr_codes?.[0]
+    const entry =
+      (typeof qr === 'object' && qr?.entry_code) ||
+      qrCode?.entry_code ||
+      '00000000'
+
     ctx.fillStyle = 'white'
     ctx.fillRect(0, 0, 300, 300)
     
@@ -361,17 +461,17 @@ export default function ReservationModal({
     ctx.textAlign = 'center'
     ctx.fillText('🎫', 150, 100)
     ctx.font = '14px Arial'
-    ctx.fillText(`Ticket #${ticket?.id || 'N/A'}`, 150, 150)
+    ctx.fillText(`Ticket #${firstTicket?.id || ticket?.id || 'N/A'}`, 150, 150)
     ctx.fillStyle = '#1a1a2e'
     ctx.font = '12px Arial'
     ctx.fillText(event?.title || 'Événement', 150, 180)
     ctx.fillText(user?.name || 'Utilisateur', 150, 200)
     ctx.fillStyle = '#0a89f2'
-    ctx.font = 'bold 18px Arial'
-    ctx.fillText(qrCode?.qr_code || ticket?.qr_codes?.[0]?.code || 'DC-XXXX', 150, 240)
+    ctx.font = 'bold 28px monospace'
+    ctx.fillText(String(entry).padStart(8, '0').slice(0, 8), 150, 245)
     
     const link = document.createElement('a')
-    link.download = `ticket-${ticket?.id || 'event'}.png`
+    link.download = `ticket-${firstTicket?.id || ticket?.id || 'event'}.png`
     link.href = canvas.toDataURL()
     link.click()
   }
@@ -483,9 +583,11 @@ export default function ReservationModal({
                   </div>
                 </div>
 
-                {/* Nombre de places uniquement */}
+                {/* Nombre de tickets */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de places</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nombre de tickets souhaités
+                  </label>
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
@@ -494,12 +596,26 @@ export default function ReservationModal({
                         quantity: Math.max(1, prev.quantity - 1) 
                       }))}
                       className="w-10 h-10 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors text-lg font-bold"
+                      disabled={formData.quantity <= 1}
                     >
-                      -
+                      −
                     </button>
-                    <span className="text-xl font-bold text-dice-blue w-12 text-center">
-                      {formData.quantity}
-                    </span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={maxTickets}
+                      value={formData.quantity}
+                      onChange={(e) => {
+                        const value = Number(e.target.value)
+                        if (Number.isNaN(value)) return
+                        setFormData(prev => ({
+                          ...prev,
+                          quantity: Math.min(maxTickets, Math.max(1, value)),
+                        }))
+                      }}
+                      className="w-16 text-center text-xl font-bold text-dice-blue border border-gray-200 rounded-lg py-2 focus:outline-none focus:ring-2 focus:ring-dice-blue/30"
+                      required
+                    />
                     <button
                       type="button"
                       onClick={() => setFormData(prev => ({ 
@@ -507,10 +623,13 @@ export default function ReservationModal({
                         quantity: Math.min(maxTickets, prev.quantity + 1) 
                       }))}
                       className="w-10 h-10 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors text-lg font-bold"
+                      disabled={formData.quantity >= maxTickets || availablePlaces <= 0}
                     >
                       +
                     </button>
-                    <span className="text-sm text-gray-500">max {maxTickets}</span>
+                    <span className="text-sm text-gray-500">
+                      {availablePlaces} dispo. · max {maxTickets}
+                    </span>
                   </div>
                 </div>
 
@@ -528,11 +647,15 @@ export default function ReservationModal({
                   variant="primary"
                   fullWidth
                   loading={loading}
-                  disabled={loading}
+                  disabled={loading || availablePlaces <= 0}
                   className="text-base py-3"
                 >
-                  {loading ? 'Réservation...' : 'Réserver maintenant'}
-                  <FaArrowRight className="ml-2" />
+                  {availablePlaces <= 0
+                    ? 'Complet'
+                    : loading
+                      ? 'Réservation...'
+                      : 'Réserver et payer'}
+                  {availablePlaces > 0 && <FaArrowRight className="ml-2" />}
                 </Button>
               </form>
             )}
@@ -859,44 +982,52 @@ export default function ReservationModal({
                 <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
                   <FaCheckCircle className="text-4xl text-green-500" />
                 </div>
-                
+
                 <div>
                   <h4 className="text-xl font-bold text-gray-800">Réservation confirmée !</h4>
                   <p className="text-sm text-gray-500">
-                    Votre réservation a été validée avec succès
-                  </p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    Ticket #{ticket?.id} - {formData.quantity} place{formData.quantity > 1 ? 's' : ''}
+                    {(ticket?.tickets?.length || formData.quantity)} ticket
+                    {(ticket?.tickets?.length || formData.quantity) > 1 ? 's' : ''} généré
+                    {(ticket?.tickets?.length || formData.quantity) > 1 ? 's' : ''}
                   </p>
                   <p className="text-xs text-green-600 font-semibold mt-1">
-                    ✅ Le ticket est disponible dans "Mes tickets"
+                    Disponibles dans « Mes tickets »
                   </p>
                 </div>
 
-                <div className="bg-white border-2 border-dice-blue/20 rounded-2xl p-6 max-w-xs mx-auto">
-                  <div className="flex justify-center mb-4">
-                    <div className="bg-white p-4 rounded-xl border-2 border-gray-200">
-                      <div className="w-40 h-40 bg-dice-blue/5 rounded-xl flex items-center justify-center">
-                        <div className="text-center">
-                          <div className="text-6xl mb-2">🎫</div>
-                          <div className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
-                            {qrCode?.qr_code || ticket?.qr_codes?.[0]?.code || 'DC-XXXX'}
-                          </div>
-                          <div className="text-[10px] text-gray-400 mt-1">
-                            #{ticket?.id}
-                          </div>
+                <div className="max-h-64 space-y-3 overflow-y-auto pr-1">
+                  {(Array.isArray(ticket?.tickets) && ticket.tickets.length
+                    ? ticket.tickets
+                    : [{ id: ticket?.id, qr_codes: ticket?.qr_codes || [] }]
+                  ).map((t, index) => {
+                    const qr = t.qr_codes?.[0]
+                    const entry =
+                      (typeof qr === 'object' && qr?.entry_code) ||
+                      qrCode?.entry_code ||
+                      '--------'
+                    return (
+                      <div
+                        key={t.id || index}
+                        className="rounded-2xl border border-dice-blue/20 bg-white p-4 text-left"
+                      >
+                        <div className="mb-2 flex items-center justify-between text-sm">
+                          <span className="font-semibold text-gray-800">
+                            Ticket {index + 1}
+                          </span>
+                          <span className="text-xs text-gray-400">#{t.id}</span>
+                        </div>
+                        <div className="flex flex-col items-center rounded-xl border border-gray-100 bg-gray-50 p-4">
+                          <div className="mb-2 text-4xl">🎫</div>
+                          <p className="text-[10px] uppercase tracking-wide text-gray-400">
+                            Code d&apos;entrée
+                          </p>
+                          <p className="mt-1 font-mono text-2xl font-bold tracking-[0.2em] text-dice-blue">
+                            {String(entry).padStart(8, '0').slice(0, 8)}
+                          </p>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-1 text-sm text-gray-600 text-left">
-                    <p><span className="font-medium">Événement:</span> {event?.title}</p>
-                    <p><span className="font-medium">Nom:</span> {user?.name}</p>
-                    <p><span className="font-medium">Places:</span> {formData.quantity}</p>
-                    <p><span className="font-medium">Ticket:</span> #{ticket?.id}</p>
-                    <p><span className="font-medium">Statut:</span> <span className="text-green-600">Payé</span></p>
-                  </div>
+                    )
+                  })}
                 </div>
 
                 <div className="flex gap-3">

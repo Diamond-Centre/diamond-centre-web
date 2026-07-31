@@ -80,7 +80,7 @@ export default function TicketsPage() {
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 flex items-center gap-4">
-          <Link href="/dashboard" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+          <Link href="/espace-client" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
             <FaArrowLeft className="text-gray-600" />
           </Link>
           <h1 className="text-xl font-bold text-gray-800">Mes tickets</h1>
@@ -192,7 +192,16 @@ export default function TicketsPage() {
                         {ticket.qr_codes && ticket.qr_codes.length > 0 && (
                           <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
                             <FaQrcode className="text-dice-blue" />
-                            <span className="font-mono">{ticket.qr_codes[0].code}</span>
+                            <span className="font-mono tracking-[0.2em] font-semibold text-dice-blue">
+                              {String(
+                                ticket.entry_code ||
+                                  ticket.qr_codes[0]?.entry_code ||
+                                  '--------'
+                              )
+                                .replace(/\D/g, '')
+                                .padStart(8, '0')
+                                .slice(-8)}
+                            </span>
                           </div>
                         )}
                       </div>

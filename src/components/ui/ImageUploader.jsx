@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { FaCloudUploadAlt, FaTimes, FaImage, FaSpinner } from 'react-icons/fa'
 import Image from 'next/image'
 import toast from 'react-hot-toast'
+import { api } from '@/lib/api'
+import { auth } from '@/lib/auth'
 
 export default function ImageUploader({ 
   value, 
@@ -21,43 +23,35 @@ export default function ImageUploader({
   const handleFileSelect = async (file) => {
     if (!file) return
 
-    // Vérification du type
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml']
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
     if (!validTypes.includes(file.type)) {
       toast.error('Type de fichier non supporté')
       return
     }
 
-    // Vérification de la taille
     if (file.size > 5 * 1024 * 1024) {
       toast.error('L\'image ne doit pas dépasser 5MB')
       return
     }
 
-    // Upload du fichier
     setIsUploading(true)
     try {
-      const formData = new FormData()
-      formData.append('image', file)
-
-      const response = await fetch('/api/admin/upload', {
-        method: 'POST',
-        body: formData,
-        credentials: 'include'
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        setPreview(data.url)
-        onChange(data.url)
-        toast.success('Image uploadée avec succès')
-      } else {
-        toast.error(data.error || 'Erreur lors de l\'upload')
+      const token = auth.getToken()
+      if (!token) {
+        toast.error('Connectez-vous pour uploader une image')
+        return
       }
+
+      const data = await api.uploadImage(file, token)
+      const url = data.url || data.path || data.image_url
+      if (!url) throw new Error('URL d’image manquante')
+
+      setPreview(url)
+      onChange(url)
+      toast.success('Image uploadée avec succès')
     } catch (error) {
       console.error('Erreur upload:', error)
-      toast.error('Erreur lors de l\'upload')
+      toast.error(error.message || 'Erreur lors de l\'upload')
     } finally {
       setIsUploading(false)
     }

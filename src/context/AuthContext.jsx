@@ -59,7 +59,7 @@ export function AuthProvider({ children }) {
       localStorage.setItem('token', data.token)
       setUser(data.user)
       toast.success('Connexion réussie')
-      router.push('/dashboard')
+      router.push('/espace-client')
       return data
     } catch (error) {
       toast.error(error.message)

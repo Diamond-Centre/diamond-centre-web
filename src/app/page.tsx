@@ -1,190 +1,73 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useEvents } from '@/hooks/useEvents'
 import { useAuth } from '@/hooks/useAuth'
-import { 
-  FaGraduationCap, 
-  FaUsers, 
-  FaStar, 
-  FaAward 
-} from 'react-icons/fa'
-import { IconType } from 'react-icons'
-
-// Composants layout
 import HeroSection from '@/components/layout/HeroSection'
 import WhyDiceSection from '@/components/layout/WhyDiceSection'
 import FormationsSection from '@/components/layout/FormationsSection'
-import TestimonialsSection from '@/components/layout/TestimonialsSection'
 import CTASection from '@/components/layout/CTASection'
-import VideoModal from '@/components/layout/VideoModal'
-
-// Types
-interface CarouselImage {
-  src: string
-  alt: string
-  title: string
-  description: string
-  videoUrl: string
-}
-
-interface Stat {
-  icon: IconType
-  label: string
-  value: string
-}
-
-interface Testimonial {
-  name: string
-  role: string
-  text: string
-  rating: number
-}
-
-// Données du carousel - Images Unsplash
-const carouselImages: CarouselImage[] = [
-  {
-    src: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&h=500&fit=crop&crop=center',
-    alt: 'Diamond Centre - Formation',
-    title: 'Formations d\'excellence',
-    description: 'Des programmes adaptés à vos besoins',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
-  },
-  {
-    src: 'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=800&h=500&fit=crop&crop=center',
-    alt: 'Diamond Centre - Conférence',
-    title: 'Conférences Inspirantes',
-    description: 'Des moments de partage et de motivation',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
-  },
-  {
-    src: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800&h=500&fit=crop&crop=center',
-    alt: 'Diamond Centre - Atelier',
-    title: 'Ateliers Pratiques',
-    description: 'Mettez en pratique vos connaissances',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
-  },
-  {
-    src: 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&h=500&fit=crop&crop=center',
-    alt: 'Diamond Centre - Séminaire',
-    title: 'Séminaires Transformateurs',
-    description: 'Des expériences qui changent des vies',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
-  },
-  {
-    src: 'https://images.unsplash.com/photo-1507537297725-24a1c029d3ca?w=800&h=500&fit=crop&crop=center',
-    alt: 'Diamond Centre - Événement',
-    title: 'Événements Exclusifs',
-    description: 'Des opportunités uniques de développement',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
-  }
-]
-
-// Statistiques
-const stats: Stat[] = [
-  { icon: FaGraduationCap, label: 'Formations', value: '50+' },
-  { icon: FaUsers, label: 'Participants', value: '5 000+' },
-  { icon: FaStar, label: 'Satisfaction', value: '98%' },
-  { icon: FaAward, label: 'Experts', value: '20+' }
-]
-
-// Témoignages
-const testimonials: Testimonial[] = [
-  {
-    name: 'Sophie Martin',
-    role: 'Entrepreneure',
-    text: 'Les conférences de motivation du Dr SONFFO ont transformé ma vision des choses. Je recommande vivement !',
-    rating: 5
-  },
-  {
-    name: 'Thomas Dubois',
-    role: 'Étudiant',
-    text: 'Le séminaire ÉTUPRENEUR m\'a donné les clés pour lancer ma première entreprise. Une expérience inoubliable.',
-    rating: 5
-  },
-  {
-    name: 'Laura Petit',
-    role: 'Chef d\'entreprise',
-    text: 'L\'école de l\'art oratoire m\'a permis de gagner en confiance et de mieux communiquer avec mes équipes.',
-    rating: 4
-  }
-]
+import ReservationModal from '@/components/events/ReservationModal'
+import toast from 'react-hot-toast'
 
 export default function Home() {
-  const { events, loading } = useEvents()
-  const { user } = useAuth()
-  const [isVideoOpen, setIsVideoOpen] = useState<boolean>(false)
-  const [selectedVideo, setSelectedVideo] = useState<string>('')
+  const { events, loading, fetchPublicEvents } = useEvents()
+  const { isAuthenticated } = useAuth()
+  const [selectedEvent, setSelectedEvent] = useState(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
-  // Filtrer les événements à venir
-  const upcomingEvents = events
-    ?.filter(e => e.statut === 'à venir')
-    ?.slice(0, 6) || []
+  useEffect(() => {
+    fetchPublicEvents?.()
+  }, [fetchPublicEvents])
 
-  // Gestion de la vidéo
-  const handleVideoOpen = (videoUrl: string) => {
-    setSelectedVideo(videoUrl)
-    setIsVideoOpen(true)
+  const upcomingEvents = (events || [])
+    .filter((e) => {
+      if (e.status && e.status !== 'published') return false
+      const d = new Date(e.end_date || e.start_date || 0)
+      if (Number.isNaN(d.getTime())) return true
+      return d.getTime() >= Date.now() - 86400000
+    })
+    .sort(
+      (a, b) =>
+        new Date(a.start_date || 0).getTime() -
+        new Date(b.start_date || 0).getTime()
+    )
+    .slice(0, 3)
+
+  const openReservation = (event) => {
+    if (!isAuthenticated) {
+      toast.error('Veuillez vous connecter pour réserver')
+      return
+    }
+    setSelectedEvent(event)
+    setIsModalOpen(true)
   }
 
-  // Contenu du hero
-  const heroTitle = `
-    <span class="gradient-text">Diamond Centre</span>
-    <br />
-    <span class="text-gray-800">Votre développement</span>
-    <br />
-    <span class="text-gray-600">commence ici</span>
-  `
-
   return (
-    <div className="min-h-screen">
-      <main>
-        {/* Hero Section */}
-        <HeroSection
-          badge="Diamond Centre - Depuis 2015"
-          title={heroTitle}
-          subtitle="Des conférences, séminaires et formations d'excellence animés par des experts passionnés pour révéler votre potentiel."
-          stats={stats}
-          carouselImages={carouselImages}
-          onVideoClick={handleVideoOpen}
-          primaryCta={{ text: 'Explorer les formations', href: '/events' }}
-        />
+    <div className="min-h-screen bg-[#F4F7FB]">
+      <HeroSection />
+      <WhyDiceSection />
+      <FormationsSection
+        events={upcomingEvents}
+        loading={loading}
+        onReserve={openReservation}
+      />
+      <CTASection />
 
-        {/* Why Dice Section */}
-        <WhyDiceSection />
-
-        {/* Formations Section */}
-        <FormationsSection
-          formations={upcomingEvents}
-          loading={loading}
-          title="Choisissez votre formation idéale"
-          subtitle="Trouvez la formation qui correspond à vos objectifs et à votre style d'apprentissage, conçue pour vous offrir la meilleure expérience et donner vie à votre projet professionnel."
-          badge="Nos formations"
-          onVideoClick={handleVideoOpen}
-        />
-
-        {/* Témoignages */}
-        <TestimonialsSection
-          testimonials={testimonials}
-          bgClass="bg-gradient-to-br from-dice-blue to-dice-blue-dark"
-        />
-
-        {/* CTA */}
-        <CTASection
-          title="Prêt à transformer votre vie ?"
-          subtitle="Rejoignez des milliers de personnes qui ont déjà fait le choix de l'excellence avec Diamond Centre."
-          primaryCta={{ text: 'Commencer gratuitement', href: '/auth/register' }}
-          secondaryCta={{ text: 'Explorer nos services', href: '/events' }}
-          bgClass="bg-gradient-to-r from-dice-blue to-dice-blue-dark"
-        />
-      </main>
-
-      {/* Video Modal */}
-      <VideoModal
-        isOpen={isVideoOpen}
-        onClose={() => setIsVideoOpen(false)}
-        videoUrl={selectedVideo}
-        title="Présentation Diamond Centre"
+      <ReservationModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false)
+          setSelectedEvent(null)
+        }}
+        event={selectedEvent}
+        onSuccess={(ticket) => {
+          const qty = Math.max(1, Number(ticket?.quantity ?? 1))
+          toast.success(
+            `${qty} ticket${qty > 1 ? 's' : ''} réservé${qty > 1 ? 's' : ''} ! Retrouvez-les dans Mon espace.`
+          )
+          fetchPublicEvents?.()
+        }}
       />
     </div>
   )

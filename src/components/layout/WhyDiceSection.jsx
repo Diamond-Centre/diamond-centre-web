@@ -1,395 +1,91 @@
 /**
- * Section "Pourquoi Dice" avec glassmorphisme bleu Diamond Centre
- * et effet hover "carte projet" (fond plein + bouton flèche) au survol
- * avec Counter-Up sur les statistiques
+ * Pourquoi DiCe — une intention claire, sans grille de cartes égales
  */
 'use client'
 
+import { motion } from 'framer-motion'
+import { FaArrowRight } from 'react-icons/fa'
 import Link from 'next/link'
-import { motion, useInView } from 'framer-motion'
-import { useEffect, useRef, useState } from 'react'
-import { FaArrowRight, FaArrowUp, FaUsers, FaVideo, FaHeadset } from 'react-icons/fa'
-import { GiDiamondRing } from 'react-icons/gi'
-import Section from '@/components/ui/Section'
-import Card from '@/components/ui/Card'
-import Button from '@/components/ui/Button'
 
-// Valeurs
-const values = {
-  excellence: {
-    icon: GiDiamondRing,
+const pillars = [
+  {
+    num: '01',
     title: 'Excellence',
-    description: 'Des formations de qualité dispensées par des experts reconnus',
-    color: 'from-dice-blue to-blue-600'
+    text: 'Des programmes exigeants animés par des experts reconnus.',
   },
-  communaute: {
-    icon: FaUsers,
+  {
+    num: '02',
     title: 'Communauté',
-    description: 'Rejoignez une communauté de professionnels passionnés',
-    color: 'from-purple-500 to-pink-500'
+    text: 'Un réseau de professionnels et d’apprenants engagés.',
   },
-  flexibilite: {
-    icon: FaVideo,
-    title: 'Flexibilité',
-    description: 'Formations en présentiel et à distance selon vos besoins',
-    color: 'from-green-500 to-emerald-500'
-  },
-  accompagnement: {
-    icon: FaHeadset,
+  {
+    num: '03',
     title: 'Accompagnement',
-    description: 'Un suivi personnalisé tout au long de votre parcours',
-    color: 'from-orange-500 to-red-500'
-  }
-}
-
-// Sponsors officiels avec logos
-const sponsors = [
-  {
-    name: 'Orange',
-    logo: '/images/sponsors/orange-logo.png',
-    color: '#FF7900',
-    website: 'https://www.orange.com'
+    text: 'Un suivi concret pour faire avancer votre projet.',
   },
-  {
-    name: 'MTN',
-    logo: '/images/sponsors/mtn-logo.png',
-    color: '#FFCD00',
-    website: 'https://www.mtn.com'
-  },
-  {
-    name: 'Ecobank',
-    logo: '/images/sponsors/ecobank-logo.png',
-    color: '#006633',
-    website: 'https://www.ecobank.com'
-  },
-  {
-    name: 'Afriland',
-    logo: '/images/sponsors/afriland-logo.png',
-    color: '#003399',
-    website: 'https://www.afriland.com'
-  }
 ]
-
-// Statistiques avec leurs valeurs numériques pour le Counter-Up
-const statsData = [
-  { label: 'Participants', value: 5000, suffix: '+' },
-  { label: 'Formations', value: 50, suffix: '+' },
-  { label: 'Satisfaction', value: 98, suffix: '%' },
-  { label: 'Experts', value: 20, suffix: '+' }
-]
-
-// Composant Counter-Up
-function CounterUp({ targetValue, suffix = '', duration = 2000, startOnView = true }) {
-  const [count, setCount] = useState(0)
-  const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, amount: 0.5 })
-  const [hasStarted, setHasStarted] = useState(false)
-
-  useEffect(() => {
-    if (startOnView && isInView && !hasStarted) {
-      setHasStarted(true)
-      let startTime = null
-      const startValue = 0
-      
-      const animate = (timestamp) => {
-        if (!startTime) startTime = timestamp
-        const progress = Math.min((timestamp - startTime) / duration, 1)
-        const easedProgress = 1 - Math.pow(1 - progress, 3) // easeOutCubic
-        const currentValue = Math.floor(easedProgress * targetValue)
-        setCount(currentValue)
-        
-        if (progress < 1) {
-          requestAnimationFrame(animate)
-        } else {
-          setCount(targetValue)
-        }
-      }
-      
-      requestAnimationFrame(animate)
-    }
-  }, [isInView, targetValue, duration, startOnView, hasStarted])
-
-  // Si l'animation ne doit pas démarrer à la vue, démarrer immédiatement
-  useEffect(() => {
-    if (!startOnView && !hasStarted) {
-      setHasStarted(true)
-      let startTime = null
-      const startValue = 0
-      
-      const animate = (timestamp) => {
-        if (!startTime) startTime = timestamp
-        const progress = Math.min((timestamp - startTime) / duration, 1)
-        const easedProgress = 1 - Math.pow(1 - progress, 3)
-        const currentValue = Math.floor(easedProgress * targetValue)
-        setCount(currentValue)
-        
-        if (progress < 1) {
-          requestAnimationFrame(animate)
-        } else {
-          setCount(targetValue)
-        }
-      }
-      
-      requestAnimationFrame(animate)
-    }
-  }, [targetValue, duration, startOnView, hasStarted])
-
-  return (
-    <span ref={ref}>
-      {count.toLocaleString()}{suffix}
-    </span>
-  )
-}
-
-// Petit composant réutilisable pour le bouton flèche qui apparaît au hover
-function HoverArrowButton() {
-  return (
-    <div className="absolute top-4 right-4 z-20">
-      <div className="w-11 h-11 rounded-full bg-white shadow-lg flex items-center justify-center scale-0 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all duration-300 ease-out">
-        <FaArrowUp className="rotate-45 text-dice-blue text-base" />
-      </div>
-    </div>
-  )
-}
 
 export default function WhyDiceSection() {
   return (
-    <section className="py-20 bg-gradient-to-br from-dice-blue/5 via-white to-purple-500/5">
-      <div className="container mx-auto px-4">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Colonne gauche - Texte */}
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
-            <span className="inline-block text-dice-blue font-semibold uppercase tracking-wider text-sm mb-4">
-              Pourquoi Diamond Centre
-            </span>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
-              L'excellence à <br />
-              <span className="gradient-text">chaque étape</span>
-            </h2>
-            <p className="text-gray-600 text-lg mb-8 max-w-lg">
-              Nous nous engageons à vous offrir une expérience d'apprentissage unique 
-              et transformatrice.
-            </p>
-            
-            <Link href="/about">
-              <Button variant="outline" size="large">
-                En savoir plus
-                <FaArrowRight className="ml-2" />
-              </Button>
-            </Link>
+    <section className="relative overflow-hidden bg-[#F4F7FB] py-20 md:py-28">
+      <div className="pointer-events-none absolute -right-20 top-10 h-64 w-64 rounded-full bg-[#0A89F2]/10 blur-3xl" />
 
-            {/* Sponsors officiels */}
-            <div className="mt-8 pt-8 border-t border-gray-200">
-              <p className="text-sm text-gray-500 mb-4">Nos sponsors officiels</p>
-              <div className="flex flex-wrap gap-6 items-center">
-                {sponsors.map((sponsor) => (
-                  <a
-                    key={sponsor.name}
-                    href={sponsor.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group relative"
-                  >
-                    <div className="w-20 h-12 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-200 group-hover:border-dice-blue transition-all duration-300 group-hover:shadow-lg">
-                      <span 
-                        className="text-sm font-bold transition-colors duration-300 group-hover:text-dice-blue"
-                        style={{ color: sponsor.color }}
-                      >
-                        {sponsor.name}
-                      </span>
-                    </div>
-                    {/* Tooltip */}
-                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 translate-y-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                      <div className="bg-gray-900 text-white text-xs rounded-lg px-2 py-1 whitespace-nowrap">
-                        {sponsor.name}
-                      </div>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            </div>
+      <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
+        <div className="grid items-end gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-80px' }}
+            transition={{ duration: 0.5 }}
+          >
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0A89F2]">
+              Pourquoi DiCe
+            </p>
+            <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-[#0B1220] sm:text-4xl md:text-[2.75rem] md:leading-[1.1]">
+              L’excellence au service
+              <br />
+              de vos ambitions
+            </h2>
+            <p className="mt-4 max-w-md text-base leading-relaxed text-[#667085]">
+              Depuis des années, Diamond Centre accompagne celles et ceux qui
+              veulent grandir — avec des formats concrets, inspirants et
+              accessibles.
+            </p>
+            <Link
+              href="/about"
+              className="mt-7 inline-flex items-center gap-2 text-sm font-semibold text-[#0A89F2] transition hover:gap-3"
+            >
+              Notre histoire
+              <FaArrowRight className="text-xs" />
+            </Link>
           </motion.div>
 
-          {/* Colonne droite - Grille de valeurs avec glassmorphisme */}
-          <div className="relative grid grid-cols-2 grid-rows-[auto_auto_auto] gap-4">
-
-            {/* Communauté - haut gauche */}
-            <motion.div
-              className="col-start-1 row-start-1"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-            >
-              <div className="glass-card-dice rounded-2xl p-6 shadow-xl h-full relative overflow-hidden group">
-                <HoverArrowButton />
-
-                <div className="relative z-10">
-                  <div className={`w-14 h-14 bg-gradient-to-r ${values.communaute.color} rounded-2xl flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                    <values.communaute.icon className="text-2xl text-white" />
-                  </div>
-                  <h3 className="text-lg font-bold text-gray-800 group-hover:text-white mb-2 transition-colors duration-300">
-                    {values.communaute.title}
+          <div className="space-y-0 divide-y divide-[#E8EEF5] border-y border-[#E8EEF5] bg-white/70">
+            {pillars.map((item, i) => (
+              <motion.div
+                key={item.num}
+                initial={{ opacity: 0, x: 16 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.08 * i, duration: 0.4 }}
+                className="flex gap-5 px-5 py-6 sm:px-6"
+              >
+                <span className="text-sm font-bold tabular-nums text-[#0A89F2]">
+                  {item.num}
+                </span>
+                <div>
+                  <h3 className="text-lg font-bold text-[#0B1220]">
+                    {item.title}
                   </h3>
-                  <p className="text-gray-600 group-hover:text-white/90 text-sm transition-colors duration-300">
-                    {values.communaute.description}
+                  <p className="mt-1 text-sm leading-relaxed text-[#667085]">
+                    {item.text}
                   </p>
                 </div>
-              </div>
-            </motion.div>
-
-            {/* Excellence - colonne droite, pleine hauteur */}
-            <motion.div
-              className="col-start-2 row-start-1 row-span-2"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2 }}
-            >
-              <div className="glass-card-dice rounded-2xl p-6 shadow-xl h-full relative overflow-hidden group">
-                <HoverArrowButton />
-
-                <div className="relative z-10 flex flex-col h-full">
-                  <div className={`w-14 h-14 bg-gradient-to-r ${values.excellence.color} rounded-2xl flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                    <values.excellence.icon className="text-2xl text-white" />
-                  </div>
-                  <h3 className="text-lg font-bold text-gray-800 group-hover:text-white mb-2 transition-colors duration-300">
-                    {values.excellence.title}
-                  </h3>
-                  <p className="text-gray-600 group-hover:text-white/90 text-sm transition-colors duration-300">
-                    {values.excellence.description}
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Flexibilité - bas gauche */}
-            <motion.div
-              className="col-start-1 row-start-2"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.3 }}
-            >
-              <div className="glass-card-dice rounded-2xl p-6 shadow-xl h-full relative overflow-hidden group">
-                <HoverArrowButton />
-
-                <div className="relative z-10">
-                  <div className={`w-14 h-14 bg-gradient-to-r ${values.flexibilite.color} rounded-2xl flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                    <values.flexibilite.icon className="text-2xl text-white" />
-                  </div>
-                  <h3 className="text-lg font-bold text-gray-800 group-hover:text-white mb-2 transition-colors duration-300">
-                    {values.flexibilite.title}
-                  </h3>
-                  <p className="text-gray-600 group-hover:text-white/90 text-sm transition-colors duration-300">
-                    {values.flexibilite.description}
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Accompagnement - bande pleine largeur en bas */}
-            <motion.div
-              className="col-span-2 row-start-3"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.4 }}
-            >
-              <div className="glass-card-dice rounded-2xl p-6 shadow-xl h-full relative overflow-hidden group">
-                <HoverArrowButton />
-
-                <div className="relative z-10">
-                  <div className={`w-14 h-14 bg-gradient-to-r ${values.accompagnement.color} rounded-2xl flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                    <values.accompagnement.icon className="text-2xl text-white" />
-                  </div>
-                  <h3 className="text-lg font-bold text-gray-800 group-hover:text-white mb-2 transition-colors duration-300">
-                    {values.accompagnement.title}
-                  </h3>
-                  <p className="text-gray-600 group-hover:text-white/90 text-sm transition-colors duration-300">
-                    {values.accompagnement.description}
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Logo Diamond Centre */}
-            <motion.div
-              className="absolute left-[-30px] top-[30%] -translate-y-1/2 z-20"
-              initial={{ opacity: 0, scale: 0.6 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.5 }}
-            >
-              <div className="w-16 h-16 rounded-full bg-white border-4 border-white shadow-2xl flex items-center justify-center">
-                <div className="w-full h-full bg-gradient-to-br from-dice-blue to-purple-600 rounded-full flex items-center justify-center shadow-lg">
-                  <GiDiamondRing className="text-white text-2xl" />
-                </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            ))}
           </div>
         </div>
-
-        {/* Statistiques avec Counter-Up */}
-        <motion.div 
-          className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-6 p-8 bg-gradient-to-br from-gray-50 to-gray-100 rounded-3xl border border-gray-200"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.3 }}
-        >
-          {statsData.map((stat, index) => (
-            <motion.div 
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.4 + index * 0.1 }}
-              className="text-center relative"
-            >
-              <div className="text-3xl md:text-4xl font-bold text-dice-blue">
-                <CounterUp targetValue={stat.value} suffix={stat.suffix} duration={2000} />
-              </div>
-              <div className="text-sm text-gray-600">{stat.label}</div>
-              {index < statsData.length - 1 && (
-                <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 w-px h-8 bg-gray-300" />
-              )}
-            </motion.div>
-          ))}
-        </motion.div>
       </div>
-
-      {/* Styles globaux : glassmorphisme + hover "carte projet" plein bleu #0a89f2 */}
-      <style jsx global>{`
-        .glass-card-dice {
-          background: rgba(10, 137, 242, 0.08);
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
-          border: 1px solid rgba(10, 137, 242, 0.15);
-          box-shadow: 
-            0 8px 32px rgba(10, 137, 242, 0.06),
-            inset 0 1px 0 rgba(10, 137, 242, 0.1);
-          transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                      box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                      transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                      border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        /* Au survol : le fond devient un bleu plein #0a89f2, comme la carte de référence */
-        .glass-card-dice:hover {
-          background: #0a89f2;
-          border-color: #0a89f2;
-          box-shadow: 
-            0 16px 40px rgba(10, 137, 242, 0.35),
-            inset 0 1px 0 rgba(255, 255, 255, 0.15);
-          transform: translateY(-6px);
-        }
-      `}</style>
     </section>
   )
 }

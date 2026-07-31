@@ -1,33 +1,306 @@
 /**
- * Gestion des événements - Admin avec lightbox
+ * Gestion des événements — design DiCe + pagination
  */
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { 
+import { motion, AnimatePresence } from 'framer-motion'
+import {
   FaPlus, FaEye, FaEdit, FaTrash, FaCalendar,
-  FaMapMarker, FaUsers, FaTicketAlt, FaSearch,
-  FaSync, FaSpinner,
-  FaCalendarPlus
+  FaMapMarkerAlt, FaUsers, FaTicketAlt, FaSearch,
+  FaSync, FaSpinner, FaTag, FaChevronLeft, FaChevronRight,
 } from 'react-icons/fa'
 import { api } from '@/lib/api'
 import { auth } from '@/lib/auth'
-import Badge from '@/components/ui/Badge'
-import Button from '@/components/ui/Button'
 import EventLightbox from '@/components/events/EventLightbox'
 import toast from 'react-hot-toast'
+
+const PAGE_SIZE = 9
+
+const STATUS_FILTERS = [
+  { id: 'all', label: 'Tous' },
+  { id: 'published', label: 'Publiés' },
+  { id: 'draft', label: 'Brouillons' },
+  { id: 'cancelled', label: 'Annulés' },
+  { id: 'completed', label: 'Terminés' },
+]
+
+const CATEGORY_FILTERS = [
+  { id: 'all', label: 'Toutes' },
+  { id: 'conference', label: 'Conférence' },
+  { id: 'formation', label: 'Formation' },
+  { id: 'seminaire', label: 'Séminaire' },
+  { id: 'atelier', label: 'Atelier' },
+  { id: 'webinaire', label: 'Webinaire' },
+]
+
+function statusMeta(status) {
+  switch (String(status || '').toLowerCase()) {
+    case 'published':
+      return { label: 'Publié', className: 'bg-emerald-50 text-[#0B9B6B]' }
+    case 'draft':
+      return { label: 'Brouillon', className: 'bg-[#FFF4DE] text-[#B78103]' }
+    case 'cancelled':
+      return { label: 'Annulé', className: 'bg-red-50 text-red-600' }
+    case 'completed':
+      return { label: 'Terminé', className: 'bg-slate-100 text-slate-600' }
+    default:
+      return { label: status || '—', className: 'bg-[#E8F3FE] text-[#0A89F2]' }
+  }
+}
+
+function formatDate(value) {
+  if (!value) return '—'
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return '—'
+  return d.toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
+function formatPrice(price, currency = 'FCFA') {
+  const n = Number(price)
+  if (Number.isNaN(n)) return '—'
+  return `${n.toLocaleString('fr-FR')} ${currency}`
+}
+
+function soldCount(event) {
+  const capacity = Number(event.capacity) || 0
+  const available = Number(event.available_tickets)
+  if (!capacity || Number.isNaN(available)) return 0
+  return Math.max(0, capacity - available)
+}
+
+function hasPromo(event) {
+  return event?.promotion && Number(event.promotion.pourcentage) > 0
+}
+
+function EventCard({ event, index, onView, onDelete, deleting }) {
+  const badge = statusMeta(event.status)
+  const sold = soldCount(event)
+  const capacity = Number(event.capacity) || 0
+  const fill = capacity > 0 ? Math.min(100, Math.round((sold / capacity) * 100)) : 0
+  const promo = hasPromo(event)
+
+  return (
+    <motion.article
+      layout
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.98 }}
+      transition={{ delay: Math.min(index * 0.04, 0.2), duration: 0.28 }}
+      className="group flex flex-col overflow-hidden rounded-[22px] border border-[#E8EEF5] bg-white shadow-[0_8px_24px_rgba(11,18,32,0.04)] hover:shadow-[0_16px_36px_rgba(10,137,242,0.14)] hover:border-[#0A89F2]/35 transition-all"
+    >
+      <div className="relative h-40 overflow-hidden bg-[#E8F3FE]">
+        {event.image_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={event.image_url}
+            alt=""
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-[#0A89F2]">
+            <FaCalendar className="text-3xl opacity-60" />
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
+        <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
+          <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-semibold backdrop-blur-sm ${badge.className}`}>
+            {badge.label}
+          </span>
+          {promo && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#FFF4DE] text-[#B78103]">
+              <FaTag className="text-[9px]" />
+              -{event.promotion.pourcentage}%
+            </span>
+          )}
+        </div>
+        <p className="absolute bottom-3 left-3 right-3 text-white text-sm font-bold drop-shadow line-clamp-1">
+          {formatPrice(event.price, event.currency || 'FCFA')}
+        </p>
+      </div>
+
+      <div className="flex-1 p-4 flex flex-col gap-3">
+        <div>
+          {event.category && (
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#0A89F2] mb-1 capitalize">
+              {event.category}
+            </p>
+          )}
+          <h3 className="font-bold text-[#0B1220] text-[15px] leading-snug line-clamp-2">
+            {event.title}
+          </h3>
+        </div>
+
+        <div className="space-y-1.5 text-sm text-[#667085]">
+          <p className="flex items-center gap-2 truncate">
+            <FaCalendar className="text-[#0A89F2] text-xs shrink-0" />
+            {formatDate(event.start_date)}
+            {event.end_date && event.end_date !== event.start_date
+              ? ` → ${formatDate(event.end_date)}`
+              : ''}
+          </p>
+          {event.location && (
+            <p className="flex items-center gap-2 truncate">
+              <FaMapMarkerAlt className="text-[#0A89F2] text-xs shrink-0" />
+              {event.location}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between text-xs text-[#98A2B3] mb-1.5">
+            <span className="inline-flex items-center gap-1">
+              <FaUsers className="text-[#0A89F2]" />
+              {sold}/{capacity || '—'} places
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <FaTicketAlt className="text-[#0A89F2]" />
+              {event.available_tickets ?? 0} dispo.
+            </span>
+          </div>
+          <div className="h-1.5 rounded-full bg-[#E8EEF5] overflow-hidden">
+            <div
+              className="h-full rounded-full bg-[#0A89F2] transition-all"
+              style={{ width: `${fill}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="mt-auto pt-1 flex gap-2">
+          <button
+            type="button"
+            onClick={() => onView(event)}
+            className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-[#0A89F2] bg-[#E8F3FE] hover:bg-[#d6ebfc] transition-colors inline-flex items-center justify-center gap-1.5"
+          >
+            <FaEye className="text-xs" />
+            Voir
+          </button>
+          <Link
+            href={`/admin/events/edit/${event.id}`}
+            className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#0A89F2] hover:bg-[#0770cc] transition-colors inline-flex items-center justify-center gap-1.5"
+          >
+            <FaEdit className="text-xs" />
+            Éditer
+          </Link>
+          <button
+            type="button"
+            onClick={() => onDelete(event)}
+            disabled={deleting}
+            className="w-11 rounded-xl text-red-500 bg-red-50 hover:bg-red-100 transition-colors inline-flex items-center justify-center disabled:opacity-50"
+            title="Supprimer"
+          >
+            {deleting ? <FaSpinner className="animate-spin text-sm" /> : <FaTrash className="text-sm" />}
+          </button>
+        </div>
+      </div>
+    </motion.article>
+  )
+}
+
+function Pagination({ page, totalPages, onChange, totalItems, pageSize }) {
+  if (totalPages <= 1) return null
+
+  const from = (page - 1) * pageSize + 1
+  const to = Math.min(page * pageSize, totalItems)
+
+  const pages = []
+  const window = 2
+  for (let i = 1; i <= totalPages; i++) {
+    if (
+      i === 1 ||
+      i === totalPages ||
+      (i >= page - window && i <= page + window)
+    ) {
+      pages.push(i)
+    } else if (pages[pages.length - 1] !== '…') {
+      pages.push('…')
+    }
+  }
+
+  return (
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+      <p className="text-sm text-[#667085]">
+        Affichage <span className="font-semibold text-[#0B1220]">{from}–{to}</span> sur{' '}
+        <span className="font-semibold text-[#0B1220]">{totalItems}</span>
+      </p>
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          disabled={page <= 1}
+          onClick={() => onChange(page - 1)}
+          className="w-10 h-10 rounded-xl border border-[#E8EEF5] bg-white text-[#667085] hover:bg-[#F3F6FA] disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center justify-center"
+          aria-label="Page précédente"
+        >
+          <FaChevronLeft className="text-xs" />
+        </button>
+        {pages.map((p, idx) =>
+          p === '…' ? (
+            <span key={`ellipsis-${idx}`} className="w-8 text-center text-[#98A2B3]">
+              …
+            </span>
+          ) : (
+            <button
+              key={p}
+              type="button"
+              onClick={() => onChange(p)}
+              className={`min-w-10 h-10 px-2 rounded-xl text-sm font-bold transition-colors ${
+                p === page
+                  ? 'bg-[#0A89F2] text-white shadow-[0_6px_16px_rgba(10,137,242,0.3)]'
+                  : 'border border-[#E8EEF5] bg-white text-[#667085] hover:bg-[#F3F6FA]'
+              }`}
+            >
+              {p}
+            </button>
+          )
+        )}
+        <button
+          type="button"
+          disabled={page >= totalPages}
+          onClick={() => onChange(page + 1)}
+          className="w-10 h-10 rounded-xl border border-[#E8EEF5] bg-white text-[#667085] hover:bg-[#F3F6FA] disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center justify-center"
+          aria-label="Page suivante"
+        >
+          <FaChevronRight className="text-xs" />
+        </button>
+      </div>
+    </div>
+  )
+}
 
 export default function AdminEvents() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
-  const [deleting, setDeleting] = useState(null)
+  const [deletingId, setDeletingId] = useState(null)
   const [events, setEvents] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [categoryFilter, setCategoryFilter] = useState('all')
+  const [page, setPage] = useState(1)
   const [error, setError] = useState(null)
   const [selectedEvent, setSelectedEvent] = useState(null)
   const [isLightboxOpen, setIsLightboxOpen] = useState(false)
+
+  const loadEvents = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const token = auth.getToken()
+      const data = await api.getEvents(token)
+      const list = Array.isArray(data) ? data : data?.data || []
+      setEvents(list)
+    } catch (err) {
+      setError(err.message)
+      toast.error('Erreur lors du chargement des événements')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     const token = auth.getToken()
@@ -36,36 +309,73 @@ export default function AdminEvents() {
       return
     }
     loadEvents()
-  }, [])
+  }, [router, loadEvents])
 
-  const loadEvents = async () => {
+  const counts = useMemo(() => {
+    const byStatus = {
+      all: events.length,
+      published: 0,
+      draft: 0,
+      cancelled: 0,
+      completed: 0,
+    }
+    for (const e of events) {
+      const s = String(e.status || '').toLowerCase()
+      if (byStatus[s] != null) byStatus[s] += 1
+    }
+    return byStatus
+  }, [events])
+
+  const filteredEvents = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase()
+    return events.filter((event) => {
+      if (statusFilter !== 'all' && String(event.status).toLowerCase() !== statusFilter) {
+        return false
+      }
+      if (
+        categoryFilter !== 'all' &&
+        String(event.category || '').toLowerCase() !== categoryFilter
+      ) {
+        return false
+      }
+      if (!q) return true
+      return (
+        event.title?.toLowerCase().includes(q) ||
+        event.location?.toLowerCase().includes(q) ||
+        event.category?.toLowerCase().includes(q)
+      )
+    })
+  }, [events, searchTerm, statusFilter, categoryFilter])
+
+  const totalPages = Math.max(1, Math.ceil(filteredEvents.length / PAGE_SIZE))
+
+  useEffect(() => {
+    setPage(1)
+  }, [searchTerm, statusFilter, categoryFilter])
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages)
+  }, [page, totalPages])
+
+  const pageEvents = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE
+    return filteredEvents.slice(start, start + PAGE_SIZE)
+  }, [filteredEvents, page])
+
+  const handleDelete = async (event) => {
+    if (!confirm(`Supprimer « ${event.title} » ?`)) return
     try {
-      setLoading(true)
-      setError(null)
+      setDeletingId(event.id)
       const token = auth.getToken()
-      const data = await api.getEvents(token)
-      setEvents(data || [])
+      await api.deleteEvent(event.id, token)
+      toast.success('Événement supprimé')
+      await loadEvents()
     } catch (err) {
-      setError(err.message)
-      toast.error('Erreur lors du chargement des événements')
+      toast.error(err.message || 'Erreur lors de la suppression')
     } finally {
-      setLoading(false)
+      setDeletingId(null)
     }
   }
-
-  // La suppression est maintenant gérée correctement avec DELETE
-const handleDelete = async (id) => {
-  if (!confirm('Êtes-vous sûr de vouloir supprimer cet événement ?')) return
-  
-  try {
-    const token = auth.getToken()
-    await api.deleteEvent(id, token)
-    toast.success('Événement supprimé avec succès !')
-    await loadEvents()
-  } catch (err) {
-    toast.error(err.message || 'Erreur lors de la suppression')
-  }
-}
 
   const openLightbox = (event) => {
     setSelectedEvent(event)
@@ -77,170 +387,178 @@ const handleDelete = async (id) => {
     setSelectedEvent(null)
   }
 
-  const filteredEvents = events.filter(event =>
-    event.title?.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
-  const getStatusBadge = (status) => {
-    if (status === 'published') {
-      return { variant: 'success', label: 'Publié' }
-    } else if (status === 'draft') {
-      return { variant: 'warning', label: 'Brouillon' }
-    } else {
-      return { variant: 'default', label: status || 'Inconnu' }
-    }
-  }
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-dice-blue border-t-transparent" />
-      </div>
-    )
-  }
-
   return (
     <>
-      <div className="p-6">
-        {/* En-tête */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">Gestion des événements</h1>
-            <p className="text-gray-500">
-              {events.length} événement{events.length > 1 ? 's' : ''} au total
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={loadEvents}
-              disabled={loading}
-              className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
-            >
-              <FaSync className={loading ? 'animate-spin' : ''} />
-            </button>
-            <Link href="/admin/events/create">
-              <Button variant="primary">
-                <FaCalendarPlus className="mr-2" />
+      <div className="relative -m-6 min-h-full">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -top-24 -right-16 w-80 h-80 rounded-full bg-[#0A89F2]/[0.07] blur-3xl" />
+          <div className="absolute top-1/2 -left-20 w-72 h-72 rounded-full bg-[#0A89F2]/[0.05] blur-3xl" />
+        </div>
+
+        <div className="relative p-6 space-y-6 max-w-6xl">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#0A89F2] mb-1">
+                Diamond Centre
+              </p>
+              <h1 className="text-[28px] sm:text-[32px] font-extrabold text-[#0B1220] tracking-tight">
+                Événements
+              </h1>
+              <p className="text-[#667085] text-sm mt-1">
+                {events.length} événement{events.length !== 1 ? 's' : ''} · gérez publications, places et promos
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={loadEvents}
+                disabled={loading}
+                className="px-4 py-2.5 rounded-2xl border border-[#E8EEF5] bg-white text-sm font-medium text-[#667085] hover:bg-[#F3F6FA] transition-colors inline-flex items-center gap-2 disabled:opacity-50"
+              >
+                <FaSync className={loading ? 'animate-spin' : ''} />
+                Rafraîchir
+              </button>
+              <Link
+                href="/admin/events/create"
+                className="px-4 py-2.5 rounded-2xl bg-[#0A89F2] text-white text-sm font-semibold hover:bg-[#0770cc] transition-colors inline-flex items-center gap-2 shadow-[0_8px_20px_rgba(10,137,242,0.28)]"
+              >
+                <FaPlus className="text-xs" />
                 Nouvel événement
-              </Button>
-            </Link>
+              </Link>
+            </div>
           </div>
-        </div>
 
-        {/* Barre de recherche */}
-        <div className="relative mb-6">
-          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Rechercher un événement..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
-          />
-        </div>
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 mb-6">
-            {error}
+          {/* KPIs */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {[
+              { label: 'Total', value: counts.all, tone: 'text-[#0A89F2]' },
+              { label: 'Publiés', value: counts.published, tone: 'text-[#0B9B6B]' },
+              { label: 'Brouillons', value: counts.draft, tone: 'text-[#B78103]' },
+              { label: 'Résultats', value: filteredEvents.length, tone: 'text-[#0B1220]' },
+            ].map((kpi) => (
+              <div
+                key={kpi.label}
+                className="rounded-[20px] border border-[#E8EEF5] bg-white/90 backdrop-blur-sm px-4 py-3.5 shadow-[0_4px_16px_rgba(11,18,32,0.03)]"
+              >
+                <p className={`text-2xl font-extrabold tracking-tight ${kpi.tone}`}>{kpi.value}</p>
+                <p className="text-xs font-medium text-[#98A2B3] mt-0.5">{kpi.label}</p>
+              </div>
+            ))}
           </div>
-        )}
 
-        {/* Liste des événements */}
-        {filteredEvents.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-            <FaCalendar className="text-6xl text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-600 mb-2">Aucun événement</h3>
-            <p className="text-gray-400">Commencez par créer votre premier événement</p>
-            <Link href="/admin/events/create">
-              <Button variant="primary" className="mt-4">
-                <FaPlus className="mr-2" />
-                Créer un événement
-              </Button>
-            </Link>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {filteredEvents.map((event) => {
-              const statusBadge = getStatusBadge(event.status)
-              const isDeleting = deleting === event.id
-              
-              return (
-                <div
-                  key={event.id}
-                  className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow"
+          {/* Filters */}
+          <div className="rounded-[24px] border border-[#E8EEF5] bg-white p-4 shadow-[0_8px_24px_rgba(11,18,32,0.04)] space-y-3">
+            <div className="relative">
+              <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#98A2B3] text-sm" />
+              <input
+                type="text"
+                placeholder="Rechercher par titre, lieu ou catégorie…"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 rounded-2xl border border-[#E8EEF5] bg-[#F8FAFC] text-sm focus:ring-2 focus:ring-[#0A89F2]/30 focus:border-[#0A89F2] focus:bg-white outline-none transition-colors"
+              />
+            </div>
+
+            <div className="flex flex-col lg:flex-row gap-3">
+              <div className="flex flex-wrap gap-1.5">
+                {STATUS_FILTERS.map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => setStatusFilter(f.id)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${
+                      statusFilter === f.id
+                        ? 'bg-[#0A89F2] text-white'
+                        : 'bg-[#F3F6FA] text-[#667085] hover:bg-[#E8F3FE] hover:text-[#0A89F2]'
+                    }`}
+                  >
+                    {f.label}
+                    {f.id !== 'all' && counts[f.id] != null ? ` (${counts[f.id]})` : ''}
+                  </button>
+                ))}
+              </div>
+              <div className="lg:ml-auto">
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="w-full sm:w-auto px-3 py-2 rounded-xl border border-[#E8EEF5] bg-white text-sm text-[#0B1220] focus:ring-2 focus:ring-[#0A89F2]/30 outline-none"
                 >
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold text-gray-800">
-                          {event.title}
-                        </h3>
-                        <Badge variant={statusBadge.variant}>
-                          {statusBadge.label}
-                        </Badge>
-                      </div>
-                      <div className="flex flex-wrap gap-4 text-sm text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <FaCalendar className="text-dice-blue" />
-                          {new Date(event.start_date).toLocaleDateString('fr-FR')}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <FaMapMarker className="text-dice-blue" />
-                          {event.location}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <FaUsers className="text-dice-blue" />
-                          {event.capacity} places
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <FaTicketAlt className="text-dice-blue" />
-                          {event.available_tickets || 0} disponibles
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <span className="font-semibold text-dice-blue">
-                            {event.price} {event.currency || 'FCFA'}
-                          </span>
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => openLightbox(event)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Voir sur le site"
-                      >
-                        <FaEye />
-                      </button>
-                      <Link href={`/admin/events/edit/${event.id}`}>
-                        <button 
-                          className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors"
-                          title="Modifier"
-                        >
-                          <FaEdit />
-                        </button>
-                      </Link>
-                      <button
-                        onClick={() => handleDelete(event.id)}
-                        disabled={isDeleting}
-                        className={`p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50`}
-                        title="Supprimer"
-                      >
-                        {isDeleting ? (
-                          <FaSpinner className="animate-spin" />
-                        ) : (
-                          <FaTrash />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
+                  {CATEGORY_FILTERS.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
-        )}
+
+          {error && (
+            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error}
+              <button type="button" onClick={loadEvents} className="ml-3 underline font-medium">
+                Réessayer
+              </button>
+            </div>
+          )}
+
+          {/* Content */}
+          {loading && events.length === 0 ? (
+            <div className="rounded-[24px] border border-[#E8EEF5] bg-white p-16 text-center text-[#667085]">
+              <div className="mx-auto mb-3 h-10 w-10 animate-spin rounded-full border-4 border-[#0A89F2] border-t-transparent" />
+              Chargement des événements…
+            </div>
+          ) : filteredEvents.length === 0 ? (
+            <div className="rounded-[24px] border border-dashed border-[#D0D5DD] bg-white/80 p-14 text-center">
+              <div className="mx-auto mb-3 w-14 h-14 rounded-2xl bg-[#E8F3FE] text-[#0A89F2] flex items-center justify-center">
+                <FaCalendar className="text-xl" />
+              </div>
+              <h3 className="text-lg font-bold text-[#0B1220] mb-1">Aucun événement</h3>
+              <p className="text-sm text-[#667085] mb-5">
+                {events.length === 0
+                  ? 'Créez votre premier événement DiCe.'
+                  : 'Aucun résultat pour ces filtres.'}
+              </p>
+              {events.length === 0 && (
+                <Link
+                  href="/admin/events/create"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-[#0A89F2] text-white text-sm font-semibold hover:bg-[#0770cc]"
+                >
+                  <FaPlus className="text-xs" />
+                  Créer un événement
+                </Link>
+              )}
+            </div>
+          ) : (
+            <>
+              <AnimatePresence mode="popLayout">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {pageEvents.map((event, index) => (
+                    <EventCard
+                      key={event.id}
+                      event={event}
+                      index={index}
+                      onView={openLightbox}
+                      onDelete={handleDelete}
+                      deleting={deletingId === event.id}
+                    />
+                  ))}
+                </div>
+              </AnimatePresence>
+
+              <Pagination
+                page={page}
+                totalPages={totalPages}
+                onChange={setPage}
+                totalItems={filteredEvents.length}
+                pageSize={PAGE_SIZE}
+              />
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Lightbox */}
       <EventLightbox
         isOpen={isLightboxOpen}
         onClose={closeLightbox}

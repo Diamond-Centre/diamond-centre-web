@@ -6,19 +6,21 @@ import Footer from './Footer'
 
 export default function AppShell({ children }) {
   const pathname = usePathname()
-  
-  // Vérifier si on est sur une page admin
+
   const isAdminPage = pathname?.startsWith('/admin')
-  
+  const isAuthPage = pathname?.startsWith('/auth')
+  const isLegacyDashboard = pathname?.startsWith('/dashboard')
+
+  // Auth / admin / old dashboard redirect: no chrome
+  if (isAuthPage || isAdminPage || isLegacyDashboard) {
+    return <>{children}</>
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Ne pas afficher la Navbar sur les pages admin */}
-      {!isAdminPage && <Navbar />}
-      <main className={`flex-grow ${!isAdminPage ? '' : ''}`}>
-        {children}
-      </main>
-      {/* Ne pas afficher le Footer sur les pages admin */}
-      {!isAdminPage && <Footer />}
+      <Navbar />
+      <main className="flex-grow">{children}</main>
+      <Footer />
     </div>
   )
 }

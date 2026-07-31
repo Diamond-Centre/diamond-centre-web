@@ -185,7 +185,7 @@ export default function RegisterPage() {
       
       console.log('📤 Envoi au backend:', JSON.stringify(registerData, null, 2))
       
-      const response = await fetch('http://localhost:3001/api/auth/register', {
+      const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -208,7 +208,12 @@ export default function RegisterPage() {
         throw new Error(errorMessage)
       }
       
-      const result = JSON.parse(text)
+      let result
+      try {
+        result = JSON.parse(text)
+      } catch {
+        throw new Error(`Réponse invalide du serveur (${response.status})`)
+      }
       console.log('✅ Inscription réussie:', result)
       
       setSuccess(true)

@@ -8,14 +8,17 @@ import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { auth } from '@/lib/auth'
 import { 
-  FaHome, FaCalendar, FaTicketAlt,
+  FaHome, FaCalendar, FaTicketAlt, FaUsers, FaCertificate, FaCalendarAlt,
   FaSignOutAlt, FaGem
 } from 'react-icons/fa'
 
 const menuItems = [
   { href: '/admin', icon: FaHome, label: 'Dashboard' },
+  { href: '/admin/agenda', icon: FaCalendarAlt, label: 'Agenda' },
   { href: '/admin/events', icon: FaCalendar, label: 'Événements' },
   { href: '/admin/tickets', icon: FaTicketAlt, label: 'Tickets' },
+  { href: '/admin/users', icon: FaUsers, label: 'Utilisateurs' },
+  { href: '/admin/certificates', icon: FaCertificate, label: 'Certificats' },
 ]
 
 export default function AdminLayout({ children }) {

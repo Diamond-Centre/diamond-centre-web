@@ -90,8 +90,13 @@ export default function TicketsPage() {
     ctx.fillText(ticket.event_title || 'Événement', 150, 180)
     ctx.fillText(ticket.customer_name || 'Client', 150, 200)
     ctx.fillStyle = '#0a89f2'
-    ctx.font = 'bold 18px Arial'
-    ctx.fillText(ticket.qr_codes?.[0]?.code || 'DC-XXXX', 150, 240)
+    ctx.font = 'bold 28px monospace'
+    const entry =
+      ticket.entry_code ||
+      ticket.qr_codes?.[0]?.entry_code ||
+      ticket.qr_codes?.[0]?.code ||
+      '--------'
+    ctx.fillText(String(entry).replace(/\D/g, '').padStart(8, '0').slice(-8), 150, 240)
     
     const link = document.createElement('a')
     link.download = `ticket-${ticket.id}-qr.png`
@@ -241,8 +246,15 @@ export default function TicketsPage() {
                 <div className="w-48 h-48 bg-dice-blue/5 rounded-xl flex items-center justify-center">
                   <div className="text-center">
                     <div className="text-6xl mb-2">🎫</div>
-                    <div className="text-sm font-mono bg-gray-100 px-3 py-1 rounded">
-                      {selectedTicket.qr_codes?.[0]?.code || 'DC-XXXX'}
+                    <div className="text-sm font-mono bg-gray-100 px-3 py-1 rounded tracking-[0.2em]">
+                      {String(
+                        selectedTicket.entry_code ||
+                          selectedTicket.qr_codes?.[0]?.entry_code ||
+                          '--------'
+                      )
+                        .replace(/\D/g, '')
+                        .padStart(8, '0')
+                        .slice(-8)}
                     </div>
                     <div className="text-xs text-gray-400 mt-1">
                       #{selectedTicket.id}

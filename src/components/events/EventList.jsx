@@ -1,6 +1,5 @@
 'use client'
 
-import { motion } from 'framer-motion'
 import EventCard from './EventCard'
 
 export default function EventList({ events }) {
@@ -13,16 +12,9 @@ export default function EventList({ events }) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
       {events.map((event, index) => (
-        <motion.div
-          key={event.id}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.05 }}
-        >
-          <EventCard event={event} />
-        </motion.div>
+        <EventCard key={event.id} event={event} index={index} />
       ))}
     </div>
   )

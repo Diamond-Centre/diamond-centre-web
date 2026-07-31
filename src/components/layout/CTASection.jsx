@@ -1,134 +1,91 @@
 /**
- * Section CTA (Call To Action) avec effet glassmorphisme - Uniquement bleu Diamond Centre
+ * CTA final Accueil — fond DiCe uni, aligné au design system
  */
 'use client'
 
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { FaArrowRight, FaGem, FaRocket } from 'react-icons/fa'
-import Button from '@/components/ui/Button'
+import { FaArrowRight } from 'react-icons/fa'
 
-export default function CTASection({ 
-  title,
-  subtitle,
-  primaryCta = { text: 'Commencer gratuitement', href: '/auth/register' },
-  secondaryCta = { text: 'Explorer nos services', href: '/events' },
-  bgClass = 'bg-gradient-to-r from-dice-blue to-dice-blue-dark'
-}) {
+const steps = [
+  { n: '01', label: 'Créez votre compte' },
+  { n: '02', label: 'Choisissez un événement' },
+  { n: '03', label: 'Réservez votre place' },
+]
+
+export default function CTASection() {
   return (
-    <section className="py-16 md:py-20 bg-gradient-to-br from-dice-blue/5 via-white to-purple-500/5">
-      <div className="container mx-auto px-4">
-        <motion.div 
-          className={`max-w-5xl mx-auto ${bgClass} rounded-2xl md:rounded-3xl p-8 md:p-12 lg:p-16 text-center text-white shadow-xl relative overflow-hidden`}
-          initial={{ opacity: 0, scale: 0.95 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
+    <section className="relative overflow-hidden bg-[#0A89F2]">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(255,255,255,0.18),_transparent_55%)]" />
+      <div className="pointer-events-none absolute -left-24 bottom-0 h-56 w-56 rounded-full bg-[#0057C2]/40 blur-3xl" />
+
+      <div className="relative mx-auto flex max-w-6xl flex-col justify-between gap-12 px-4 py-16 sm:px-6 md:flex-row md:items-end md:gap-16 md:py-20">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-60px' }}
+          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+          className="max-w-xl"
         >
-          {/* Effets de fond */}
-          <div className="absolute inset-0 bg-[url('/images/pattern-grid.svg')] opacity-5" />
-          <motion.div 
-            className="absolute -top-20 -right-20 w-48 h-48 bg-white/10 rounded-full blur-2xl"
-            animate={{ scale: [1, 1.2, 1], rotate: [0, 90, 0] }}
-            transition={{ duration: 20, repeat: Infinity }}
-          />
-          <motion.div 
-            className="absolute -bottom-20 -left-20 w-48 h-48 bg-dice-blue/20 rounded-full blur-2xl"
-            animate={{ scale: [1, 1.3, 1], rotate: [0, -90, 0] }}
-            transition={{ duration: 25, repeat: Infinity }}
-          />
+          <div className="mb-5 flex items-center gap-3">
+            <span className="h-px w-8 bg-white/70" />
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/80">
+              Rejoignez DiCe
+            </p>
+          </div>
 
-          {/* Contenu */}
-          <div className="relative z-10">
-            {/* Icône décorative */}
-            <motion.div 
-              className="inline-flex items-center justify-center w-14 h-14 md:w-16 md:h-16 bg-white/20 backdrop-blur-sm rounded-xl md:rounded-2xl border border-white/30 mb-4 md:mb-6"
-              whileHover={{ scale: 1.1, rotate: 5 }}
-              transition={{ type: "spring", stiffness: 400 }}
+          <h2 className="text-3xl font-extrabold leading-[1.1] tracking-tight text-white sm:text-4xl md:text-[2.75rem]">
+            Prêt à écrire
+            <br />
+            <span className="text-white/85">la suite ?</span>
+          </h2>
+
+          <p className="mt-4 max-w-md text-base leading-relaxed text-white/75">
+            Créez votre compte et réservez votre prochaine formation ou
+            conférence en quelques minutes.
+          </p>
+
+          <div className="mt-8 flex flex-wrap items-center gap-3">
+            <Link
+              href="/auth/register"
+              className="group inline-flex items-center gap-2 rounded-full bg-white px-7 py-3.5 text-sm font-semibold text-[#0A89F2] shadow-[0_14px_32px_rgba(11,18,32,0.18)] transition hover:bg-white/95"
             >
-              <FaGem className="text-2xl md:text-3xl" />
-            </motion.div>
-
-            {title && (
-              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-3 md:mb-4">
-                {title}
-              </h2>
-            )}
-            {subtitle && (
-              <p className="text-base md:text-lg lg:text-xl text-white/90 mb-6 md:mb-8 max-w-2xl mx-auto">
-                {subtitle}
-              </p>
-            )}
-            
-            <div className="flex flex-wrap justify-center gap-3 md:gap-4">
-              {/* Bouton "Commencer gratuitement" avec hover amélioré */}
-              <Link href={primaryCta.href}>
-                <motion.button
-                  className="group relative px-6 md:px-8 py-3 md:py-4 bg-white rounded-full font-semibold text-base md:text-lg shadow-lg overflow-hidden"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  {/* Fond animé au survol - Bleu Diamond Centre */}
-                  <span className="absolute inset-0 bg-gradient-to-r from-dice-blue to-dice-blue-dark opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  
-                  {/* Effet de brillance */}
-                  <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-                  
-                  {/* Effet d'onde au survol */}
-                  <span className="absolute inset-0 scale-0 group-hover:scale-150 transition-transform duration-700 rounded-full bg-dice-blue/20" />
-                  
-                  {/* Contenu du bouton */}
-                  <span className="relative flex items-center gap-2 text-dice-blue group-hover:text-white transition-colors duration-300">
-                    <FaRocket className="text-sm md:text-base group-hover:rotate-12 transition-transform duration-300" />
-                    {primaryCta.text}
-                    <FaArrowRight className="group-hover:translate-x-2 transition-transform duration-300 text-sm md:text-base" />
-                  </span>
-                  
-                  {/* Points lumineux décoratifs */}
-                  <span className="absolute -top-2 -right-2 w-2.5 h-2.5 md:w-3 md:h-3 bg-dice-blue rounded-full opacity-0 group-hover:opacity-100 group-hover:scale-150 transition-all duration-500" />
-                  <span className="absolute -bottom-2 -left-2 w-2.5 h-2.5 md:w-3 md:h-3 bg-dice-blue-dark rounded-full opacity-0 group-hover:opacity-100 group-hover:scale-150 transition-all duration-500 delay-100" />
-                </motion.button>
-              </Link>
-
-              {/* Bouton "Explorer nos services" */}
-              <Link href={secondaryCta.href}>
-                <motion.button
-                  className="group px-6 md:px-8 py-3 md:py-4 bg-white/10 backdrop-blur-sm text-white rounded-full font-semibold text-base md:text-lg border border-white/30 hover:bg-white/20 transition-all duration-300"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <span className="flex items-center gap-2">
-                    {secondaryCta.text}
-                    <FaArrowRight className="group-hover:translate-x-1 transition-transform duration-300 text-sm md:text-base" />
-                  </span>
-                </motion.button>
-              </Link>
-            </div>
-
-            {/* Badge de confiance */}
-            <motion.div 
-              className="mt-6 md:mt-8 flex items-center justify-center gap-4 md:gap-6 text-xs md:text-sm text-white/70 flex-wrap"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
+              Commencer
+              <FaArrowRight className="text-xs transition group-hover:translate-x-0.5" />
+            </Link>
+            <Link
+              href="/events"
+              className="inline-flex items-center gap-2 rounded-full border border-white/35 bg-white/10 px-7 py-3.5 text-sm font-semibold text-white transition hover:bg-white/15"
             >
-              <span className="flex items-center gap-1.5 md:gap-2">
-                <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-                +5000 participants
-              </span>
-              <span className="w-px h-3 md:h-4 bg-white/20 hidden sm:block" />
-              <span className="flex items-center gap-1.5 md:gap-2">
-                <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-                Satisfaction 98%
-              </span>
-              <span className="w-px h-3 md:h-4 bg-white/20 hidden sm:block" />
-              <span className="flex items-center gap-1.5 md:gap-2">
-                <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-                Garantie 100%
-              </span>
-            </motion.div>
+              Voir le programme
+            </Link>
           </div>
         </motion.div>
+
+        <motion.ol
+          initial={{ opacity: 0, x: 20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.12, duration: 0.5 }}
+          className="w-full max-w-xs space-y-0 border-l border-white/25 md:mb-2"
+        >
+          {steps.map((step, i) => (
+            <li
+              key={step.n}
+              className="flex items-start gap-4 py-4 pl-5 first:pt-0 last:pb-0"
+            >
+              <span className="pt-0.5 text-xs font-bold tabular-nums text-white">
+                {step.n}
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-white">{step.label}</p>
+                {i < steps.length - 1 ? (
+                  <span className="mt-3 block h-px w-12 bg-white/20" />
+                ) : null}
+              </div>
+            </li>
+          ))}
+        </motion.ol>
       </div>
     </section>
   )

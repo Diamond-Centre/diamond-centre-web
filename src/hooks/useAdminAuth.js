@@ -1,10 +1,12 @@
 /**
- * Hook d'authentification admin
+ * Hook d'authentification admin — utilise le login DICE (/auth/login)
  */
 'use client'
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { api } from '@/lib/api'
+import { auth } from '@/lib/auth'
 import toast from 'react-hot-toast'
 
 export function useAdminAuth() {
@@ -12,16 +14,16 @@ export function useAdminAuth() {
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
-  const checkAuth = async () => {
+  const checkAuth = () => {
     try {
-      const response = await fetch('/api/auth/admin/me')
-      if (response.ok) {
-        const data = await response.json()
-        setAdmin(data.admin)
+      const token = auth.getToken()
+      const user = auth.getUser()
+      if (token && user && (user.role === 'admin' || user.role === 'super_admin')) {
+        setAdmin(user)
       } else {
         setAdmin(null)
       }
-    } catch (error) {
+    } catch {
       setAdmin(null)
     } finally {
       setLoading(false)
@@ -34,38 +36,30 @@ export function useAdminAuth() {
 
   const login = async (email, password) => {
     try {
-      const response = await fetch('/api/auth/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      })
+      const data = await api.login(email, password)
+      const user = data.user
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Erreur de connexion')
+      if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
+        throw new Error('Compte non autorisé pour l’administration')
       }
 
-      const data = await response.json()
-      setAdmin(data.admin)
+      auth.setToken(data.access_token)
+      auth.setUser(user)
+      setAdmin(user)
       toast.success('Connexion réussie')
       router.push('/admin')
       return data
     } catch (error) {
-      toast.error(error.message)
+      toast.error(error.message || 'Erreur de connexion')
       throw error
     }
   }
 
-  const logout = async () => {
-    try {
-      setAdmin(null)
-      // Supprimer le cookie
-      document.cookie = 'admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
-      toast.success('Déconnexion réussie')
-      router.push('/auth/admin/login')
-    } catch (error) {
-      toast.error('Erreur lors de la déconnexion')
-    }
+  const logout = () => {
+    auth.logout()
+    setAdmin(null)
+    toast.success('Déconnexion réussie')
+    router.push('/auth/login')
   }
 
   return {
@@ -74,6 +68,6 @@ export function useAdminAuth() {
     loading,
     login,
     logout,
-    checkAuth
+    checkAuth,
   }
 }

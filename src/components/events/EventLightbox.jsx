@@ -10,6 +10,7 @@ import {
 } from 'react-icons/fa'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
+import EventLocationMap from '@/components/maps/EventLocationMap'
 
 export default function EventLightbox({ 
   isOpen, 
@@ -191,6 +192,14 @@ export default function EventLightbox({
                 <p className="text-xs text-gray-500">Devise</p>
                 <p className="text-sm font-medium text-gray-800">{event.currency || 'XAF'}</p>
               </div>
+            </div>
+
+            <div className="mb-6">
+              <EventLocationMap
+                location={event.location}
+                latitude={event.latitude}
+                longitude={event.longitude}
+              />
             </div>
 
             {/* Promotion (si présente) */}

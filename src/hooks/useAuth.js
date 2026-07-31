@@ -38,7 +38,7 @@ export function useAuth() {
       if (response.user.role === 'admin' || response.user.role === 'super_admin') {
         window.location.href = '/admin'
       } else {
-        window.location.href = '/dashboard'
+        window.location.href = '/espace-client'
       }
       
       return response.user
