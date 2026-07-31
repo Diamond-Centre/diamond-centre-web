@@ -49,24 +49,22 @@ export default function AdminPage() {
     try {
       setLoading(true)
       setError(null)
-      
-      // Charger les événements
-      const eventsData = await api.getEvents(token)
-      setEvents(eventsData || [])
-      
-      // Charger les utilisateurs
-      try {
-        const usersData = await api.getUsers(token)
-        setUsers(usersData || [])
-      } catch (err) {
-        console.warn('Impossible de charger les utilisateurs:', err)
-        setUsers([])
-      }
-      
-      // Calculer les statistiques à partir des événements réels
-      const calculatedStats = calculateStats(eventsData || [], users || [])
-      setStats(calculatedStats)
-      
+
+      const [eventsRaw, usersRaw, dashboardRaw] = await Promise.all([
+        api.getEvents(token).catch(() => []),
+        api.getUsers(token).catch((err) => {
+          console.warn('Impossible de charger les utilisateurs:', err)
+          return []
+        }),
+        api.getDashboardStats(token).catch(() => null),
+      ])
+
+      const eventsData = Array.isArray(eventsRaw) ? eventsRaw : eventsRaw?.data || []
+      const usersData = Array.isArray(usersRaw) ? usersRaw : usersRaw?.data || []
+
+      setEvents(eventsData)
+      setUsers(usersData)
+      setStats(calculateStats(eventsData, usersData, dashboardRaw))
     } catch (error) {
       console.error('Erreur chargement dashboard:', error)
       setError(error.message || 'Erreur lors du chargement des données')
@@ -76,83 +74,111 @@ export default function AdminPage() {
     }
   }
 
-  const calculateStats = (eventsList, usersList) => {
-    // Mois de l'année
-    const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aou', 'Sep', 'Oct', 'Nov', 'Déc']
-    
-    // Initialiser les données par mois
-    const eventsByMonth = months.map(month => ({
-      month,
-      count: 0
-    }))
+  const buildLast12Months = () => {
+    const now = new Date()
+    const buckets = []
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      buckets.push({
+        key: `${d.getFullYear()}-${d.getMonth()}`,
+        month: d.toLocaleString('fr-FR', { month: 'short' }),
+        count: 0,
+        revenue: 0,
+      })
+    }
+    return buckets
+  }
 
-    const revenueByMonth = months.map(month => ({
-      month,
-      revenue: 0
-    }))
+  const monthKeyFromDate = (value) => {
+    if (!value) return null
+    const d = new Date(value)
+    if (Number.isNaN(d.getTime())) return null
+    return `${d.getFullYear()}-${d.getMonth()}`
+  }
 
-    // Remplir les données à partir des événements
-    eventsList.forEach(event => {
-      if (event.start_date) {
-        const eventMonth = new Date(event.start_date).toLocaleString('fr-FR', { month: 'short' })
-        const monthIndex = months.indexOf(eventMonth)
-        if (monthIndex !== -1) {
-          eventsByMonth[monthIndex].count += 1
-          revenueByMonth[monthIndex].revenue += (event.price || 0)
-        }
+  const soldTicketsForEvent = (event) => {
+    const capacity = Number(event.capacity) || 0
+    const available = Number(event.available_tickets)
+    if (capacity <= 0 || Number.isNaN(available)) return 0
+    return Math.max(0, capacity - available)
+  }
+
+  const calculateStats = (eventsList, usersList, dashboard = null) => {
+    const eventsByMonth = buildLast12Months()
+    const revenueByMonth = buildLast12Months()
+    const usersByMonth = buildLast12Months()
+    const eventIndex = Object.fromEntries(eventsByMonth.map((b, i) => [b.key, i]))
+    const revenueIndex = Object.fromEntries(revenueByMonth.map((b, i) => [b.key, i]))
+    const userIndex = Object.fromEntries(usersByMonth.map((b, i) => [b.key, i]))
+
+    let totalRevenue = 0
+    let soldTickets = 0
+
+    eventsList.forEach((event) => {
+      const price = Number(event.price) || 0
+      const sold = soldTicketsForEvent(event)
+      const eventRevenue = sold * price
+      totalRevenue += eventRevenue
+      soldTickets += sold
+
+      const startKey = monthKeyFromDate(event.start_date)
+      if (startKey != null && eventIndex[startKey] != null) {
+        eventsByMonth[eventIndex[startKey]].count += 1
+      }
+
+      // Revenus estimés : billets vendus, rattachés au mois de début de l'événement
+      if (startKey != null && revenueIndex[startKey] != null) {
+        revenueByMonth[revenueIndex[startKey]].revenue += eventRevenue
       }
     })
 
-    // Statistiques de base
-    const totalEvents = eventsList.length
-    const totalUsers = usersList.length
-    const totalRevenue = eventsList.reduce((sum, e) => sum + (e.price || 0), 0)
-    
-    // Événements par statut
-    const publishedEvents = eventsList.filter(e => e.status === 'published').length
-    const draftEvents = eventsList.filter(e => e.status === 'draft').length
-    const cancelledEvents = eventsList.filter(e => e.status === 'cancelled').length
-    
-    // Événements à venir
-    const now = new Date()
-    const upcomingEvents = eventsList.filter(e => new Date(e.start_date) > now).length
-    
-    // Prix moyen
-    const averagePrice = totalEvents > 0 
-      ? Math.round(eventsList.reduce((sum, e) => sum + (e.price || 0), 0) / totalEvents) 
-      : 0
-
-    // Catégories
-    const categoriesMap = eventsList.reduce((acc, event) => {
-      const cat = event.category || 'autre'
-      if (!acc[cat]) acc[cat] = 0
-      acc[cat]++
-      return acc
-    }, {})
-    
-    const categoriesData = Object.entries(categoriesMap).map(([name, count]) => ({
-      name,
-      count,
-      percentage: totalEvents > 0 ? Math.round((count / totalEvents) * 100) : 0
-    }))
-
-    // Utilisateurs par mois (si disponibles)
-    const usersByMonth = months.map(month => {
-      const count = usersList.filter(u => {
-        if (!u.created_at) return false
-        const userMonth = new Date(u.created_at).toLocaleString('fr-FR', { month: 'short' })
-        return userMonth === month
-      }).length
-      return { month, count }
+    usersList.forEach((u) => {
+      const key = monthKeyFromDate(u.created_at)
+      if (key != null && userIndex[key] != null) {
+        usersByMonth[userIndex[key]].count += 1
+      }
     })
 
-    // Événements avec promotion
-    const eventsWithPromotion = eventsList.filter(e => e.promotion && e.promotion.pourcentage > 0).length
-    const promotionRate = totalEvents > 0 ? Math.round((eventsWithPromotion / totalEvents) * 100) : 0
+    const totalEvents = dashboard?.events?.total ?? eventsList.length
+    const totalUsers = dashboard?.users?.total ?? usersList.length
+    const publishedEvents = dashboard?.events?.published
+      ?? eventsList.filter((e) => e.status === 'published').length
+    const draftEvents = dashboard?.events?.draft
+      ?? eventsList.filter((e) => e.status === 'draft').length
+    const cancelledEvents = dashboard?.events?.cancelled
+      ?? eventsList.filter((e) => e.status === 'cancelled').length
+    const totalTickets = dashboard?.tickets?.total ?? soldTickets
 
-    // Derniers événements créés
+    const now = new Date()
+    const upcomingEvents = eventsList.filter((e) => e.start_date && new Date(e.start_date) > now).length
+
+    const averagePrice = eventsList.length > 0
+      ? Math.round(eventsList.reduce((sum, e) => sum + (Number(e.price) || 0), 0) / eventsList.length)
+      : 0
+
+    const categoriesMap = eventsList.reduce((acc, event) => {
+      const cat = event.category || 'autre'
+      acc[cat] = (acc[cat] || 0) + 1
+      return acc
+    }, {})
+
+    const categoriesData = Object.entries(categoriesMap)
+      .map(([name, count]) => ({
+        name,
+        count,
+        percentage: eventsList.length > 0 ? Math.round((count / eventsList.length) * 100) : 0,
+      }))
+      .sort((a, b) => b.count - a.count)
+
+    const eventsWithPromotion = eventsList.filter(
+      (e) => e.promotion && Number(e.promotion.pourcentage) > 0
+    ).length
+    const promotionRate = eventsList.length > 0
+      ? Math.round((eventsWithPromotion / eventsList.length) * 100)
+      : 0
+
     const recentEvents = [...eventsList]
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
       .slice(0, 5)
 
     return {
@@ -171,7 +197,8 @@ export default function AdminPage() {
       eventsWithPromotion,
       promotionRate,
       recentEvents,
-      totalTickets: eventsList.reduce((sum, e) => sum + (e.available_tickets || 0), 0)
+      totalTickets,
+      soldTickets,
     }
   }
 
@@ -220,7 +247,7 @@ export default function AdminPage() {
       color: 'from-green-500 to-green-600'
     },
     {
-      title: 'Tickets Disponibles',
+      title: 'Tickets',
       value: stats?.totalTickets || 0,
       icon: FaTicketAlt,
       color: 'from-purple-500 to-purple-600'
@@ -235,9 +262,10 @@ export default function AdminPage() {
 
   const customTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
+      const title = label || payload[0].name || payload[0].payload?.name
       return (
         <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg">
-          <p className="text-sm font-medium text-gray-800">{label}</p>
+          <p className="text-sm font-medium text-gray-800">{title}</p>
           <p className="text-sm text-dice-blue font-bold">
             {payload[0].value}
           </p>
@@ -408,7 +436,9 @@ export default function AdminPage() {
                 />
                 <YAxis 
                   stroke="#9ca3af"
-                  tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                  tickFormatter={(value) =>
+                    value >= 1000 ? `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}k` : String(value)
+                  }
                   tick={{ fontSize: 12 }}
                 />
                 <Tooltip content={revenueTooltip} />
@@ -482,16 +512,20 @@ export default function AdminPage() {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={stats?.categories || []}
+                  data={stats?.categories?.length ? stats.categories : [{ name: 'Aucune', count: 1 }]}
                   cx="50%"
                   cy="50%"
                   innerRadius={60}
                   outerRadius={80}
                   paddingAngle={5}
                   dataKey="count"
+                  nameKey="name"
                 >
-                  {(stats?.categories || []).map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  {(stats?.categories?.length ? stats.categories : [{ name: 'Aucune', count: 1 }]).map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={stats?.categories?.length ? COLORS[index % COLORS.length] : '#e5e7eb'}
+                    />
                   ))}
                 </Pie>
                 <Tooltip content={customTooltip} />
@@ -606,7 +640,7 @@ export default function AdminPage() {
               </div>
               <div>
                 <h4 className="font-medium text-gray-800 group-hover:text-purple-500 transition-colors">Tickets</h4>
-                <p className="text-sm text-gray-500">{stats?.totalTickets || 0} tickets disponibles</p>
+                <p className="text-sm text-gray-500">{stats?.totalTickets || 0} tickets</p>
               </div>
             </div>
           </div>

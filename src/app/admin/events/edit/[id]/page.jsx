@@ -11,6 +11,7 @@ import { auth } from '@/lib/auth'
 import Button from '@/components/ui/Button'
 import toast from 'react-hot-toast'
 import Image from 'next/image'
+import LocationPicker from '@/components/maps/LocationPicker'
 
 export default function EditEvent() {
   const router = useRouter()
@@ -39,7 +40,9 @@ export default function EditEvent() {
     start_time: '09:00',
     end_time: '17:00',
     location: '',
-    category: 'conférence',
+    latitude: null,
+    longitude: null,
+    category: 'conference',
     capacity: 50,
     image_url: '',
     hasPromotion: false,
@@ -87,6 +90,8 @@ export default function EditEvent() {
         start_time: event.start_time || '09:00',
         end_time: event.end_time || '17:00',
         location: event.location || '',
+        latitude: event.latitude ?? null,
+        longitude: event.longitude ?? null,
         category: event.category || 'conférence',
         capacity: event.capacity || 50,
         image_url: event.image_url || '',
@@ -220,6 +225,8 @@ export default function EditEvent() {
         start_time: formData.start_time || '09:00',
         end_time: formData.end_time || '17:00',
         location: formData.location.trim(),
+        latitude: formData.latitude,
+        longitude: formData.longitude,
         category: formData.category,
         capacity: Number(formData.capacity),
         image_url: finalImageUrl,
@@ -303,10 +310,11 @@ export default function EditEvent() {
                 onChange={handleInputChange}
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
               >
-                <option value="conférence">Conférence</option>
-                <option value="séminaire">Séminaire</option>
+                <option value="conference">Conférence</option>
+                <option value="seminaire">Séminaire</option>
                 <option value="formation">Formation</option>
                 <option value="atelier">Atelier</option>
+                <option value="webinaire">Webinaire</option>
               </select>
             </div>
           </div>
@@ -429,14 +437,20 @@ export default function EditEvent() {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Lieu *
             </label>
-            <input
-              id="location"
-              name="location"
-              value={formData.location}
-              onChange={handleInputChange}
-              placeholder="Abidjan, Plateau"
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
+            <LocationPicker
+              location={formData.location}
+              latitude={formData.latitude}
+              longitude={formData.longitude}
               required
+              inputClassName="w-full px-4 py-2 pl-10 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
+              onChange={({ location, latitude, longitude }) => {
+                setFormData((prev) => ({
+                  ...prev,
+                  location,
+                  latitude,
+                  longitude,
+                }))
+              }}
             />
           </div>
 

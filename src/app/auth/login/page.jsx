@@ -49,7 +49,7 @@ export default function LoginPage() {
       if (user.role === 'admin' || user.role === 'super_admin') {
         window.location.href = '/admin'
       } else {
-        window.location.href = '/dashboard'
+        window.location.href = '/espace-client'
       }
     }
     setIsChecking(false)

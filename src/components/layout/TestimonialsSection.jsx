@@ -1,214 +1,65 @@
 /**
- * Section témoignages - Bleu Diamond Centre avec défilement infini horizontal
- * Pause au survol
+ * Témoignages — bande sobre
  */
 'use client'
 
-import { useState, useRef } from 'react'
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
-import { FaStar } from 'react-icons/fa'
-import Section from '@/components/ui/Section'
-import Card from '@/components/ui/Card'
+import { motion } from 'framer-motion'
 
-// Emojis pour les avatars
-const avatarEmojis = [
-  '👩‍💼', // Femme entrepreneur
-  '👨‍🎓', // Homme étudiant
-  '👩‍💻', // Femme chef d'entreprise
-  '👨‍🏫', // Homme professeur
-  '👩‍🎨', // Femme artiste
-  '👨‍💼', // Homme professionnel
-  '👩‍🚀', // Femme aventurière
-  '🧑‍💻', // Personne développeur
-  '👩‍🔬', // Femme scientifique
-  '🧑‍🏫', // Personne enseignant
-  '👩‍⚕️', // Femme médecin
-  '🧑‍💼', // Personne professionnelle
+const testimonials = [
+  {
+    name: 'Sophie Martin',
+    role: 'Entrepreneure',
+    text: 'Les conférences DiCe ont transformé ma vision. Une exigence rare, et une vraie énergie.',
+  },
+  {
+    name: 'Thomas Dubois',
+    role: 'Étudiant',
+    text: 'Le séminaire m’a donné les clés pour lancer mon projet. Format concret, orateurs inspirants.',
+  },
+  {
+    name: 'Laura Petit',
+    role: 'Cheffe d’entreprise',
+    text: 'L’art oratoire m’a permis de gagner en confiance et de mieux porter ma parole en équipe.',
+  },
 ]
 
-// Composant de défilement infini avec pause au survol
-function InfiniteMarquee({ children, direction = 'left', speed = 45 }) {
-  const [isHovered, setIsHovered] = useState(false)
-  const containerRef = useRef(null)
-
+export default function TestimonialsSection() {
   return (
-    <div 
-      className="relative overflow-hidden"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      ref={containerRef}
-    >
-      {/* Effet de fondu sur les bords (fade edges) */}
-      <div className="absolute inset-y-0 left-0 w-20 md:w-32 z-10 pointer-events-none bg-gradient-to-r from-dice-blue to-transparent" />
-      <div className="absolute inset-y-0 right-0 w-20 md:w-32 z-10 pointer-events-none bg-gradient-to-l from-dice-blue to-transparent" />
-      
-      {/* Conteneur du défilement */}
-      <div className="flex overflow-hidden">
-        <motion.div
-          className="flex gap-6 py-4"
-          animate={{
-            x: direction === 'left' ? ['0%', '-50%'] : ['-50%', '0%'],
-          }}
-          transition={{
-            duration: speed,
-            ease: 'linear',
-            repeat: Infinity,
-            repeatType: 'loop',
-          }}
-          // Pause au survol
-          style={{
-            animationPlayState: isHovered ? 'paused' : 'running',
-          }}
-          // Alternative avec stop animation
-          {...(isHovered && {
-            animate: {
-              x: ['0%', '-50%'],
-            },
-            transition: {
-              duration: speed,
-              ease: 'linear',
-              repeat: Infinity,
-              repeatType: 'loop',
-            },
-          })}
-        >
-          {children}
-          {children}
-        </motion.div>
-      </div>
-    </div>
-  )
-}
+    <section className="relative overflow-hidden bg-[#0A89F2] py-20 text-white md:py-24">
+      <div className="pointer-events-none absolute -left-16 top-0 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
+      <div className="pointer-events-none absolute -right-10 bottom-0 h-48 w-48 rounded-full bg-[#0057C2]/50 blur-2xl" />
 
-export default function TestimonialsSection({ 
-  testimonials,
-  title = 'Ce que disent nos participants',
-  badge = 'Témoignages',
-  bgClass = 'bg-gradient-to-br from-dice-blue to-dice-blue-dark'
-}) {
-  // Dupliquer les témoignages pour l'effet infini
-  const duplicatedTestimonials = [...testimonials, ...testimonials]
+      <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
+        <div className="mb-10 max-w-xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
+            Témoignages
+          </p>
+          <h2 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">
+            Ils ont choisi DiCe
+          </h2>
+        </div>
 
-  return (
-    <Section 
-      badge={badge}
-      title={title}
-      className={bgClass}
-    >
-      {/* Version desktop avec marquee */}
-      <div className="hidden md:block">
-        <InfiniteMarquee direction="left" speed={45}>
-          {duplicatedTestimonials.map((testimonial, index) => {
-            let emoji = '👤'
-            
-            if (testimonial.role?.toLowerCase().includes('entrepreneur')) {
-              emoji = '👩‍💼'
-            } else if (testimonial.role?.toLowerCase().includes('étudiant')) {
-              emoji = '👨‍🎓'
-            } else if (testimonial.role?.toLowerCase().includes('chef')) {
-              emoji = '👩‍💻'
-            } else if (testimonial.role?.toLowerCase().includes('professeur') || testimonial.role?.toLowerCase().includes('enseignant')) {
-              emoji = '👨‍🏫'
-            } else if (testimonial.role?.toLowerCase().includes('artiste')) {
-              emoji = '👩‍🎨'
-            } else if (testimonial.role?.toLowerCase().includes('développeur')) {
-              emoji = '🧑‍💻'
-            } else if (testimonial.role?.toLowerCase().includes('scientifique')) {
-              emoji = '👩‍🔬'
-            } else if (testimonial.role?.toLowerCase().includes('médecin')) {
-              emoji = '👩‍⚕️'
-            } else {
-              const emojiIndex = index % avatarEmojis.length
-              emoji = avatarEmojis[emojiIndex]
-            }
-
-            return (
-              <motion.div
-                key={`${index}-${testimonial.name}`}
-                className="min-w-[320px] max-w-[320px] flex-shrink-0"
-                whileHover={{ scale: 1.02, y: -4 }}
-                transition={{ duration: 0.3 }}
-              >
-                <Card variant="ghost" className="bg-white/10 backdrop-blur-sm p-6 border border-white/10 hover:bg-white/15 transition-all duration-300 h-full">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-14 h-14 rounded-full bg-gradient-to-r from-dice-blue to-dice-blue-dark flex items-center justify-center text-3xl text-white shadow-lg">
-                      {emoji}
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-white">{testimonial.name}</h4>
-                      <p className="text-sm text-white/60">{testimonial.role}</p>
-                    </div>
-                  </div>
-                  <div className="flex text-yellow-400 mb-3">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <FaStar key={i} />
-                    ))}
-                  </div>
-                  <p className="text-white/80 text-sm leading-relaxed">"{testimonial.text}"</p>
-                </Card>
-              </motion.div>
-            )
-          })}
-        </InfiniteMarquee>
-      </div>
-
-      {/* Version mobile avec grille classique */}
-      <div className="md:hidden">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {testimonials.map((testimonial, index) => {
-            let emoji = '👤'
-            
-            if (testimonial.role?.toLowerCase().includes('entrepreneur')) {
-              emoji = '👩‍💼'
-            } else if (testimonial.role?.toLowerCase().includes('étudiant')) {
-              emoji = '👨‍🎓'
-            } else if (testimonial.role?.toLowerCase().includes('chef')) {
-              emoji = '👩‍💻'
-            } else if (testimonial.role?.toLowerCase().includes('professeur') || testimonial.role?.toLowerCase().includes('enseignant')) {
-              emoji = '👨‍🏫'
-            } else if (testimonial.role?.toLowerCase().includes('artiste')) {
-              emoji = '👩‍🎨'
-            } else if (testimonial.role?.toLowerCase().includes('développeur')) {
-              emoji = '🧑‍💻'
-            } else if (testimonial.role?.toLowerCase().includes('scientifique')) {
-              emoji = '👩‍🔬'
-            } else if (testimonial.role?.toLowerCase().includes('médecin')) {
-              emoji = '👩‍⚕️'
-            } else {
-              const emojiIndex = index % avatarEmojis.length
-              emoji = avatarEmojis[emojiIndex]
-            }
-
-            return (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <Card variant="ghost" className="bg-white/10 backdrop-blur-sm p-6 border border-white/10 hover:bg-white/15 transition-all duration-300">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-14 h-14 rounded-full bg-gradient-to-r from-dice-blue to-dice-blue-dark flex items-center justify-center text-3xl text-white shadow-lg">
-                      {emoji}
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-white">{testimonial.name}</h4>
-                      <p className="text-sm text-white/60">{testimonial.role}</p>
-                    </div>
-                  </div>
-                  <div className="flex text-yellow-400 mb-3">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <FaStar key={i} />
-                    ))}
-                  </div>
-                  <p className="text-white/80 text-sm leading-relaxed">"{testimonial.text}"</p>
-                </Card>
-              </motion.div>
-            )
-          })}
+        <div className="grid gap-5 md:grid-cols-3">
+          {testimonials.map((t, i) => (
+            <motion.blockquote
+              key={t.name}
+              initial={{ opacity: 0, y: 18 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.08, duration: 0.45 }}
+              className="rounded-[22px] border border-white/15 bg-white/10 p-6 backdrop-blur-sm"
+            >
+              <p className="text-[15px] leading-relaxed text-white/95">
+                “{t.text}”
+              </p>
+              <footer className="mt-5 border-t border-white/15 pt-4">
+                <p className="font-semibold">{t.name}</p>
+                <p className="text-sm text-white/65">{t.role}</p>
+              </footer>
+            </motion.blockquote>
+          ))}
         </div>
       </div>
-    </Section>
+    </section>
   )
 }

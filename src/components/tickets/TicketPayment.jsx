@@ -11,7 +11,8 @@ import {
   FaPaypal, 
   FaLock,
   FaArrowLeft,
-  FaSpinner
+  FaSpinner,
+  FaShieldAlt,
 } from 'react-icons/fa'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
@@ -19,12 +20,13 @@ import Input from '@/components/ui/Input'
 export default function TicketPayment({ 
   event, 
   quantity, 
-  totalPrice, 
+  totalPrice,
+  currency = 'FCFA',
   onPayment, 
   onBack,
   isProcessing 
 }) {
-  const [paymentMethod, setPaymentMethod] = useState('card')
+  const [paymentMethod, setPaymentMethod] = useState('mobile')
   const [formData, setFormData] = useState({
     cardNumber: '',
     expiryDate: '',
@@ -34,17 +36,23 @@ export default function TicketPayment({
   })
 
   const paymentMethods = [
-    { id: 'card', label: 'Carte bancaire', icon: FaCreditCard },
     { id: 'mobile', label: 'Mobile Money', icon: FaMobileAlt },
+    { id: 'card', label: 'Carte bancaire', icon: FaCreditCard },
     { id: 'paypal', label: 'PayPal', icon: FaPaypal },
   ]
 
   const handleSubmit = (e) => {
     e.preventDefault()
+    const phone =
+      String(formData.phoneNumber || '').trim() ||
+      event?.customer_phone ||
+      '+237000000000'
+
     onPayment({
-      method: paymentMethod,
+      method: paymentMethod === 'mobile' ? 'mtn_momo' : paymentMethod,
       transactionId: `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
-      ...formData
+      ...formData,
+      phoneNumber: phone,
     })
   }
 
@@ -153,14 +161,13 @@ export default function TicketPayment({
             label="Numéro de téléphone"
             name="phoneNumber"
             type="tel"
-            placeholder="06 12 34 56 78"
+            placeholder="+237 6XX XX XX XX"
             value={formData.phoneNumber}
             onChange={handleChange}
-            required
           />
           <div className="text-sm text-gray-500 bg-blue-50 p-3 rounded-xl">
             <FaLock className="inline mr-2 text-dice-blue" />
-            Vous recevrez un code de confirmation par SMS
+            Laissez vide pour utiliser le numéro de votre compte
           </div>
         </motion.div>
       )}
@@ -180,12 +187,17 @@ export default function TicketPayment({
       {/* Résumé du paiement */}
       <div className="bg-gray-50 rounded-xl p-4">
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">{quantity} place{quantity > 1 ? 's' : ''}</span>
-          <span>{event?.prixPromotion || event?.prix} €</span>
+          <span className="text-gray-600">{quantity} ticket{quantity > 1 ? 's' : ''}</span>
+          <span>
+            {event?.prixPromotion ?? event?.promoPrice ?? event?.prix ?? event?.price}{' '}
+            {currency}
+          </span>
         </div>
         <div className="flex justify-between font-bold text-lg mt-2 pt-2 border-t border-gray-200">
           <span>Total</span>
-          <span className="text-dice-blue">{totalPrice} €</span>
+          <span className="text-dice-blue">
+            {totalPrice} {currency}
+          </span>
         </div>
       </div>
 
@@ -202,7 +214,7 @@ export default function TicketPayment({
           loading={isProcessing}
           disabled={isProcessing}
         >
-          {isProcessing ? 'Traitement...' : `Payer ${totalPrice} €`}
+          {isProcessing ? 'Traitement...' : `Payer ${totalPrice} ${currency}`}
         </Button>
       </div>
 
