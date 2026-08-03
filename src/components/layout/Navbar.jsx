@@ -1,16 +1,20 @@
 /**
- * Barre de navigation principale - Avec affichage du nom utilisateur
+ * Navbar DiCe — barre flottante distinctive
  */
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
-import { FaBars, FaTimes, FaUser, FaChevronDown } from 'react-icons/fa'
-import { GiDiamondRing } from 'react-icons/gi'
+import Image from 'next/image'
+import { usePathname, useRouter } from 'next/navigation'
+import { AnimatePresence, motion } from 'framer-motion'
+import {
+  FaArrowRight,
+  FaBars,
+  FaTimes,
+  FaUserCircle,
+} from 'react-icons/fa'
 import { useAuth } from '@/hooks/useAuth'
-import Button from '@/components/ui/Button'
 
 const navLinks = [
   { href: '/', label: 'Accueil' },
@@ -20,236 +24,245 @@ const navLinks = [
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
-  const [isProfileOpen, setIsProfileOpen] = useState(false)
-  const { user, logout, isAuthenticated } = useAuth()
+  const [scrolled, setScrolled] = useState(false)
+  const { user, isAuthenticated } = useAuth()
   const pathname = usePathname()
-  const profileRef = useRef(null)
+  const router = useRouter()
 
-  // Fermer le menu profil au changement de page
   useEffect(() => {
-    setIsProfileOpen(false)
     setIsOpen(false)
   }, [pathname])
 
-  // Fermer au clic extérieur ou touche Escape
   useEffect(() => {
-    if (!isProfileOpen) return
+    const onScroll = () => setScrolled(window.scrollY > 12)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
-    const handlePointerDown = (event) => {
-      if (profileRef.current && !profileRef.current.contains(event.target)) {
-        setIsProfileOpen(false)
-      }
-    }
-
-    const handleKeyDown = (event) => {
-      if (event.key === 'Escape') {
-        setIsProfileOpen(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handlePointerDown)
-    document.addEventListener('touchstart', handlePointerDown)
-    document.addEventListener('keydown', handleKeyDown)
-
+  useEffect(() => {
+    if (!isOpen) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
     return () => {
-      document.removeEventListener('mousedown', handlePointerDown)
-      document.removeEventListener('touchstart', handlePointerDown)
-      document.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = prev
     }
-  }, [isProfileOpen])
+  }, [isOpen])
 
-  const closeProfileMenu = () => setIsProfileOpen(false)
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin'
 
-  const toggleProfileMenu = (event) => {
-    event.stopPropagation()
-    setIsProfileOpen((open) => !open)
+  const goSpace = () => {
+    router.push(isAdmin ? '/admin' : '/espace-client')
   }
 
-  const displayName = [user?.prenom, user?.nom].filter(Boolean).join(' ') || user?.name || 'Utilisateur'
-  const initials =
-    `${user?.prenom?.[0] || user?.name?.[0] || ''}${user?.nom?.[0] || ''}`.toUpperCase() || 'U'
+  const spaceLabel = isAdmin ? 'Admin' : 'Mon espace'
+  const firstName =
+    user?.prenom ||
+    (user?.name ? String(user.name).split(' ')[0] : null) ||
+    'Compte'
 
   return (
-    <nav className="fixed top-[28px] left-24 right-24 z-50">
-      <div className="glass-dark rounded-3xl px-3 md:px-4 py-2 border border-white/10 shadow-xl w-full">
-        <div className="flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-9 h-9 bg-gradient-to-br from-dice-blue to-purple-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
-              <GiDiamondRing className="text-white text-lg" />
-            </div>
-            <span className="text-base font-bold text-white hidden sm:block">
-              Diamond Centre
-            </span>
+    <>
+      <header className="pointer-events-none fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-5 sm:pt-4">
+        <motion.nav
+          initial={false}
+          animate={{
+            y: 0,
+            boxShadow: scrolled
+              ? '0 18px 40px rgba(11,18,32,0.12)'
+              : '0 10px 30px rgba(11,18,32,0.06)',
+          }}
+          className={`pointer-events-auto mx-auto flex max-w-6xl items-center gap-3 rounded-[22px] border px-3 py-2 transition-[background,border-color] duration-300 sm:gap-4 sm:px-4 ${
+            scrolled
+              ? 'border-[#E8EEF5]/90 bg-white/95 backdrop-blur-xl'
+              : 'border-white/70 bg-white/90 backdrop-blur-md'
+          }`}
+        >
+          {/* Brand — logo officiel DiCe (fond transparent) */}
+          <Link
+            href="/"
+            className="group flex shrink-0 items-center py-0.5"
+            aria-label="DiCe — Diamond Centre"
+          >
+            <Image
+              src="/images/logo-dice.png"
+              alt="DiCe Diamond Centre — Fulfil your dreams"
+              width={220}
+              height={101}
+              priority
+              className="h-10 w-auto object-contain object-left sm:h-11 md:h-12"
+            />
           </Link>
 
-          <div className="hidden md:flex items-center gap-6">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`text-sm font-medium transition-colors hover:text-dice-blue ${
-                  pathname === link.href ? 'text-dice-blue' : 'text-black'
-                }`}
-              >
-                {link.label}
-              </Link>
-            ))}
+          {/* Center links */}
+          <div className="hidden min-w-0 flex-1 justify-center md:flex">
+            <div className="flex items-center gap-0.5 rounded-full border border-[#E8EEF5] bg-[#F4F7FB]/90 p-1">
+              {navLinks.map((link) => {
+                const active =
+                  link.href === '/'
+                    ? pathname === '/'
+                    : pathname === link.href ||
+                      pathname?.startsWith(`${link.href}/`)
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`relative rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors lg:px-4 ${
+                      active
+                        ? 'text-white'
+                        : 'text-[#667085] hover:text-[#0B1220]'
+                    }`}
+                  >
+                    {active ? (
+                      <motion.span
+                        layoutId="nav-active-pill"
+                        className="absolute inset-0 rounded-full bg-[#0A89F2] shadow-[0_6px_16px_rgba(10,137,242,0.35)]"
+                        transition={{
+                          type: 'spring',
+                          stiffness: 380,
+                          damping: 30,
+                        }}
+                      />
+                    ) : null}
+                    <span className="relative z-10">{link.label}</span>
+                  </Link>
+                )
+              })}
+            </div>
           </div>
 
-          <div className="hidden md:flex items-center gap-1">
+          {/* Actions */}
+          <div className="ml-auto hidden shrink-0 items-center gap-2 md:flex">
             {isAuthenticated ? (
-              <div className="relative" ref={profileRef}>
-                <button
-                  type="button"
-                  aria-haspopup="menu"
-                  aria-expanded={isProfileOpen}
-                  onClick={toggleProfileMenu}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-dice-blue/10 hover:bg-dice-blue/20 transition-colors"
-                >
-                  <div className="w-7 h-7 bg-gradient-to-br from-dice-blue to-purple-600 rounded-full flex items-center justify-center text-xs text-white font-bold">
-                    {initials}
-                  </div>
-                  <span className="text-sm font-medium text-gray-700 max-w-[140px] truncate">
-                    {displayName}
-                  </span>
-                  <FaChevronDown
-                    className={`text-xs text-gray-400 transition-transform duration-200 ${
-                      isProfileOpen ? 'rotate-180' : ''
-                    }`}
-                  />
-                </button>
-
-                <AnimatePresence>
-                  {isProfileOpen && (
-                    <motion.div
-                      role="menu"
-                      initial={{ opacity: 0, y: -8, scale: 0.98 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -8, scale: 0.98 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-[60]"
-                    >
-                      <div className="px-4 py-3 border-b border-gray-100">
-                        <p className="text-sm font-semibold text-gray-800 truncate">{displayName}</p>
-                        <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-                      </div>
-                      <Link
-                        href="/dashboard"
-                        role="menuitem"
-                        onClick={closeProfileMenu}
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                      >
-                        Tableau de bord
-                      </Link>
-                      <Link
-                        href="/profile"
-                        role="menuitem"
-                        onClick={closeProfileMenu}
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                      >
-                        Mon profil
-                      </Link>
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={() => {
-                          closeProfileMenu()
-                          logout()
-                        }}
-                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors border-t border-gray-100"
-                      >
-                        Déconnexion
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+              <button
+                type="button"
+                onClick={goSpace}
+                className="group inline-flex items-center gap-2 rounded-full border border-[#E8EEF5] bg-white py-1.5 pl-1.5 pr-3.5 text-sm font-semibold text-[#0B1220] transition hover:border-[#0A89F2]/35 hover:bg-[#E8F3FE]"
+              >
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0A89F2] text-[11px] font-bold text-white">
+                  {String(firstName).charAt(0).toUpperCase()}
+                </span>
+                <span className="max-w-[7rem] truncate">{spaceLabel}</span>
+                <FaArrowRight className="text-[10px] text-[#0A89F2] opacity-0 transition group-hover:opacity-100" />
+              </button>
             ) : (
-              <Link href="/auth/login">
-                <Button
-                  variant="primary"
-                  size="small"
-                  className="bg-dice-blue hover:bg-dice-blue-dark text-white px-3.5 py-1.5 rounded-full text-xs"
-                >
-                  <FaUser className="mr-1 text-xs" />
-                  Connexion
-                </Button>
+              <Link
+                href="/auth/login"
+                className="inline-flex items-center gap-2 rounded-full bg-[#0A89F2] px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(10,137,242,0.3)] transition hover:bg-[#0770cc]"
+              >
+                Connexion
+                <FaArrowRight className="text-[10px]" />
               </Link>
             )}
           </div>
 
+          {/* Mobile toggle */}
           <button
             type="button"
-            onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden text-white/80 hover:text-white transition-colors"
-            aria-label="Menu"
+            onClick={() => setIsOpen((v) => !v)}
+            className="ml-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#E8EEF5] bg-white text-[#0B1220] transition hover:border-[#0A89F2]/40 hover:text-[#0A89F2] md:hidden"
+            aria-label={isOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+            aria-expanded={isOpen}
           >
-            {isOpen ? <FaTimes size={22} /> : <FaBars size={22} />}
+            {isOpen ? <FaTimes /> : <FaBars />}
           </button>
-        </div>
+        </motion.nav>
+      </header>
 
-        <AnimatePresence>
-          {isOpen && (
+      {/* Mobile sheet */}
+      <AnimatePresence>
+        {isOpen ? (
+          <motion.div
+            className="fixed inset-0 z-40 md:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <button
+              type="button"
+              className="absolute inset-0 bg-[#0B1220]/45 backdrop-blur-sm"
+              aria-label="Fermer"
+              onClick={() => setIsOpen(false)}
+            />
             <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="md:hidden mt-2 pt-2 border-t border-white/10"
+              initial={{ y: -24, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -16, opacity: 0 }}
+              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              className="absolute inset-x-3 top-[4.75rem] overflow-hidden rounded-[24px] border border-[#E8EEF5] bg-white shadow-[0_24px_60px_rgba(11,18,32,0.18)]"
             >
-              <div className="flex flex-col gap-2">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={`text-sm font-medium transition-colors hover:text-dice-blue ${
-                      pathname === link.href ? 'text-dice-blue' : 'text-black'
-                    }`}
-                    onClick={() => setIsOpen(false)}
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-                <div className="flex flex-col gap-2 pt-2 border-t border-white/10">
-                  {isAuthenticated ? (
-                    <>
-                      <div className="flex items-center gap-2 px-3 py-2 bg-dice-blue/5 rounded-lg">
-                        <div className="w-8 h-8 bg-gradient-to-br from-dice-blue to-purple-600 rounded-full flex items-center justify-center text-xs text-white font-bold">
-                          {initials}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-gray-800 truncate">{displayName}</p>
-                          <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-                        </div>
-                      </div>
-                      <Link href="/dashboard" onClick={() => setIsOpen(false)}>
-                        <Button variant="glass" fullWidth>
-                          Tableau de bord
-                        </Button>
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          logout()
-                          setIsOpen(false)
-                        }}
-                        className="text-red-400 text-sm font-medium text-center"
+              <div className="border-b border-[#F0F2F5] px-5 py-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#0A89F2]">
+                  Navigation
+                </p>
+                <p className="mt-1 text-sm text-[#667085]">
+                  Explorez Diamond Centre
+                </p>
+              </div>
+
+              <div className="flex flex-col p-2">
+                {navLinks.map((link, i) => {
+                  const active =
+                    link.href === '/'
+                      ? pathname === '/'
+                      : pathname === link.href ||
+                        pathname?.startsWith(`${link.href}/`)
+                  return (
+                    <motion.div
+                      key={link.href}
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.05 + i * 0.04 }}
+                    >
+                      <Link
+                        href={link.href}
+                        onClick={() => setIsOpen(false)}
+                        className={`flex items-center justify-between rounded-2xl px-4 py-3.5 text-sm font-semibold transition ${
+                          active
+                            ? 'bg-[#E8F3FE] text-[#0A89F2]'
+                            : 'text-[#0B1220] hover:bg-[#F4F7FB]'
+                        }`}
                       >
-                        Déconnexion
-                      </button>
-                    </>
-                  ) : (
-                    <Link href="/auth/login" onClick={() => setIsOpen(false)}>
-                      <Button variant="primary" fullWidth>
-                        Connexion
-                      </Button>
-                    </Link>
-                  )}
-                </div>
+                        {link.label}
+                        {active ? (
+                          <span className="h-1.5 w-1.5 rounded-full bg-[#0A89F2]" />
+                        ) : (
+                          <FaArrowRight className="text-[10px] text-[#CBD5E1]" />
+                        )}
+                      </Link>
+                    </motion.div>
+                  )
+                })}
+              </div>
+
+              <div className="border-t border-[#F0F2F5] p-3">
+                {isAuthenticated ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsOpen(false)
+                      goSpace()
+                    }}
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#0A89F2] px-4 py-3.5 text-sm font-semibold text-white"
+                  >
+                    <FaUserCircle />
+                    {spaceLabel}
+                  </button>
+                ) : (
+                  <Link
+                    href="/auth/login"
+                    onClick={() => setIsOpen(false)}
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#0A89F2] px-4 py-3.5 text-sm font-semibold text-white"
+                  >
+                    Connexion
+                    <FaArrowRight className="text-xs" />
+                  </Link>
+                )}
               </div>
             </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </nav>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </>
   )
 }

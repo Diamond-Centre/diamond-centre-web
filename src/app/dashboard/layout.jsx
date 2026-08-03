@@ -1,50 +1,52 @@
 /**
- * Layout du dashboard avec sidebar responsive
+ * Layout legacy /dashboard — redirige tout le sous-arbre client vers /espace-client.
  */
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuth } from '@/hooks/useAuth'
-import Sidebar from '@/components/dashboard/Sidebar'
+import { useEffect } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
+import { auth } from '@/lib/auth'
+
+const mapPath = (pathname) => {
+  if (!pathname) return '/espace-client'
+  if (pathname.startsWith('/dashboard/tickets')) return '/espace-client/tickets'
+  if (pathname.startsWith('/dashboard/certificates')) return '/espace-client/certificats'
+  if (pathname.startsWith('/dashboard/attestations')) return '/espace-client/certificats'
+  if (pathname.startsWith('/dashboard/calendar') || pathname.startsWith('/dashboard/agenda')) {
+    return '/espace-client/agenda'
+  }
+  if (pathname.startsWith('/dashboard/profile')) return '/espace-client/profil'
+  // Ancien CRUD événements sous dashboard = réservé admin
+  if (pathname.startsWith('/dashboard/events')) return '/admin/events'
+  return '/espace-client'
+}
 
 export default function DashboardLayout({ children }) {
-  const [isClient, setIsClient] = useState(false)
-  const { isAuthenticated, loading } = useAuth()
   const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
-    setIsClient(true)
-  }, [])
+    const token = auth.getToken()
+    const user = auth.getUser()
 
-  useEffect(() => {
-    if (isClient && !loading && !isAuthenticated) {
+    if (!token || !user) {
       router.replace('/auth/login')
+      return
     }
-  }, [isClient, isAuthenticated, loading, router])
 
-  if (!isClient || loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-dice-blue" />
-      </div>
-    )
-  }
+    if (user.role === 'admin' || user.role === 'super_admin') {
+      router.replace('/admin')
+      return
+    }
 
-  if (!isAuthenticated) {
-    return null
-  }
+    router.replace(mapPath(pathname))
+  }, [router, pathname])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-dice-blue/5 via-white to-purple-500/5 pt-20 md:pt-24 pb-20 md:pb-8">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex gap-6">
-          <Sidebar />
-          <div className="flex-1 min-w-0">
-            {children}
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-dice-blue" />
+      {/* children unused — always redirect */}
+      <span className="sr-only">{children ? 'redirect' : ''}</span>
     </div>
   )
 }

@@ -1,304 +1,253 @@
 /**
- * Page des événements
+ * Page publique des événements — grille + réservation
  */
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
-import { useSearchParams } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useEffect, useState } from 'react'
+import { FaSearch, FaTicketAlt } from 'react-icons/fa'
 import { useEvents } from '@/hooks/useEvents'
-
-// Import des modèles
-import { EventTypes } from '@/models/Event'
-
-// Composants layout
+import { useAuth } from '@/hooks/useAuth'
 import Container from '@/components/ui/Container'
-import Badge from '@/components/ui/Badge'
+import Button from '@/components/ui/Button'
 import Spinner from '@/components/ui/Spinner'
-
-// Composants événements
 import EventCard from '@/components/events/EventCard'
-import EventSearchBar from '@/components/events/EventSearchBar'
-import EventCategories from '@/components/events/EventCategories'
-import EventStats from '@/components/events/EventStats'
-import SponsorsSection from '@/components/events/SponsorsSection'
+import ReservationModal from '@/components/events/ReservationModal'
+import toast from 'react-hot-toast'
 
-// Types
-interface EventType {
-  id: string
-  titre: string
-  description: string
-  type: string
-  service: string
-  image: string
-  prix: number
-  prixPromotion: number | null
-  date: Date
-  duree: number
-  lieu: string
-  formateur: {
-    id: string
-    nom: string
-    titre: string
-    bio: string
-    photo: string
-    specialites: string[]
-  }
-  nbPlaces: number
-  nbInscrits: number
-  statut: string
-  videoPublicitaire?: string
-}
-
-// Catégories avec leurs labels
 const categories = [
-  { id: 'all', label: 'Tous', count: 0 },
-  { id: 'conférence', label: 'Conférences', count: 0 },
-  { id: 'séminaire', label: 'Séminaires', count: 0 },
-  { id: 'formation', label: 'Formations', count: 0 },
+  { id: 'all', label: 'Tous' },
+  { id: 'conférence', label: 'Conférences' },
+  { id: 'séminaire', label: 'Séminaires' },
+  { id: 'formation', label: 'Formations' },
+  { id: 'atelier', label: 'Ateliers' },
+]
+
+const sortOptions = [
+  { value: 'created_at', label: 'Plus récent' },
+  { value: 'date', label: 'Date' },
+  { value: 'popularity', label: 'Popularité' },
+  { value: 'price-asc', label: 'Tarif croissant' },
+  { value: 'price-desc', label: 'Tarif décroissant' },
 ]
 
 export default function EventsPage() {
-  const { events, loading, fetchEvents } = useEvents()
-  
-  // États
+  const { events, loading, error, fetchPublicEvents } = useEvents()
+  const { isAuthenticated } = useAuth()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
-  const [filteredEvents, setFilteredEvents] = useState<EventType[]>([])
-  const [viewMode, setViewMode] = useState('grid')
+  const [sortBy, setSortBy] = useState('created_at')
+  const [selectedEvent, setSelectedEvent] = useState(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
-  // Charger les événements
   useEffect(() => {
-    fetchEvents()
-  }, [])
+    fetchPublicEvents()
+  }, [fetchPublicEvents])
 
-  // Mettre à jour les catégories avec les compteurs
-  const updateCategories = useCallback(() => {
-    const eventTypes = events.reduce((acc: Record<string, number>, event: EventType) => {
-      acc[event.type] = (acc[event.type] || 0) + 1
-      return acc
-    }, {})
-
-    return categories.map(cat => {
-      if (cat.id === 'all') {
-        return { ...cat, count: events.length }
-      }
-      return { ...cat, count: eventTypes[cat.id] || 0 }
-    })
-  }, [events])
-
-  // Filtrer les événements
-  useEffect(() => {
-    // Vérifier que events est un tableau
-    if (!events || !Array.isArray(events)) {
-      setFilteredEvents([])
-      return
+  const getEffectivePrice = (event) => {
+    if (event.promotion && event.promotion.pourcentage) {
+      const discount = (event.price * event.promotion.pourcentage) / 100
+      return Math.round(event.price - discount)
     }
-
-    let filtered = [...events]
-
-    // Recherche avec vérification des valeurs undefined
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase()
-      filtered = filtered.filter(event => {
-        const titre = event?.titre || ''
-        const description = event?.description || ''
-        return titre.toLowerCase().includes(term) || 
-               description.toLowerCase().includes(term)
-      })
-    }
-
-    // Catégorie
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(event => event?.type === selectedCategory)
-    }
-
-    setFilteredEvents(filtered)
-  }, [events, searchTerm, selectedCategory])
-
-  // Statistiques
-  const stats = {
-    total: events?.length || 0,
-    upcoming: events?.filter((e: EventType) => {
-      const status = String(e?.statut || e?.status || '').toLowerCase()
-      return status === 'à venir' || status === 'published' || status === 'upcoming'
-    }).length || 0,
-    participants: events?.reduce((acc: number, e: EventType) => acc + (e?.nbInscrits || 0), 0) || 0,
+    return event.price || 0
   }
 
-  // Rendu des événements
-  const renderEvents = () => {
-    if (loading) {
-      return (
-        <div className="flex justify-center items-center py-20">
-          <Spinner size="large" className="text-dice-blue" />
-        </div>
-      )
-    }
+  const filteredEvents =
+    events?.filter((event) => {
+      const matchSearch =
+        event.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        event.description?.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchCategory =
+        selectedCategory === 'all' || event.category === selectedCategory
+      return matchSearch && matchCategory
+    }) || []
 
-    if (!filteredEvents || filteredEvents.length === 0) {
-      return (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center py-20"
-        >
-          <div className="text-6xl mb-4">🔍</div>
-          <h3 className="text-2xl font-bold text-gray-700 mb-2">
-            Aucun événement trouvé
-          </h3>
-          <p className="text-gray-500">
-            Essayez de modifier votre recherche ou votre catégorie
-          </p>
-          <button
-            onClick={() => {
-              setSearchTerm('')
-              setSelectedCategory('all')
-            }}
-            className="mt-4 text-dice-blue hover:text-dice-blue-dark font-medium"
-          >
-            Réinitialiser les filtres
-          </button>
-        </motion.div>
-      )
+  const sortedEvents = [...filteredEvents].sort((a, b) => {
+    switch (sortBy) {
+      case 'created_at': {
+        const dateA = new Date(a.created_at || a.createdAt || 0)
+        const dateB = new Date(b.created_at || b.createdAt || 0)
+        return dateB - dateA
+      }
+      case 'date':
+        return new Date(a.start_date) - new Date(b.start_date)
+      case 'popularity': {
+        const popularityA = (a.nb_inscrits || 0) / (a.capacity || 1)
+        const popularityB = (b.nb_inscrits || 0) / (b.capacity || 1)
+        return popularityB - popularityA
+      }
+      case 'price-asc':
+        return getEffectivePrice(a) - getEffectivePrice(b)
+      case 'price-desc':
+        return getEffectivePrice(b) - getEffectivePrice(a)
+      default:
+        return 0
     }
+  })
 
+  const openReservation = (event) => {
+    if (!isAuthenticated) {
+      toast.error('Veuillez vous connecter pour réserver')
+      return
+    }
+    setSelectedEvent(event)
+    setIsModalOpen(true)
+  }
+
+  const getSortLabel = () =>
+    sortOptions.find((opt) => opt.value === sortBy)?.label || 'Plus récent'
+
+  if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredEvents.map((event, index) => (
-          <motion.div
-            key={event?.id || index}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-          >
-            <EventCard event={event} />
-          </motion.div>
-        ))}
+      <div className="flex min-h-[60vh] items-center justify-center pt-24">
+        <Spinner size="large" className="text-dice-blue" />
       </div>
     )
   }
 
-  const updatedCategories = updateCategories()
+  if (error) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center pt-24">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-700">
+            Erreur de chargement
+          </h2>
+          <p className="mt-2 text-gray-500">{error}</p>
+          <Button
+            variant="primary"
+            className="mt-4"
+            onClick={() => fetchPublicEvents()}
+          >
+            Réessayer
+          </Button>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="pt-20">
-        {/* Hero Section */}
-        <section className="relative py-12">
-          <Container>
-            <div className="max-w-4xl">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-              >
-                <Badge variant="default" className="mb-4">
-                  Nos événements
-                </Badge>
-                
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-800 mb-4">
-                  Découvrez nos <br />
-                  <span className="gradient-text">événements</span>
-                </h1>
-                
-                <p className="text-lg md:text-xl text-gray-600 max-w-2xl">
-                  Des formations, conférences et séminaires pour votre développement personnel et professionnel.
-                </p>
+    <>
+      <div className="min-h-screen bg-[#F4F7FB] pt-24">
+        <Container>
+          <div className="py-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0A89F2]">
+              Programme
+            </p>
+            <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-[#0B1220] md:text-4xl">
+              Nos événements
+            </h1>
+            <p className="mt-2 max-w-xl text-[#667085]">
+              Formations, conférences et ateliers DiCe — réservez votre place en
+              quelques secondes.
+            </p>
+          </div>
 
-                {/* Statistiques */}
-                <div className="mt-6">
-                  <EventStats 
-                    totalEvents={stats.total}
-                    upcomingEvents={stats.upcoming}
-                    participants={stats.participants}
-                  />
-                </div>
-              </motion.div>
-            </div>
-          </Container>
-        </section>
-
-        {/* Section Recherche */}
-        <section className="py-6 bg-white/80 backdrop-blur-sm border-b border-gray-100 sticky top-16 z-30">
-          <Container>
-            <div className="flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
-              {/* Barre de recherche */}
-              <div className="flex-1 max-w-xl">
-                <EventSearchBar
+          <div className="mb-8">
+            <div className="flex flex-col gap-4 md:flex-row">
+              <div className="relative flex-1">
+                <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#98A2B3]" />
+                <input
+                  type="text"
+                  placeholder="Rechercher un événement…"
                   value={searchTerm}
-                  onChange={setSearchTerm}
-                  placeholder="Rechercher un événement..."
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full rounded-2xl border border-[#E8EEF5] bg-white py-3 pl-11 pr-4 text-sm outline-none transition focus:border-[#0A89F2]/40 focus:ring-2 focus:ring-[#0A89F2]/15"
                 />
               </div>
 
-              {/* Vue mode toggle */}
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded-lg transition-colors ${
-                    viewMode === 'grid' 
-                      ? 'bg-dice-blue/10 text-dice-blue' 
-                      : 'text-gray-400 hover:text-gray-600'
-                  }`}
-                >
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM13 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2h-2zM13 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2h-2z" />
-                  </svg>
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 rounded-lg transition-colors ${
-                    viewMode === 'list' 
-                      ? 'bg-dice-blue/10 text-dice-blue' 
-                      : 'text-gray-400 hover:text-gray-600'
-                  }`}
-                >
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M5 3a1 1 0 011 1v1a1 1 0 01-1 1H4a1 1 0 01-1-1V4a1 1 0 011-1h1zM11 3a1 1 0 011 1v1a1 1 0 01-1 1h-1a1 1 0 01-1-1V4a1 1 0 011-1h1zM17 3a1 1 0 011 1v1a1 1 0 01-1 1h-1a1 1 0 01-1-1V4a1 1 0 011-1h1zM5 9a1 1 0 011 1v1a1 1 0 01-1 1H4a1 1 0 01-1-1v-1a1 1 0 011-1h1zM11 9a1 1 0 011 1v1a1 1 0 01-1 1h-1a1 1 0 01-1-1v-1a1 1 0 011-1h1zM17 9a1 1 0 011 1v1a1 1 0 01-1 1h-1a1 1 0 01-1-1v-1a1 1 0 011-1h1zM5 15a1 1 0 011 1v1a1 1 0 01-1 1H4a1 1 0 01-1-1v-1a1 1 0 011-1h1zM11 15a1 1 0 011 1v1a1 1 0 01-1 1h-1a1 1 0 01-1-1v-1a1 1 0 011-1h1zM17 15a1 1 0 011 1v1a1 1 0 01-1 1h-1a1 1 0 01-1-1v-1a1 1 0 011-1h1z" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </Container>
-        </section>
-
-        {/* Catégories - UNIQUE FILTRE */}
-        <section className="py-6">
-          <Container>
-            <EventCategories
-              categories={updatedCategories}
-              selectedCategory={selectedCategory}
-              onSelect={setSelectedCategory}
-            />
-          </Container>
-        </section>
-
-        {/* Grille des événements */}
-        <section className="py-8">
-          <Container>
-            <div className="mb-4 flex justify-between items-center">
-              <div className="text-sm text-gray-500">
-                {filteredEvents?.length || 0} événement{filteredEvents?.length !== 1 ? 's' : ''} trouvé{filteredEvents?.length !== 1 ? 's' : ''}
-              </div>
-              {filteredEvents && filteredEvents.length > 0 && (
-                <select className="text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-dice-blue/30 focus:border-dice-blue outline-none">
-                  <option value="date">Trier par date</option>
-                  <option value="popularity">Popularité</option>
-                  <option value="price">Prix croissant</option>
-                  <option value="price-desc">Prix décroissant</option>
-                </select>
-              )}
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="min-w-[160px] rounded-2xl border border-[#E8EEF5] bg-white px-4 py-3 text-sm outline-none focus:border-[#0A89F2]/40 focus:ring-2 focus:ring-[#0A89F2]/15"
+              >
+                {sortOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            <AnimatePresence mode="wait">
-              {renderEvents()}
-            </AnimatePresence>
-          </Container>
-        </section>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                    selectedCategory === cat.id
+                      ? 'bg-[#0A89F2] text-white shadow-[0_8px_20px_rgba(10,137,242,0.28)]'
+                      : 'border border-[#E8EEF5] bg-white text-[#667085] hover:border-[#0A89F2]/35 hover:text-[#0A89F2]'
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
-      </main>
-      
-    </div>
+          <div className="mb-5 flex items-center justify-between gap-3">
+            <p className="text-sm text-[#667085]">
+              {sortedEvents.length} événement
+              {sortedEvents.length !== 1 ? 's' : ''}
+            </p>
+            <p className="text-xs text-[#98A2B3]">
+              Tri : <span className="font-medium text-[#667085]">{getSortLabel()}</span>
+            </p>
+          </div>
+
+          {sortedEvents.length === 0 ? (
+            <div className="rounded-[28px] border border-dashed border-[#E8EEF5] bg-white px-6 py-16 text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E8F3FE] text-[#0A89F2]">
+                <FaTicketAlt className="text-xl" />
+              </div>
+              <h3 className="text-xl font-bold text-[#0B1220]">
+                Aucun événement trouvé
+              </h3>
+              <p className="mt-2 text-sm text-[#667085]">
+                Essayez de modifier vos filtres ou votre recherche.
+              </p>
+              <Button
+                variant="outline"
+                className="mt-5"
+                onClick={() => {
+                  setSearchTerm('')
+                  setSelectedCategory('all')
+                  fetchPublicEvents()
+                }}
+              >
+                Réinitialiser
+              </Button>
+            </div>
+          ) : (
+            <div className="grid gap-6 pb-12 md:grid-cols-2 lg:grid-cols-3">
+              {sortedEvents.map((event, index) => (
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  index={index}
+                  onReserve={openReservation}
+                />
+              ))}
+            </div>
+          )}
+        </Container>
+      </div>
+
+      <ReservationModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false)
+          setSelectedEvent(null)
+        }}
+        event={selectedEvent}
+        onSuccess={(ticket) => {
+          const qty = Math.max(1, Number(ticket?.quantity ?? 1))
+          toast.success(
+            `${qty} ticket${qty > 1 ? 's' : ''} réservé${qty > 1 ? 's' : ''} ! Retrouvez-les dans Mon espace.`
+          )
+          fetchPublicEvents()
+        }}
+      />
+    </>
   )
 }

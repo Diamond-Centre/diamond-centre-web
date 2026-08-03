@@ -14,6 +14,7 @@ import Badge from '@/components/ui/Badge'
 import Spinner from '@/components/ui/Spinner'
 import TicketReservation from '@/components/tickets/TicketReservation'
 import Container from '@/components/ui/Container'
+import EventLocationMap from '@/components/maps/EventLocationMap'
 
 export default function EventDetailPage() {
   const params = useParams()
@@ -127,7 +128,7 @@ export default function EventDetailPage() {
                 <FaClock className="text-dice-blue" />
                 <span>{event.time || (hasValidDate ? format(parsedDate, 'HH:mm') : '--:--')}</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 sm:col-span-2">
                 <FaMapMarker className="text-dice-blue" />
                 <span>{event.lieu || event.location || 'Lieu à confirmer'}</span>
               </div>
@@ -136,6 +137,13 @@ export default function EventDetailPage() {
                 <span>{event.formateur?.nom || 'Diamond Centre'}</span>
               </div>
             </div>
+
+            <EventLocationMap
+              location={event.lieu || event.location}
+              latitude={event.latitude}
+              longitude={event.longitude}
+              title="Localisation"
+            />
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-gray-100">
               <div>
@@ -163,6 +171,26 @@ export default function EventDetailPage() {
         event={event}
         isOpen={showReservation}
         onClose={() => setShowReservation(false)}
+        onSuccess={(ticket: { quantity?: number }) => {
+          const qty = Math.max(1, Number(ticket?.quantity ?? 1))
+          setEvent((prev: any) => {
+            if (!prev) return prev
+            const currentAvailable = Number(
+              prev.available_tickets ??
+                (prev.nbPlaces != null && prev.nbInscrits != null
+                  ? prev.nbPlaces - prev.nbInscrits
+                  : 0)
+            )
+            const nextAvailable = Math.max(0, currentAvailable - qty)
+            return {
+              ...prev,
+              available_tickets: nextAvailable,
+              nbPlacesRestantes: nextAvailable,
+              nbInscrits: Math.max(0, Number(prev.nbInscrits ?? 0) + qty),
+            }
+          })
+          setShowReservation(false)
+        }}
       />
     </div>
   )

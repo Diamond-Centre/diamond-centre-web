@@ -1,142 +1,119 @@
+/**
+ * Context d'authentification utilisateur
+ */
 'use client'
 
-import { createContext, useState, useEffect, useCallback } from 'react'
-import api from '@/lib/api'
-import toast from 'react-hot-toast'
+import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import toast from 'react-hot-toast'
 
-export const AuthContext = createContext()
-
-function mapBackendUser(user) {
-  if (!user) return null
-  const nameParts = String(user.name || '').trim().split(/\s+/)
-  const prenom = nameParts[0] || ''
-  const nom = nameParts.slice(1).join(' ') || prenom
-  return {
-    id: String(user.id),
-    email: user.email,
-    name: user.name,
-    nom,
-    prenom,
-    role: user.role === 'admin' ? 'admin' : 'user',
-  }
-}
-
-function getErrorMessage(error, fallback) {
-  return (
-    error.response?.data?.message ||
-    error.response?.data?.error ||
-    error.message ||
-    fallback
-  )
-}
+const AuthContext = createContext()
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
   useEffect(() => {
-    const loadUser = () => {
-      try {
-        const storedUser = localStorage.getItem('user')
-        const token = localStorage.getItem('token')
-        if (storedUser && token) {
-          setUser(JSON.parse(storedUser))
-          setIsAuthenticated(true)
-        }
-      } catch (error) {
-        console.error('Erreur chargement utilisateur:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-    loadUser()
+    checkAuth()
   }, [])
+
+  const checkAuth = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      if (token) {
+        // Vérifier le token avec l'API
+        const response = await fetch('/api/auth/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setUser(data.user)
+        } else {
+          localStorage.removeItem('token')
+        }
+      }
+    } catch (error) {
+      console.error('Erreur auth:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const login = useCallback(async (email, password) => {
     try {
-      const response = await api.post('/auth/login', { email, password })
-      const mappedUser = mapBackendUser(response.data.user)
-      const token = response.data.access_token
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      })
 
-      if (!mappedUser || !token) {
-        throw new Error('Réponse d\'authentification invalide')
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Erreur de connexion')
       }
 
-      localStorage.setItem('token', token)
-      localStorage.setItem('user', JSON.stringify(mappedUser))
-
-      setUser(mappedUser)
-      setIsAuthenticated(true)
-      toast.success('Connexion réussie !')
-
-      router.push('/')
-      return { success: true }
+      const data = await response.json()
+      localStorage.setItem('token', data.token)
+      setUser(data.user)
+      toast.success('Connexion réussie')
+      router.push('/espace-client')
+      return data
     } catch (error) {
-      toast.error(getErrorMessage(error, 'Erreur de connexion'))
-      return { success: false, error: getErrorMessage(error, 'Erreur de connexion') }
+      toast.error(error.message)
+      throw error
     }
   }, [router])
 
-  const register = useCallback(async (data) => {
+  const register = useCallback(async (userData) => {
     try {
-      const name =
-        data.name ||
-        [data.prenom, data.nom].filter(Boolean).join(' ').trim()
-
-      await api.post('/auth/register', {
-        email: data.email,
-        password: data.password,
-        name,
-        role: data.role || 'client',
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData)
       })
 
-      const response = await api.post('/auth/login', {
-        email: data.email,
-        password: data.password,
-      })
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Erreur d\'inscription')
+      }
 
-      const mappedUser = mapBackendUser(response.data.user)
-      const token = response.data.access_token
-
-      localStorage.setItem('token', token)
-      localStorage.setItem('user', JSON.stringify(mappedUser))
-
-      setUser(mappedUser)
-      setIsAuthenticated(true)
-      toast.success('Inscription réussie !')
-
-      router.push('/')
-      return { success: true }
+      toast.success('Inscription réussie')
+      router.push('/auth/login')
+      return await response.json()
     } catch (error) {
-      toast.error(getErrorMessage(error, "Erreur d'inscription"))
-      return { success: false, error: getErrorMessage(error, "Erreur d'inscription") }
+      toast.error(error.message)
+      throw error
     }
   }, [router])
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
     localStorage.removeItem('token')
-    localStorage.removeItem('user')
     setUser(null)
-    setIsAuthenticated(false)
     toast.success('Déconnexion réussie')
     router.push('/')
   }, [router])
 
-  const value = {
-    user,
-    isAuthenticated,
-    loading,
-    login,
-    register,
-    logout,
-  }
-
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{
+      user,
+      isAuthenticated: !!user,
+      loading,
+      login,
+      register,
+      logout
+    }}>
       {children}
     </AuthContext.Provider>
   )
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext)
+  if (!context) {
+    throw new Error('useAuth must be used within AuthProvider')
+  }
+  return context
 }

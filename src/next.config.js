@@ -1,21 +1,32 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
+    domains: ['localhost', 'ui-avatars.com', 'images.unsplash.com'],
+    formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '**',
+        hostname: 'ui-avatars.com',
+        port: '',
+        pathname: '/**',
       },
       {
-        protocol: 'http',
-        hostname: 'localhost',
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        port: '',
+        pathname: '/**',
       },
     ],
   },
-  experimental: {
-    serverActions: {
-      bodySizeLimit: '2mb',
-    },
+  // Server Actions sont disponibles par défaut
+  async redirects() {
+    return [
+      {
+        source: '/auth/admin',
+        destination: '/admin',
+        permanent: true,
+      },
+    ]
   },
 }
 
