@@ -2,7 +2,7 @@
  * API client — DICE backend (via Next /api proxy)
  * Safe JSON parsing so HTML 404 pages never crash as JSON.parse errors.
  */
-const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api'
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || '/api').replace(/\/+$/, '')
 
 async function parseJson(response) {
   const text = await response.text()
@@ -20,13 +20,15 @@ async function parseJson(response) {
 }
 
 async function request(path, options = {}) {
-  const response = await fetch(`${API_URL}${path}`, options)
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+  const response = await fetch(`${API_URL}${normalizedPath}`, options)
   const data = await parseJson(response)
 
   if (!response.ok) {
     const message =
       (data && (data.message || data.error)) ||
       `Erreur ${response.status}`
+
     throw new Error(typeof message === 'string' ? message : `Erreur ${response.status}`)
   }
 
@@ -435,9 +437,17 @@ export const api = {
 
   /** Admin: full ticket list from GET /tickets */
   getTickets: async (token) => {
+  try {
     const data = await request('/tickets', { headers: authHeaders(token) })
     return Array.isArray(data) ? data : data?.data || []
-  },
+  } catch (error) {
+    // Le swagger ne définit pas GET /api/tickets
+    if (String(error.message).includes('404')) {
+      return []
+    }
+    throw error
+  }
+},
 
   deleteTicket: async () => {
     throw new Error('La suppression de tickets n’est pas encore disponible sur le backend')

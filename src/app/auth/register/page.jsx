@@ -233,7 +233,9 @@ export default function RegisterPage() {
   }
 
   const handleGoogleRegister = async () => {
-    toast.info("L'inscription Google sera bientôt disponible")
+    toast("L'inscription Google sera bientôt disponible", {
+      icon: 'ℹ️',
+    })
   }
 
   return (
@@ -556,9 +558,6 @@ export default function RegisterPage() {
               <span className="text-base font-medium text-gray-700">Google</span>
             </button>
 
-            <div className="mt-4 text-center text-xs text-gray-400">
-              <p>✅ Le rôle <span className="font-semibold text-dice-blue">"client"</span> est attribué par défaut</p>
-            </div>
           </motion.div>
         </div>
       </div>

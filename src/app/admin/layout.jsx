@@ -6,10 +6,11 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { auth } from '@/lib/auth'
 import { 
   FaHome, FaCalendar, FaTicketAlt, FaUsers, FaCertificate, FaCalendarAlt,
-  FaSignOutAlt, FaGem
+  FaSignOutAlt, 
 } from 'react-icons/fa'
 
 const menuItems = [
@@ -60,9 +61,15 @@ export default function AdminLayout({ children }) {
         <div className="p-4">
           {/* Logo */}
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 bg-gradient-to-br from-dice-blue to-purple-600 rounded-xl flex items-center justify-center">
-              <FaGem className="text-white text-lg" />
-            </div>
+            <div className="w-18 h-18 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm overflow-hidden">
+              <Image
+                src="/images/logo-dice.png"
+                alt="Logo Dice"
+                width={60}
+                height={60}
+                className="object-contain"
+              />
+          </div>
             <span className="text-lg font-bold text-gray-800">DC Admin</span>
           </div>
           

@@ -264,11 +264,17 @@ export default function AdminPage() {
     if (active && payload && payload.length) {
       const title = label || payload[0].name || payload[0].payload?.name
       return (
-        <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg">
-          <p className="text-sm font-medium text-gray-800">{title}</p>
-          <p className="text-sm text-dice-blue font-bold">
-            {payload[0].value}
-          </p>
+        <div className="bg-white/95 backdrop-blur-md border border-gray-100 rounded-xl p-3 shadow-xl text-xs">
+          <p className="font-semibold text-gray-700 mb-1">{title}</p>
+          <div className="flex items-center gap-2">
+            <span
+              className="w-2.5 h-2.5 rounded-full"
+              style={{ backgroundColor: payload[0].color || payload[0].fill || '#0a89f2' }}
+            />
+            <span className="font-bold text-gray-900 text-sm">
+              {payload[0].value} {payload[0].name ? `(${payload[0].name})` : ''}
+            </span>
+          </div>
         </div>
       )
     }
@@ -278,11 +284,14 @@ export default function AdminPage() {
   const revenueTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg">
-          <p className="text-sm font-medium text-gray-800">{label}</p>
-          <p className="text-sm text-dice-blue font-bold">
-            {payload[0].value.toLocaleString()} FCFA
-          </p>
+        <div className="bg-white/95 backdrop-blur-md border border-gray-100 rounded-xl p-3 shadow-xl text-xs">
+          <p className="font-semibold text-gray-700 mb-1">{label}</p>
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-dice-blue" />
+            <span className="font-bold text-dice-blue text-sm">
+              {payload[0].value.toLocaleString()} FCFA
+            </span>
+          </div>
         </div>
       )
     }
@@ -412,40 +421,49 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* Graphiques */}
+      {/* Graphiques - 4 cartes de même taille en grille 2x2 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Revenus mensuels - Graphique en barres */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-              <FaMoneyBillWave className="text-dice-blue" />
-              Revenus mensuels
-            </h3>
-            <span className="text-sm font-bold text-dice-blue">
-              Total: {stats?.totalRevenue ? `${stats.totalRevenue.toLocaleString()} FCFA` : '0 FCFA'}
+        {/* 1. Revenus mensuels */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-base font-bold text-gray-800 flex items-center gap-2">
+                <div className="p-2 bg-blue-50 rounded-lg text-dice-blue">
+                  <FaMoneyBillWave />
+                </div>
+                Revenus mensuels
+              </h3>
+              <p className="text-xs text-gray-400 mt-0.5">Évolution du chiffre d'affaires</p>
+            </div>
+            <span className="text-sm font-extrabold text-dice-blue bg-blue-50 px-3 py-1 rounded-full">
+              {stats?.totalRevenue ? `${stats.totalRevenue.toLocaleString()} FCFA` : '0 FCFA'}
             </span>
           </div>
-          <div className="h-80">
+          <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats?.revenueByMonth || []} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis 
-                  dataKey="month" 
-                  stroke="#9ca3af"
-                  tick={{ fontSize: 12 }}
-                />
-                <YAxis 
-                  stroke="#9ca3af"
+              <BarChart data={stats?.revenueByMonth || []} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#0a89f2" stopOpacity={1} />
+                    <stop offset="100%" stopColor="#0a89f2" stopOpacity={0.35} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="month" stroke="#94a3b8" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis
+                  stroke="#94a3b8"
                   tickFormatter={(value) =>
                     value >= 1000 ? `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}k` : String(value)
                   }
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 11 }}
+                  axisLine={false}
+                  tickLine={false}
                 />
                 <Tooltip content={revenueTooltip} />
-                <Bar 
-                  dataKey="revenue" 
-                  fill="#0a89f2" 
-                  radius={[4, 4, 0, 0]}
+                <Bar
+                  dataKey="revenue"
+                  fill="url(#revenueGradient)"
+                  radius={[6, 6, 0, 0]}
                   name="Revenus"
                 />
               </BarChart>
@@ -453,119 +471,139 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* Événements par mois - Graphique en ligne */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-              <FaCalendar className="text-dice-blue" />
-              Événements par mois
-            </h3>
-            <span className="text-sm font-bold text-dice-blue">
-              Total: {stats?.totalEvents || 0} événements
+        {/* 2. Événements par mois */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-base font-bold text-gray-800 flex items-center gap-2">
+                <div className="p-2 bg-blue-50 rounded-lg text-dice-blue">
+                  <FaCalendar />
+                </div>
+                Événements par mois
+              </h3>
+              <p className="text-xs text-gray-400 mt-0.5">Activité de création d'événements</p>
+            </div>
+            <span className="text-sm font-extrabold text-dice-blue bg-blue-50 px-3 py-1 rounded-full">
+              {stats?.totalEvents || 0} événements
             </span>
           </div>
-          <div className="h-80">
+          <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={stats?.eventsByMonth || []} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis 
-                  dataKey="month" 
-                  stroke="#9ca3af"
-                  tick={{ fontSize: 12 }}
-                />
-                <YAxis 
-                  stroke="#9ca3af"
-                  tick={{ fontSize: 12 }}
-                  allowDecimals={false}
-                />
+              <AreaChart data={stats?.eventsByMonth || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="eventsGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#0a89f2" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="#0a89f2" stopOpacity={0.0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="month" stroke="#94a3b8" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis stroke="#94a3b8" tick={{ fontSize: 11 }} allowDecimals={false} axisLine={false} tickLine={false} />
                 <Tooltip content={customTooltip} />
-                <Line 
-                  type="monotone" 
-                  dataKey="count" 
-                  stroke="#0a89f2" 
+                <Area
+                  type="monotone"
+                  dataKey="count"
+                  stroke="#0a89f2"
                   strokeWidth={3}
-                  dot={{ 
-                    fill: '#0a89f2', 
-                    strokeWidth: 2,
-                    r: 5
-                  }}
-                  activeDot={{ 
-                    r: 8,
-                    fill: '#0a89f2'
-                  }}
+                  fill="url(#eventsGradient)"
+                  dot={{ fill: '#0a89f2', stroke: '#fff', strokeWidth: 2, r: 4 }}
+                  activeDot={{ r: 7, fill: '#0a89f2', stroke: '#fff', strokeWidth: 3 }}
                   name="Événements"
                 />
-              </LineChart>
+              </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        {/* Catégories */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-800">Catégories</h3>
-            <span className="text-xs text-gray-400">Distribution</span>
+        {/* 3. Catégories */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-base font-bold text-gray-800 flex items-center gap-2">
+                <div className="p-2 bg-purple-50 rounded-lg text-purple-600">
+                  <FaTag />
+                </div>
+                Catégories
+              </h3>
+              <p className="text-xs text-gray-400 mt-0.5">Répartition par secteur</p>
+            </div>
+            <span className="text-xs text-gray-500 font-medium bg-gray-100 px-2.5 py-1 rounded-full">
+              Distribution
+            </span>
           </div>
-          <div className="h-64">
+          <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={stats?.categories?.length ? stats.categories : [{ name: 'Aucune', count: 1 }]}
                   cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
+                  cy="45%"
+                  innerRadius={55}
+                  outerRadius={85}
+                  paddingAngle={4}
                   dataKey="count"
                   nameKey="name"
+                  cornerRadius={6}
                 >
                   {(stats?.categories?.length ? stats.categories : [{ name: 'Aucune', count: 1 }]).map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
-                      fill={stats?.categories?.length ? COLORS[index % COLORS.length] : '#e5e7eb'}
+                      fill={stats?.categories?.length ? COLORS[index % COLORS.length] : '#e2e8f0'}
+                      stroke="none"
                     />
                   ))}
                 </Pie>
                 <Tooltip content={customTooltip} />
-                <Legend 
-                  verticalAlign="bottom" 
+                <Legend
+                  verticalAlign="bottom"
                   height={36}
-                  formatter={(value) => <span className="text-xs text-gray-600">{value}</span>}
+                  iconType="circle"
+                  formatter={(value) => <span className="text-xs font-medium text-gray-600 capitalize">{value}</span>}
                 />
               </PieChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Utilisateurs par mois */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm lg:col-span-2">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-800">Utilisateurs par mois</h3>
-            <span className="text-xs text-gray-400">{stats?.totalUsers || 0} utilisateurs</span>
+        {/* 4. Utilisateurs par mois */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-base font-bold text-gray-800 flex items-center gap-2">
+                <div className="p-2 bg-purple-50 rounded-lg text-purple-600">
+                  <FaUsers />
+                </div>
+                Utilisateurs par mois
+              </h3>
+              <p className="text-xs text-gray-400 mt-0.5">Acquisition de nouveaux membres</p>
+            </div>
+            <span className="text-sm font-extrabold text-purple-600 bg-purple-50 px-3 py-1 rounded-full">
+              {stats?.totalUsers || 0} inscrits
+            </span>
           </div>
-          <div className="h-64">
+          <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={stats?.usersByMonth || []}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="month" stroke="#9ca3af" />
-                <YAxis stroke="#9ca3af" />
-                <Tooltip content={customTooltip} />
-                <Area 
-                  type="monotone" 
-                  dataKey="count" 
-                  stroke="#8b5cf6" 
-                  fill="url(#colorUsers)"
-                  strokeWidth={2}
-                  name="Utilisateurs"
-                />
+              <AreaChart data={stats?.usersByMonth || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                  <linearGradient id="colorUsersGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.4} />
+                    <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.0} />
                   </linearGradient>
                 </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="month" stroke="#94a3b8" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis stroke="#94a3b8" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                <Tooltip content={customTooltip} />
+                <Area
+                  type="monotone"
+                  dataKey="count"
+                  stroke="#8b5cf6"
+                  strokeWidth={3}
+                  fill="url(#colorUsersGrad)"
+                  dot={{ fill: '#8b5cf6', stroke: '#fff', strokeWidth: 2, r: 4 }}
+                  activeDot={{ r: 7, fill: '#8b5cf6', stroke: '#fff', strokeWidth: 3 }}
+                  name="Utilisateurs"
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
