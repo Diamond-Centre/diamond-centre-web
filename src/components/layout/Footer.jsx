@@ -35,7 +35,6 @@ const quickLinks = [
   { href: '/', label: 'Accueil' },
   { href: '/events', label: 'Événements' },
   { href: '/about', label: 'À propos' },
-  { href: '/contact', label: 'Contact' },
 ]
 
 const serviceLinks = [
@@ -241,11 +240,7 @@ export default function Footer() {
         <div className="pt-8 flex flex-col items-center justify-between gap-6 text-xs font-medium text-white/40 md:flex-row">
 
           <div className="flex items-center gap-3">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-            </span>
-            <span className="text-white/60">Plateforme active — Yaoundé, CM</span>
+            <span className="text-white/60">Yaoundé, Cameroun</span>
           </div>
 
           <p>© {currentYear} Diamond Centre (DiCe). Tous droits réservés.</p>

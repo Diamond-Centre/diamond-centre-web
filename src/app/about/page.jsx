@@ -1,10 +1,11 @@
 /**
- * Page À propos de Diamond Centre - Version responsive
+ * Page À propos de Diamond Centre - Version Premium Cinématique avec Smooth Scrolling
  */
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import Lenis from 'lenis'
 
 // Composants layout
 import Container from '@/components/ui/Container'
@@ -12,44 +13,41 @@ import VideoModal from '@/components/layout/VideoModal'
 
 // Composants about
 import AboutHero from '@/components/about/AboutHero'
-import AboutMission from '@/components/about/AboutMission'
 import AboutStats from '@/components/about/AboutStats'
+import AboutMission from '@/components/about/AboutMission'
 import AboutValues from '@/components/about/AboutValues'
 import AboutTeam from '@/components/about/AboutTeam'
+import AboutQuote from '@/components/about/AboutQuote'
 import AboutTimeline from '@/components/about/AboutTimeline'
-
-// Composants partagés
-import Section from '@/components/ui/Section'
-import Button from '@/components/ui/Button'
-import Card from '@/components/ui/Card'
-import Badge from '@/components/ui/Badge'
-import { FaArrowRight, FaQuoteRight } from 'react-icons/fa'
-
-// Témoignages
-const testimonials = [
-  {
-    name: 'Sophie Martin',
-    role: 'Entrepreneure',
-    text: 'Diamond Centre a transformé ma vision des affaires. Les formations sont d\'une qualité exceptionnelle.',
-    rating: 5
-  },
-  {
-    name: 'Thomas Dubois',
-    role: 'Étudiant',
-    text: 'Grâce aux séminaires, j\'ai pu lancer ma première entreprise. Une expérience inoubliable.',
-    rating: 5
-  },
-  {
-    name: 'Laura Petit',
-    role: 'Chef d\'entreprise',
-    text: 'L\'accompagnement personnalisé et la qualité des formateurs font la différence.',
-    rating: 4
-  }
-]
 
 export default function AboutPage() {
   const [isVideoOpen, setIsVideoOpen] = useState(false)
   const [selectedVideo, setSelectedVideo] = useState('')
+
+  // Initialize Lenis smooth scroll on mount
+  useEffect(() => {
+    const lenis = new Lenis({
+      duration: 1.4,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      orientation: 'vertical',
+      gestureOrientation: 'vertical',
+      smoothWheel: true,
+      wheelMultiplier: 1,
+      touchMultiplier: 2,
+      infinite: false,
+    })
+
+    function raf(time) {
+      lenis.raf(time)
+      requestAnimationFrame(raf)
+    }
+
+    requestAnimationFrame(raf)
+
+    return () => {
+      lenis.destroy()
+    }
+  }, [])
 
   const handleVideoOpen = (videoUrl) => {
     setSelectedVideo(videoUrl)
@@ -57,29 +55,31 @@ export default function AboutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#f8fafc] overflow-hidden antialiased">
       <main>
-        {/* Hero */}
+        {/* 1. Cinematic Hero Section */}
         <AboutHero onVideoClick={() => handleVideoOpen('https://www.youtube.com/embed/dQw4w9WgXcQ')} />
 
-        {/* Statistiques */}
+        {/* 2. Visual Statistics Milestones */}
         <AboutStats />
 
-        {/* Mission */}
+        {/* 3. Storytelling Mission & Vision */}
         <AboutMission />
 
-        {/* Valeurs */}
+        {/* 4. Asymmetrical Bento Values Grid */}
         <AboutValues />
 
-        {/* Équipe */}
+        {/* 5. Elegant Team Portrait Presentation */}
         <AboutTeam />
 
-        {/* Timeline */}
-        <AboutTimeline />
+        {/* 6. Premium Full-Width Quote Section */}
+        <AboutQuote />
 
+        {/* 7. Historical Milestone Timeline */}
+        <AboutTimeline />
       </main>
 
-      {/* Video Modal */}
+      {/* Video Modal component */}
       <VideoModal
         isOpen={isVideoOpen}
         onClose={() => setIsVideoOpen(false)}
