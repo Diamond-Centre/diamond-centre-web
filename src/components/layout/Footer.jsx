@@ -52,7 +52,6 @@ export default function Footer() {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-
       if (contentRef.current) {
         gsap.fromTo(
           contentRef.current.children,
@@ -71,11 +70,11 @@ export default function Footer() {
         )
       }
 
-
       if (watermarkRef.current) {
         gsap.fromTo(
           watermarkRef.current,
-          { x: -60, opacity: 0.02 },
+          // Mouvement réduit pour ne pas faire sortir le texte de l'écran
+          { x: -20, opacity: 0.02 },
           {
             x: 20,
             opacity: 0.06,
@@ -108,42 +107,10 @@ export default function Footer() {
 
       <div className="relative z-10 mx-auto max-w-7xl px-6 sm:px-8">
 
-        <div className="mb-20 grid grid-cols-1 gap-8 items-center border-b border-white/10 pb-16 lg:grid-cols-12">
-          <div className="lg:col-span-6">
-            <span className="text-xs font-mono font-semibold uppercase tracking-[0.2em] text-[#0A89F2]">
-              Restez informé
-            </span>
-            <h3 className="mt-2 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-              Ne manquez aucun événement DiCe
-            </h3>
-            <p className="mt-3 text-base text-white/60 max-w-md">
-              Inscrivez-vous pour recevoir les prochaines dates de formations, séminaires et masterclasses.
-            </p>
-          </div>
+        <div ref={contentRef} className="grid grid-cols-1 gap-10 pb-16 border-b border-white/10 sm:grid-cols-2 lg:grid-cols-12">
 
-          <div className="lg:col-span-6">
-            <form onSubmit={(e) => e.preventDefault()} className="relative flex items-center">
-              <input
-                type="email"
-                placeholder="Votre adresse email..."
-                className="w-full rounded-2xl border border-white/15 bg-white/[0.04] px-6 py-5 text-sm text-white placeholder-white/40 backdrop-blur-xl transition-all duration-300 focus:border-[#0A89F2] focus:bg-white/[0.08] focus:outline-none focus:ring-1 focus:ring-[#0A89F2]"
-              />
-              <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                type="submit"
-                className="absolute right-2 top-2 bottom-2 inline-flex items-center gap-2 rounded-xl bg-[#0A89F2] px-6 text-sm font-bold text-white transition-colors hover:bg-[#0877d4]"
-              >
-                <span>S'inscrire</span>
-                <FaArrowRight className="text-xs" />
-              </motion.button>
-            </form>
-          </div>
-        </div>
-
-        <div ref={contentRef} className="grid grid-cols-1 gap-12 pb-16 border-b border-white/10 md:grid-cols-2 lg:grid-cols-12">
-
-          <div className="lg:col-span-5 flex flex-col justify-between">
+          {/* 1. Colonne Marque & Description (4 cols) */}
+          <div className="lg:col-span-4 flex flex-col justify-between gap-6">
             <div>
               <Link href="/" className="group inline-block">
                 <Image
@@ -151,20 +118,20 @@ export default function Footer() {
                   alt="DiCe - Diamond Centre"
                   width={160}
                   height={50}
-                  className="h-20 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+                  className="h-16 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
                   priority={false}
                 />
               </Link>
-
-              <p className="mt-6 max-w-sm text-base leading-relaxed text-white/60 font-normal">
-                Propulser les talents et les organisations vers leur plus haut niveau d’excellence grâce à des programmes d'apprentissage immersifs et inspirants.
+              <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/60 font-normal">
+                Propulser les talents et les organisations vers leur plus haut niveau d’excellence grâce à des programmes d'apprentissage immersifs.
               </p>
             </div>
-            <div className="mt-8">
-              <p className="mb-4 text-xs font-mono font-semibold uppercase tracking-widest text-white/40">
+
+            <div>
+              <p className="mb-3 text-[11px] font-mono font-semibold uppercase tracking-widest text-white/40">
                 Suivez l'aventure
               </p>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-2.5">
                 {socialLinks.map((social) => {
                   const Icon = social.icon
                   return (
@@ -174,15 +141,15 @@ export default function Footer() {
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label={social.name}
-                      whileHover={{ y: -4, scale: 1.08 }}
+                      whileHover={{ y: -3, scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      className="group relative flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-white/70 backdrop-blur-md transition-colors duration-300 hover:border-white/30 hover:text-white"
+                      className="group relative flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-white/70 backdrop-blur-md transition-colors duration-300 hover:border-white/30 hover:text-white"
                     >
                       <div
                         className="absolute inset-0 rounded-xl opacity-0 blur-md transition-opacity duration-300 group-hover:opacity-40"
                         style={{ backgroundColor: social.color }}
                       />
-                      <Icon className="relative z-10 text-lg transition-transform duration-300 group-hover:scale-110" />
+                      <Icon className="relative z-10 text-base transition-transform duration-300 group-hover:scale-110" />
                     </motion.a>
                   )
                 })}
@@ -190,17 +157,17 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Navigation Liens Rapides */}
-          <div className="lg:col-span-3">
-            <h4 className="mb-6 text-xs font-mono font-bold uppercase tracking-[0.2em] text-[#0A89F2]">
+          {/* 2. Navigation (2 cols) */}
+          <div className="lg:col-span-2">
+            <h4 className="mb-5 text-xs font-mono font-bold uppercase tracking-[0.2em] text-[#0A89F2]">
               Navigation
             </h4>
-            <ul className="space-y-4">
+            <ul className="space-y-3 text-sm">
               {quickLinks.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="group inline-flex items-center gap-2 text-base font-medium text-white/70 transition-colors duration-300 hover:text-white"
+                    className="group inline-flex items-center gap-2 text-white/70 transition-colors duration-300 hover:text-white"
                   >
                     <span className="h-1.5 w-1.5 rounded-full bg-[#0A89F2] opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:scale-125" />
                     <span className="transition-transform duration-300 group-hover:translate-x-1">
@@ -212,17 +179,17 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Navigation Programmes */}
-          <div className="lg:col-span-4">
-            <h4 className="mb-6 text-xs font-mono font-bold uppercase tracking-[0.2em] text-[#0A89F2]">
+          {/* 3. Programmes (3 cols) */}
+          <div className="lg:col-span-3">
+            <h4 className="mb-5 text-xs font-mono font-bold uppercase tracking-[0.2em] text-[#0A89F2]">
               Nos Programmes
             </h4>
-            <ul className="space-y-4">
+            <ul className="space-y-3 text-sm">
               {serviceLinks.map((link) => (
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="group inline-flex items-center gap-2 text-base font-medium text-white/70 transition-colors duration-300 hover:text-white"
+                    className="group inline-flex items-center gap-2 text-white/70 transition-colors duration-300 hover:text-white"
                   >
                     <span className="h-1.5 w-1.5 rounded-full bg-[#0A89F2] opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:scale-125" />
                     <span className="transition-transform duration-300 group-hover:translate-x-1">
@@ -232,6 +199,20 @@ export default function Footer() {
                 </li>
               ))}
             </ul>
+          </div>
+
+          {/* 4. Contact & Localisation (3 cols - Équilibre le coin droit) */}
+          <div className="lg:col-span-3">
+            <h4 className="mb-5 text-xs font-mono font-bold uppercase tracking-[0.2em] text-[#0A89F2]">
+              Localisation
+            </h4>
+            <div className="space-y-3 text-sm text-white/70 font-normal">
+              <p className="text-white font-medium">Diamond Centre</p>
+              <p>Yaoundé, Cameroun</p>
+              <p className="pt-2 text-xs text-white/40">
+                Carrefour Emmombo 2ème, dernier étage au dessus de la boulangerie Kelvis.
+              </p>
+            </div>
           </div>
 
         </div>
@@ -239,11 +220,9 @@ export default function Footer() {
         {/* Pied de page Bottom Bar */}
         <div className="pt-8 flex flex-col items-center justify-between gap-6 text-xs font-medium text-white/40 md:flex-row">
 
-          <div className="flex items-center gap-3">
-            <span className="text-white/60">Yaoundé, Cameroun</span>
-          </div>
-
-          <p>© {currentYear} Diamond Centre (DiCe). Tous droits réservés.</p>
+          <p className="flex items-center gap-1">
+            <span className="text-2xl font-bold leading-none inline-block translate-y-[2px] text-white/80">©</span> {currentYear} Diamond Centre. Tous droits réservés.
+          </p>
 
           <motion.button
             whileHover={{ scale: 1.05, y: -2 }}
@@ -261,7 +240,7 @@ export default function Footer() {
 
       <div
         ref={watermarkRef}
-        className="pointer-events-none absolute -bottom-6 left-0 select-none whitespace-nowrap text-[13vw] font-black leading-none tracking-tighter text-white opacity-5"
+        className="pointer-events-none absolute -bottom-4 w-full text-center select-none whitespace-nowrap text-[10vw] font-black leading-none tracking-tighter text-white opacity-5"
       >
         DIAMOND CENTRE
       </div>

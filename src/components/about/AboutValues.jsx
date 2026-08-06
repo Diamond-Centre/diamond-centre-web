@@ -5,10 +5,10 @@
 
 import { useState, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { 
-  FaGem, 
-  FaUsers, 
-  FaLightbulb, 
+import {
+  FaCrown,
+  FaUsers,
+  FaLightbulb,
   FaHandshake,
   FaRocket,
   FaAward
@@ -18,7 +18,7 @@ import Badge from '@/components/ui/Badge'
 
 const values = [
   {
-    icon: FaGem,
+    icon: FaCrown,
     title: 'Excellence',
     description: 'Nous visons le plus haut niveau de qualité et d\'exigence dans toutes nos formations et accompagnements pour garantir des résultats hors du commun.',
     color: 'from-[#0a89f2] to-purple-600',
@@ -84,11 +84,11 @@ function TiltCard({ children, className, bgGlow, ...props }) {
     const box = card.getBoundingClientRect()
     const x = e.clientX - box.left // Mouse position X relative to card
     const y = e.clientY - box.top  // Mouse position Y relative to card
-    
+
     // Calculate rotation angle (max 6 degrees)
     const rx = -((y - box.height / 2) / (box.height / 2)) * 6
     const ry = ((x - box.width / 2) / (box.width / 2)) * 6
-    
+
     setRotateX(rx)
     setRotateY(ry)
 
@@ -126,17 +126,17 @@ function TiltCard({ children, className, bgGlow, ...props }) {
     >
       {/* 3D Glass Layer Card */}
       <div className="relative w-full h-full about-glass-card hover-glow-border rounded-3xl p-6 sm:p-8 flex flex-col justify-between overflow-hidden group/card border border-gray-200/50">
-        
+
         {/* Dynamic Inner Glow backdrop */}
-        <div 
+        <div
           className="absolute -inset-10 rounded-full blur-3xl opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 pointer-events-none z-0"
-          style={{ 
-            background: `radial-gradient(circle, ${bgGlow || 'rgba(10,137,242,0.05)'} 0%, transparent 70%)` 
+          style={{
+            background: `radial-gradient(circle, ${bgGlow || 'rgba(10,137,242,0.05)'} 0%, transparent 70%)`
           }}
         />
 
         {/* Dynamic Light reflection overlay */}
-        <div 
+        <div
           className="absolute inset-0 pointer-events-none z-10 transition-opacity duration-300 pointer-events-none"
           style={{
             opacity: shineStyle.opacity,
@@ -164,7 +164,7 @@ export default function AboutValues() {
       </div>
 
       <Container className="relative z-10">
-        
+
         {/* Heading Section */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}

@@ -9,7 +9,7 @@ import Container from '@/components/ui/Container'
 
 const teamMembers = [
   {
-    name: 'Dr T. G. SONFFO',
+    name: 'Grégoire Armand TATSI',
     role: 'Fondateur & Conférencier Principal',
     bio: 'Expert en développement personnel et leadership, conférencier international.',
     quote: 'Le leadership n\'est pas un titre ou une position, c\'est un impact de chaque instant.',
@@ -69,7 +69,7 @@ export default function AboutTeam() {
       </div>
 
       <Container className="relative z-10">
-        
+
         {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -104,9 +104,9 @@ export default function AboutTeam() {
               <div className="absolute inset-0 border border-black/10 rounded-[32px] z-20 pointer-events-none group-hover:border-[#0a89f2]/30 transition-colors duration-500" />
 
               {/* Portrait Image with B&W to Color Transition */}
-              <img 
-                src={member.image} 
-                alt={member.name} 
+              <img
+                src={member.image}
+                alt={member.name}
                 className="absolute inset-0 w-full h-full object-cover filter grayscale contrast-[1.1] brightness-[0.75] transition-all duration-700 ease-out group-hover:grayscale-0 group-hover:scale-105 group-hover:brightness-[0.9] select-none"
               />
 
@@ -115,12 +115,12 @@ export default function AboutTeam() {
 
               {/* Sequential Details Overlay Container */}
               <div className="absolute inset-0 p-6 sm:p-8 flex flex-col justify-end text-left z-20 translate-y-12 group-hover:translate-y-0 transition-transform duration-500 ease-[0.16,1,0.3,1]">
-                
+
                 {/* Name - Slides up and fades in */}
                 <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight leading-snug mb-1 group-hover:text-white transition-colors duration-300">
                   {member.name}
                 </h3>
-                
+
                 {/* Role - Slides up and fades in */}
                 <p className="text-xs sm:text-sm font-semibold text-[#0a89f2] tracking-wider uppercase mb-4 opacity-75 group-hover:opacity-100 transition-opacity duration-300">
                   {member.role}
@@ -138,22 +138,22 @@ export default function AboutTeam() {
 
                 {/* Social Network Icons - Fade in with delay */}
                 <div className="flex gap-4 items-center opacity-0 translate-y-3 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500 ease-[0.16,1,0.3,1] delay-150">
-                  <a 
-                    href={member.social.linkedin} 
+                  <a
+                    href={member.social.linkedin}
                     className="w-8 h-8 rounded-full bg-white/10 hover:bg-[#0a89f2] flex items-center justify-center text-white text-sm transition-all duration-300 hover:scale-110"
                     aria-label="LinkedIn Profile"
                   >
                     <FaLinkedin />
                   </a>
-                  <a 
-                    href={member.social.twitter} 
+                  <a
+                    href={member.social.twitter}
                     className="w-8 h-8 rounded-full bg-white/10 hover:bg-[#0a89f2] flex items-center justify-center text-white text-sm transition-all duration-300 hover:scale-110"
                     aria-label="Twitter Profile"
                   >
                     <FaTwitter />
                   </a>
-                  <a 
-                    href={member.social.email} 
+                  <a
+                    href={member.social.email}
                     className="w-8 h-8 rounded-full bg-white/10 hover:bg-[#0a89f2] flex items-center justify-center text-white text-sm transition-all duration-300 hover:scale-110"
                     aria-label="Send Email"
                   >

@@ -248,7 +248,9 @@ export default function CertificatesPage() {
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err.message || 'Impossible de charger vos certificats')
+          const msg = err.message || ''
+          const isHtmlError = msg.includes('<html') || msg.includes('<!DOCTYPE') || msg.includes('Cannot GET')
+          setError(isHtmlError ? 'Erreur' : msg || 'Erreur')
           setCertificates([])
         }
       } finally {

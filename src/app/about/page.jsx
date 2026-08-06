@@ -61,7 +61,7 @@ export default function AboutPage() {
         <AboutHero onVideoClick={() => handleVideoOpen('https://www.youtube.com/embed/dQw4w9WgXcQ')} />
 
         {/* 2. Visual Statistics Milestones */}
-        <AboutStats />
+        {/* <AboutStats /> */}
 
         {/* 3. Storytelling Mission & Vision */}
         <AboutMission />

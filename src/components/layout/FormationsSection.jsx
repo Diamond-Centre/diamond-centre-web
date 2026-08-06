@@ -77,9 +77,6 @@ export default function FormationsSection({
 
         <div ref={headerRef} className="mb-14 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <div className="mb-3 inline-flex items-center gap-3 border-l-2 border-[#0A89F2] pl-3 text-xs font-mono uppercase tracking-widest text-[#0A89F2]">
-              Programme
-            </div>
             <h2 className="text-3xl font-black tracking-tight text-[#0B1220] sm:text-4xl md:text-5xl">
               Événements à venir
             </h2>

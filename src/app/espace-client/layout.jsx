@@ -59,7 +59,7 @@ export default function EspaceClientLayout({ children }) {
   return (
     <div className="min-h-screen bg-[#F4F7FB] pt-24 pb-16">
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-        <div className="mb-6 flex items-center justify-between gap-4">
+        <div className="mb-6 mt-16 flex items-center justify-between gap-4">
           <div className="flex items-baseline gap-2">
             <span className="text-lg font-extrabold tracking-tight text-[#0B1220]">
               DiCe
@@ -87,11 +87,10 @@ export default function EspaceClientLayout({ children }) {
                 <Link
                   key={tab.href}
                   href={tab.href}
-                  className={`relative inline-flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
-                    active
-                      ? 'text-[#0A89F2]'
-                      : 'text-[#667085] hover:text-[#0B1220]'
-                  }`}
+                  className={`relative inline-flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${active
+                    ? 'text-[#0A89F2]'
+                    : 'text-[#667085] hover:text-[#0B1220]'
+                    }`}
                 >
                   <Icon className="text-xs opacity-80" />
                   {tab.label}

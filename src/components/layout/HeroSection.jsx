@@ -7,7 +7,7 @@ import gsap from 'gsap'
 import { FaArrowRight } from 'react-icons/fa'
 
 const HERO_IMAGE =
-  'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1920&h=1080&fit=crop&crop=center'
+  'https://images.unsplash.com/photo-1511578314322-379afb476865?w=1920&h=1080&fit=crop&crop=center'
 
 export default function HeroSection() {
   const heroRef = useRef(null)

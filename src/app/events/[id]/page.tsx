@@ -177,9 +177,9 @@ export default function EventDetailPage() {
             if (!prev) return prev
             const currentAvailable = Number(
               prev.available_tickets ??
-                (prev.nbPlaces != null && prev.nbInscrits != null
-                  ? prev.nbPlaces - prev.nbInscrits
-                  : 0)
+              (prev.nbPlaces != null && prev.nbInscrits != null
+                ? prev.nbPlaces - prev.nbInscrits
+                : 0)
             )
             const nextAvailable = Math.max(0, currentAvailable - qty)
             return {
