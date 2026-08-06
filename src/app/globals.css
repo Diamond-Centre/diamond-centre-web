@@ -1,0 +1,467 @@
+/* Import Google Sans */
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@100;300;400;500;700;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Variables de couleurs */
+:root {
+  --color-dice-blue: #0a89f2;
+  --color-dice-blue-dark: #0770cc;
+  --color-dice-blue-light: #e8f4fe;
+  --color-dice-glass: rgba(255, 255, 255, 0.1);
+  --color-dice-glass-border: rgba(255, 255, 255, 0.2);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #f8fafc;
+  color: #1a1a2e;
+}
+
+/* Glassmorphisme */
+.glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.glass-dark {
+  background: rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-white {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.glass-hover:hover {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+}
+
+/* Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.8; }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+/* Scrollbar personnalisée */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-dice-blue);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-dice-blue-dark);
+}
+
+/* Sélection */
+::selection {
+  background: var(--color-dice-blue);
+  color: white;
+}
+
+/* Utilitaires */
+.bg-dice-blue {
+  background: var(--color-dice-blue);
+}
+
+.text-dice-blue {
+  color: var(--color-dice-blue);
+}
+
+.border-dice-blue {
+  border-color: var(--color-dice-blue);
+}
+
+/* Container personnalisé */
+.container-custom {
+  width: 100%;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .container-custom {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-custom {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #0a89f2, #6c5ce7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* app/globals.css - Ajouter */
+.font-google-sans {
+  font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ============================================================
+   SECTION "NOS ÉVÈNEMENTS À VENIR" — COVER FLOW
+   ============================================================ */
+
+/* Fond plein écran bleu Diamond Centre, effet "salle immersive" */
+.coverflow-section {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  overflow: hidden;
+  background-color: #051633;
+  background-image:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(10, 137, 242, 0.35), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 85% 100%, rgba(10, 137, 242, 0.25), transparent 60%),
+    radial-gradient(ellipse 50% 50% at 10% 90%, rgba(108, 92, 231, 0.18), transparent 60%),
+    linear-gradient(180deg, #04102a 0%, #061a3d 45%, #04102a 100%);
+}
+
+/* Grille technique en surimpression, façon "diamond grid" */
+.coverflow-grid {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(10, 137, 242, 0.14) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(10, 137, 242, 0.14) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse 70% 70% at 50% 40%, #000 40%, transparent 90%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 40%, #000 40%, transparent 90%);
+}
+
+/* Orbes lumineuses flottantes */
+.coverflow-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(70px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.coverflow-orb-blue {
+  background: rgba(10, 137, 242, 0.45);
+}
+
+.coverflow-orb-purple {
+  background: rgba(108, 92, 231, 0.35);
+}
+
+/* Perspective 3D du Cover Flow */
+.coverflow-stage {
+  position: relative;
+  z-index: 10;
+  perspective: 1600px;
+  perspective-origin: 50% 40%;
+}
+
+.coverflow-track {
+  position: relative;
+  width: 100%;
+  transform-style: preserve-3d;
+}
+
+/* Chaque carte */
+.coverflow-card {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 300px;
+  height: 380px;
+  margin-left: -150px;
+  border-radius: 20px;
+  overflow: hidden;
+  cursor: pointer;
+  transform-style: preserve-3d;
+  box-shadow:
+    0 25px 60px -15px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(255, 255, 255, 0.08);
+  transition: box-shadow 0.4s ease;
+}
+
+.coverflow-card.is-active {
+  box-shadow:
+    0 35px 80px -10px rgba(10, 137, 242, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+
+/* Reflet miroir sous la carte active (effet CoverFlow classique) */
+.coverflow-reflection {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 100%;
+  transform: scaleY(-1);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.25), transparent 55%);
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.25), transparent 55%);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Image de fond de carte */
+.coverflow-card-media {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.coverflow-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(3, 10, 26, 0) 30%, rgba(2, 8, 22, 0.55) 65%, rgba(2, 8, 22, 0.92) 100%);
+  z-index: 1;
+}
+
+.coverflow-card-content {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 20px;
+}
+
+/* Flèches de navigation */
+.coverflow-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 30;
+  width: 48px;
+  height: 48px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  transition: all 0.25s ease;
+}
+
+.coverflow-arrow:hover {
+  background: var(--color-dice-blue);
+  border-color: var(--color-dice-blue);
+  box-shadow: 0 8px 24px rgba(10, 137, 242, 0.5);
+}
+
+/* Indicateurs (dots) */
+.coverflow-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.25);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.coverflow-dot.is-active {
+  width: 26px;
+  background: var(--color-dice-blue);
+  box-shadow: 0 0 12px rgba(10, 137, 242, 0.8);
+}
+
+/* ============================================================
+   DIAMOND CENTRE OVERHAUL DESIGN SYSTEM
+   ============================================================ */
+
+/* Diamond Crystal Facet Grid */
+.about-crystal-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(30deg, rgba(10, 137, 242, 0.02) 1px, transparent 1px),
+    linear-gradient(150deg, rgba(10, 137, 242, 0.02) 1px, transparent 1px),
+    linear-gradient(270deg, rgba(10, 137, 242, 0.015) 1px, transparent 1px);
+  background-size: 120px 207.8px;
+  background-position: 0 0;
+  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 95%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 95%);
+  z-index: 1;
+}
+
+/* Drifting/ambient glow orbs */
+.about-glow-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(130px);
+  pointer-events: none;
+  mix-blend-mode: screen;
+  z-index: 0;
+  will-change: transform;
+}
+
+.about-glow-orb-primary {
+  background: radial-gradient(circle, rgba(10, 137, 242, 0.18) 0%, rgba(10, 137, 242, 0) 70%);
+}
+
+.about-glow-orb-secondary {
+  background: radial-gradient(circle, rgba(108, 92, 231, 0.14) 0%, rgba(108, 92, 231, 0) 70%);
+}
+
+.about-glow-orb-accent {
+  background: radial-gradient(circle, rgba(236, 72, 153, 0.08) 0%, rgba(236, 72, 153, 0) 70%);
+}
+
+/* Big outlined typography backdrop */
+.about-bg-text {
+  font-size: 13vw;
+  font-weight: 900;
+  line-height: 0.8;
+  letter-spacing: -0.04em;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(10, 137, 242, 0.025);
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+  font-family: 'Google Sans', sans-serif;
+  text-transform: uppercase;
+}
+
+/* Premium Glassmorphic Cards */
+.about-glass-card {
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow:
+    0 15px 35px -10px rgba(10, 137, 242, 0.04),
+    0 5px 15px -5px rgba(0, 0, 0, 0.02),
+    inset 0 0 20px rgba(255, 255, 255, 0.2);
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.about-glass-card:hover {
+  background: rgba(255, 255, 255, 0.6);
+  border-color: rgba(10, 137, 242, 0.3);
+  box-shadow:
+    0 25px 50px -12px rgba(10, 137, 242, 0.08),
+    inset 0 0 25px rgba(255, 255, 255, 0.4);
+}
+
+.about-glass-card-dark {
+  background: rgba(8, 20, 48, 0.7);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 20px 40px -15px rgba(0, 0, 0, 0.4),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Magnetic tilt, reflections, glow effects */
+.hover-glow-border {
+  position: relative;
+  overflow: hidden;
+}
+
+.hover-glow-border::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(90deg, transparent, rgba(10, 137, 242, 0.4), transparent);
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+
+.hover-glow-border:hover::after {
+  opacity: 1;
+  animation: border-glow-slide 2s linear infinite;
+}
+
+@keyframes border-glow-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Prism Reflection Shimmer effect */
+.prism-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.prism-shimmer::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -60%;
+  width: 30%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(10, 137, 242, 0.08) 30%,
+    rgba(108, 92, 231, 0.12) 50%,
+    rgba(236, 72, 153, 0.08) 70%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: rotate(35deg);
+  transition: all 0.75s ease;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.prism-shimmer:hover::before {
+  left: 130%;
+  transition: all 1s ease;
+}
