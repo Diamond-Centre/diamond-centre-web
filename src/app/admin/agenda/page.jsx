@@ -150,14 +150,12 @@ function EventCard({ event, index }) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(index * 0.04, 0.24), duration: 0.28 }}
-      className={`group flex overflow-hidden rounded-[20px] border border-[#E8EEF5] bg-white shadow-[0_8px_24px_rgba(11,18,32,0.04)] hover:shadow-[0_14px_32px_rgba(10,137,242,0.14)] hover:border-[#0A89F2]/35 transition-all ${
-        past ? 'opacity-80' : ''
-      }`}
+      className={`group flex overflow-hidden rounded-[20px] border border-[#E8EEF5] bg-white shadow-[0_8px_24px_rgba(11,18,32,0.04)] hover:shadow-[0_14px_32px_rgba(10,137,242,0.14)] hover:border-[#0A89F2]/35 transition-all ${past ? 'opacity-80' : ''
+        }`}
     >
       <div
-        className={`w-[84px] sm:w-[92px] shrink-0 flex flex-col items-center justify-center py-4 px-2 ${
-          past ? 'bg-slate-100' : 'bg-[#E8F3FE]'
-        }`}
+        className={`w-[84px] sm:w-[92px] shrink-0 flex flex-col items-center justify-center py-4 px-2 ${past ? 'bg-slate-100' : 'bg-[#E8F3FE]'
+          }`}
       >
         <span className={`text-sm font-bold ${past ? 'text-slate-500' : 'text-[#0A89F2]'}`}>
           {formatTime(event.start_time)}
@@ -403,22 +401,14 @@ export default function AdminAgendaPage() {
   const monthLabel = `${MONTHS[focusedMonth.getMonth()]} ${focusedMonth.getFullYear()}`
 
   return (
-<<<<<<< HEAD
     <div className="relative min-h-screen w-full flex flex-col">
-=======
-    <div className="relative -m-6 min-h-[calc(100vh-0px)]">
->>>>>>> origin/test
       {/* Atmosphere */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-24 -right-16 w-80 h-80 rounded-full bg-[#0A89F2]/[0.07] blur-3xl" />
         <div className="absolute top-1/3 -left-20 w-72 h-72 rounded-full bg-[#0A89F2]/[0.05] blur-3xl" />
       </div>
 
-<<<<<<< HEAD
       <div className="relative p-4 sm:p-6 sm:px-8 space-y-6 w-full flex-1">
-=======
-      <div className="relative p-6 space-y-6 max-w-6xl">
->>>>>>> origin/test
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
@@ -554,11 +544,7 @@ export default function AdminAgendaPage() {
         </motion.div>
 
         {/* Main grid: calendar + list */}
-<<<<<<< HEAD
         <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] xl:grid-cols-[420px_1fr] gap-6 items-start w-full">
-=======
-        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,420px)_1fr] gap-6 items-start">
->>>>>>> origin/test
           {/* Calendar */}
           <div className="xl:sticky xl:top-6 rounded-[24px] border border-[#E8EEF5] bg-white p-4 sm:p-5 shadow-[0_8px_28px_rgba(11,18,32,0.05)]">
             <div className="flex items-center gap-1 mb-4">
@@ -584,11 +570,10 @@ export default function AdminAgendaPage() {
               <button
                 type="button"
                 onClick={() => setSelectedDay(null)}
-                className={`ml-1 text-xs font-bold px-3 py-1.5 rounded-full transition-colors ${
-                  selectedDay == null
+                className={`ml-1 text-xs font-bold px-3 py-1.5 rounded-full transition-colors ${selectedDay == null
                     ? 'bg-[#0A89F2] text-white'
                     : 'text-[#0A89F2] bg-[#E8F3FE] hover:bg-[#d6ebfc]'
-                }`}
+                  }`}
               >
                 Mois
               </button>
@@ -626,8 +611,7 @@ export default function AdminAgendaPage() {
                     className="relative h-12 flex flex-col items-center justify-center"
                   >
                     <span
-                      className={`w-10 h-10 rounded-full flex items-center justify-center text-[13px] transition-all ${
-                        selected
+                      className={`w-10 h-10 rounded-full flex items-center justify-center text-[13px] transition-all ${selected
                           ? 'bg-[#0A89F2] text-white font-extrabold shadow-[0_6px_16px_rgba(10,137,242,0.35)] scale-105'
                           : isToday
                             ? 'bg-[#E8F3FE] text-[#0A89F2] font-extrabold ring-1 ring-[#0A89F2]'
@@ -636,7 +620,7 @@ export default function AdminAgendaPage() {
                               : inMonth
                                 ? 'text-[#0B1220] font-semibold hover:bg-[#F3F6FA]'
                                 : 'text-[#D0D5DD]'
-                      }`}
+                        }`}
                     >
                       {day.getDate()}
                     </span>
