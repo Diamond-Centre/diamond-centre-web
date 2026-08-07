@@ -18,7 +18,7 @@ import { api } from '@/lib/api'
 import toast from 'react-hot-toast'
 import QRCode from 'qrcode'
 
-const PAGE_SIZE = 8
+const PAGE_SIZE = 9
 
 const STATUS_FILTERS = [
   { id: 'all', label: 'Tous' },
@@ -320,7 +320,7 @@ export default function AdminTickets() {
 
   const filteredTickets = useMemo(() => {
     const q = searchTerm.trim().toLowerCase()
-    return tickets.filter((ticket) => {
+    const list = tickets.filter((ticket) => {
       const status = String(ticket.status || '').toLowerCase()
       if (statusFilter === 'confirmed') {
         if (!['confirmed', 'paid', 'payé'].includes(status)) return false
@@ -338,6 +338,13 @@ export default function AdminTickets() {
         ticket.qr_codes?.[0]?.code?.toLowerCase().includes(q) ||
         String(ticket.entry_code || '').includes(q)
       )
+    })
+
+    // Tri par date d'événement croissante (les plus proches en premier)
+    return list.sort((a, b) => {
+      const dateA = a.event_start_date ? new Date(a.event_start_date).getTime() : Infinity
+      const dateB = b.event_start_date ? new Date(b.event_start_date).getTime() : Infinity
+      return dateA - dateB
     })
   }, [tickets, searchTerm, statusFilter])
 
@@ -406,13 +413,13 @@ export default function AdminTickets() {
   }
 
   return (
-    <div className="relative -m-6 min-h-full">
+    <div className="relative min-h-screen w-full flex flex-col">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-24 -right-16 w-80 h-80 rounded-full bg-[#0A89F2]/[0.07] blur-3xl" />
         <div className="absolute top-1/2 -left-20 w-72 h-72 rounded-full bg-[#0A89F2]/[0.05] blur-3xl" />
       </div>
 
-      <div className="relative p-6 space-y-6 max-w-6xl">
+      <div className="relative p-4 sm:p-6 sm:px-8 space-y-6 w-full flex-1">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
@@ -522,7 +529,7 @@ export default function AdminTickets() {
         ) : (
           <>
             <AnimatePresence mode="popLayout">
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 w-full">
                 {pageTickets.map((ticket, index) => (
                   <TicketCard
                     key={ticket.id}

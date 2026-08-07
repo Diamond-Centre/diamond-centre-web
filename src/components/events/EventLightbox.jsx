@@ -85,7 +85,7 @@ export default function EventLightbox({
                   const parent = e.target.parentElement
                   const fallback = document.createElement('div')
                   fallback.className = 'w-full h-full bg-gradient-to-br from-slate-900 via-dice-blue/40 to-slate-800 flex items-center justify-center'
-                  fallback.innerHTML = '<span class="text-7xl animate-pulse">🎯</span>'
+                  fallback.innerHTML = '<span class="text-7xl animate-pulse"></span>'
                   parent.appendChild(fallback)
                 }}
               />

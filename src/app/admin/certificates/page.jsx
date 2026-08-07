@@ -348,9 +348,6 @@ export default function AdminCertificatesPage() {
             <FaCertificate className="text-dice-blue" />
             Certificats
           </h1>
-          <p className="text-gray-500 text-sm mt-1">
-            Formations passées, participants présents, puis délivrance — comme sur l’app mobile.
-          </p>
         </div>
         <button
           type="button"

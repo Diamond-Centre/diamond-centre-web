@@ -643,7 +643,7 @@ export default function AdminPage() {
       </div>
 
       {/* Actions rapides */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
         <Link href="/admin/events">
           <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md hover:border-dice-blue transition-all cursor-pointer group">
             <div className="flex items-center gap-3">
@@ -657,19 +657,6 @@ export default function AdminPage() {
             </div>
           </div>
         </Link>
-        <Link href="/admin/events/create">
-          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md hover:border-dice-blue transition-all cursor-pointer group">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center group-hover:bg-green-500/20 transition-colors">
-                <FaPlus className="text-green-500" />
-              </div>
-              <div>
-                <h4 className="font-medium text-gray-800 group-hover:text-green-500 transition-colors">Créer un événement</h4>
-                <p className="text-sm text-gray-500">Ajouter au calendrier</p>
-              </div>
-            </div>
-          </div>
-        </Link>
         <Link href="/admin/tickets">
           <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md hover:border-dice-blue transition-all cursor-pointer group">
             <div className="flex items-center gap-3">
@@ -677,7 +664,7 @@ export default function AdminPage() {
                 <FaTicketAlt className="text-purple-500" />
               </div>
               <div>
-                <h4 className="font-medium text-gray-800 group-hover:text-purple-500 transition-colors">Tickets</h4>
+                <h4 className="font-medium text-gray-800 group-hover:text-purple-500 transition-colors">Voir les tickets</h4>
                 <p className="text-sm text-gray-500">{stats?.totalTickets || 0} tickets</p>
               </div>
             </div>

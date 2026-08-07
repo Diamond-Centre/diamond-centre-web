@@ -640,6 +640,14 @@ export const api = {
       }),
     }),
 
+  updateUser: async () => {
+    throw new Error('Fonctionnalité à venir')
+  },
+
+  deleteUser: async () => {
+    throw new Error('Fonctionnalité à venir')
+  },
+
   getDashboardStats: async (token) =>
     request('/users/dashboard', { headers: authHeaders(token) }),
 

@@ -188,7 +188,7 @@ export default function CreateEvent() {
         try {
           const uploadResult = await api.uploadImage(imageFile, token)
           finalImageUrl = uploadResult.url || uploadResult.image_url || ''
-          toast.success('Image téléchargée')
+          //toast.success('Image téléchargée')
         } catch (err) {
           toast.error(err.message || "Erreur lors de l'upload de l'image")
           setUploading(false)
@@ -248,7 +248,7 @@ export default function CreateEvent() {
         <div className="absolute top-1/3 -left-20 w-72 h-72 rounded-full bg-[#0A89F2]/[0.05] blur-3xl" />
       </div>
 
-      <div className="relative p-6 max-w-6xl space-y-6">
+      <div className="relative p-6 w-full space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div className="flex items-start gap-3">
@@ -286,7 +286,7 @@ export default function CreateEvent() {
           </div>
         )}
 
-        <form onSubmit={handleFormSubmit} className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-6 items-start">
+        <form onSubmit={handleFormSubmit} className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-6 items-start">
           <div className="space-y-5">
             {/* General */}
             <Section
@@ -705,7 +705,7 @@ export default function CreateEvent() {
 
           {/* Sticky actions */}
           <div className="xl:col-span-2 fixed bottom-0 right-0 left-0 md:left-64 z-40 border-t border-[#E8EEF5] bg-white/95 backdrop-blur-md px-6 py-4 shadow-[0_-8px_24px_rgba(11,18,32,0.06)]">
-            <div className="max-w-6xl mx-auto flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+            <div className="w-full flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
               <p className="text-sm text-[#667085] hidden sm:block">
                 Vérifiez l’aperçu avant de publier.
               </p>

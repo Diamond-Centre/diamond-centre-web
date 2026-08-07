@@ -61,20 +61,19 @@ export default function AdminLayout({ children }) {
         <div className="p-4">
           {/* Logo */}
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-18 h-18 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm overflow-hidden">
+            <div className="w-30 h-30 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm overflow-hidden">
               <Image
                 src="/images/logo-dice.png"
                 alt="Logo Dice"
-                width={60}
-                height={60}
+                width={100}
+                height={100}
                 className="object-contain"
               />
-          </div>
-            <span className="text-lg font-bold text-gray-800">DC Admin</span>
-          </div>
+            </div>
+         </div>
           
           {/* Menu - Uniquement Dashboard, Événements, Tickets */}
-          <nav className="space-y-1">
+          <nav className="space-y-3">
             {menuItems.map((item) => {
               const isActive = pathname === item.href || 
                                (item.href !== '/admin' && pathname?.startsWith(item.href))
