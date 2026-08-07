@@ -3,7 +3,8 @@
  */
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { FaSearch, FaTicketAlt } from 'react-icons/fa'
 import { useEvents } from '@/hooks/useEvents'
 import { useAuth } from '@/hooks/useAuth'
@@ -30,14 +31,68 @@ const sortOptions = [
   { value: 'price-desc', label: 'Tarif décroissant' },
 ]
 
+const paramToCategoryMap: Record<string, string> = {
+  conference: 'conférence',
+  seminar: 'séminaire',
+  formation: 'formation',
+  workshop: 'atelier',
+}
+
+const categoryToParamMap: Record<string, string> = {
+  'conférence': 'conference',
+  'séminaire': 'seminar',
+  'formation': 'formation',
+  'atelier': 'workshop',
+}
+
 export default function EventsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-[60vh] items-center justify-center pt-24">
+        <Spinner size="large" className="text-dice-blue" />
+      </div>
+    }>
+      <EventsPageContent />
+    </Suspense>
+  )
+}
+
+function EventsPageContent() {
   const { events, loading, error, fetchPublicEvents } = useEvents()
   const { isAuthenticated } = useAuth()
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const typeParam = searchParams.get('type')
+
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [sortBy, setSortBy] = useState('created_at')
   const [selectedEvent, setSelectedEvent] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+
+  // Synchroniser le filtre actif avec le paramètre de l'URL
+  useEffect(() => {
+    if (typeParam) {
+      const categoryId = paramToCategoryMap[typeParam]
+      if (categoryId) {
+        setSelectedCategory(categoryId)
+      } else {
+        setSelectedCategory('all')
+      }
+    } else {
+      setSelectedCategory('all')
+    }
+  }, [typeParam])
+
+  const handleCategoryChange = (categoryId: string) => {
+    setSelectedCategory(categoryId)
+    const paramVal = categoryToParamMap[categoryId]
+    if (paramVal) {
+      router.push(`/events?type=${paramVal}`, { scroll: false })
+    } else {
+      router.push('/events', { scroll: false })
+    }
+  }
 
   useEffect(() => {
     fetchPublicEvents()
@@ -129,9 +184,6 @@ export default function EventsPage() {
       <div className="min-h-screen bg-[#F4F7FB] pt-24">
         <Container>
           <div className="py-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0A89F2]">
-              Programme
-            </p>
             <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-[#0B1220] md:text-4xl">
               Nos événements
             </h1>
@@ -142,22 +194,24 @@ export default function EventsPage() {
           </div>
 
           <div className="mb-8">
-            <div className="flex flex-col gap-4 md:flex-row">
-              <div className="relative flex-1">
-                <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#98A2B3]" />
+            <div className="flex flex-col gap-4 md:flex-row md:items-center">
+
+              {/* CHAMP DE RECHERCHE */}
+              <div className="relative flex-1 flex items-center">
+                <FaSearch className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#98A2B3]" />
                 <input
                   type="text"
                   placeholder="Rechercher un événement…"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full rounded-2xl border border-[#E8EEF5] bg-white py-3 pl-11 pr-4 text-sm outline-none transition focus:border-[#0A89F2]/40 focus:ring-2 focus:ring-[#0A89F2]/15"
+                  className="h-12 w-full rounded-2xl border border-[#E8EEF5] bg-white pl-11 pr-4 text-sm outline-none transition focus:border-[#0A89F2]/40 focus:ring-2 focus:ring-[#0A89F2]/15"
                 />
               </div>
 
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="min-w-[160px] rounded-2xl border border-[#E8EEF5] bg-white px-4 py-3 text-sm outline-none focus:border-[#0A89F2]/40 focus:ring-2 focus:ring-[#0A89F2]/15"
+                className="h-12 min-w-[160px] rounded-2xl border border-[#E8EEF5] bg-white px-4 text-sm outline-none focus:border-[#0A89F2]/40 focus:ring-2 focus:ring-[#0A89F2]/15"
               >
                 {sortOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -172,12 +226,11 @@ export default function EventsPage() {
                 <button
                   key={cat.id}
                   type="button"
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                    selectedCategory === cat.id
-                      ? 'bg-[#0A89F2] text-white shadow-[0_8px_20px_rgba(10,137,242,0.28)]'
-                      : 'border border-[#E8EEF5] bg-white text-[#667085] hover:border-[#0A89F2]/35 hover:text-[#0A89F2]'
-                  }`}
+                  onClick={() => handleCategoryChange(cat.id)}
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition ${selectedCategory === cat.id
+                    ? 'bg-[#0A89F2] text-white shadow-[0_8px_20px_rgba(10,137,242,0.28)]'
+                    : 'border border-[#E8EEF5] bg-white text-[#667085] hover:border-[#0A89F2]/35 hover:text-[#0A89F2]'
+                    }`}
                 >
                   {cat.label}
                 </button>
@@ -211,7 +264,7 @@ export default function EventsPage() {
                 className="mt-5"
                 onClick={() => {
                   setSearchTerm('')
-                  setSelectedCategory('all')
+                  handleCategoryChange('all')
                   fetchPublicEvents()
                 }}
               >

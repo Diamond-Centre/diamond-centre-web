@@ -57,7 +57,7 @@ export default function LoginPage() {
   useEffect(() => {
     const token = auth.getToken()
     const user = auth.getUser()
-    
+
     if (token && user) {
       if (user.role === 'admin' || user.role === 'super_admin') {
         window.location.href = '/admin'

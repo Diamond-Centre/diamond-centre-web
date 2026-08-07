@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { auth } from '@/lib/auth'
 import { api } from '@/lib/api'
-import { 
+import {
   FaCalendar, FaUsers, FaTicketAlt, FaChartLine,
   FaPlus, FaEye, FaEdit, FaTrash, FaDollarSign,
   FaArrowUp, FaArrowDown, FaMinus, FaSync,
@@ -35,12 +35,12 @@ export default function AdminPage() {
   useEffect(() => {
     const token = auth.getToken()
     const storedUser = auth.getUser()
-    
+
     if (!token || !storedUser || (storedUser.role !== 'admin' && storedUser.role !== 'super_admin')) {
       router.push('/auth/login')
       return
     }
-    
+
     setUser(storedUser)
     loadDashboardData(token)
   }, [router])
@@ -305,7 +305,7 @@ export default function AdminPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
           <p className="text-gray-500">
-            Bienvenue {user?.name || 'Admin'} ! 
+            Bienvenue {user?.name || 'Admin'} !
             <span className="ml-2 text-xs text-gray-400">
               {stats?.totalEvents || 0} événements au total
             </span>
@@ -404,11 +404,10 @@ export default function AdminPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className={`px-2 py-0.5 text-xs rounded-full ${
-                    event.status === 'published' 
-                      ? 'bg-green-100 text-green-700' 
+                  <span className={`px-2 py-0.5 text-xs rounded-full ${event.status === 'published'
+                      ? 'bg-green-100 text-green-700'
                       : 'bg-yellow-100 text-yellow-700'
-                  }`}>
+                    }`}>
                     {event.status === 'published' ? 'Publié' : 'Brouillon'}
                   </span>
                   <span className="text-sm font-semibold text-dice-blue">

@@ -1,17 +1,17 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  FaTimes, FaCalendar, FaMapMarker, FaClock, 
+import {
+  FaTimes, FaCalendar, FaMapMarker, FaClock,
   FaEuroSign, FaUsers, FaTicketAlt, FaTag, FaLayerGroup, FaCoins, FaInfoCircle
 } from 'react-icons/fa'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
-export default function EventLightbox({ 
-  isOpen, 
-  onClose, 
-  event 
+export default function EventLightbox({
+  isOpen,
+  onClose,
+  event
 }) {
   if (!isOpen || !event) return null
 
@@ -94,7 +94,7 @@ export default function EventLightbox({
                 <span className="text-7xl animate-pulse">🎯</span>
               </div>
             )}
-            
+
             {/* Voile sombre en bas pour booster la lisibilité des badges */}
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
 
@@ -131,11 +131,10 @@ export default function EventLightbox({
                 <span className="text-xs font-semibold px-2.5 py-0.5 rounded-md bg-gray-100 text-gray-600 font-mono">
                   #{event.id}
                 </span>
-                <span className={`text-xs font-bold px-2.5 py-0.5 rounded-md capitalize ${
-                  event.status === 'published' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' :
-                  event.status === 'draft' ? 'bg-amber-50 text-amber-700 border border-amber-200/60' :
-                  'bg-gray-100 text-gray-700'
-                }`}>
+                <span className={`text-xs font-bold px-2.5 py-0.5 rounded-md capitalize ${event.status === 'published' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' :
+                    event.status === 'draft' ? 'bg-amber-50 text-amber-700 border border-amber-200/60' :
+                      'bg-gray-100 text-gray-700'
+                  }`}>
                   {event.status || 'Brouillon'}
                 </span>
               </div>

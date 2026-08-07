@@ -10,6 +10,10 @@ async function parseJson(response) {
   try {
     return JSON.parse(text)
   } catch {
+    const isHtml = text.trim().startsWith('<') || text.includes('<!DOCTYPE') || text.includes('<html')
+    if (isHtml) {
+      throw new Error(`Erreur ${response.status}: Impossible de contacter le serveur`)
+    }
     const snippet = text.replace(/\s+/g, ' ').slice(0, 120)
     throw new Error(
       response.ok
@@ -28,7 +32,6 @@ async function request(path, options = {}) {
     const message =
       (data && (data.message || data.error)) ||
       `Erreur ${response.status}`
-
     throw new Error(typeof message === 'string' ? message : `Erreur ${response.status}`)
   }
 
@@ -265,11 +268,11 @@ export const api = {
         Array.isArray(result.tickets) && result.tickets.length
           ? result.tickets
           : [
-              {
-                id: result.id,
-                qr_codes: result.qr_codes || [],
-              },
-            ]
+            {
+              id: result.id,
+              qr_codes: result.qr_codes || [],
+            },
+          ]
 
       for (const t of ticketList) {
         const qrItem = Array.isArray(t.qr_codes) && t.qr_codes.length ? t.qr_codes[0] : null
@@ -337,8 +340,8 @@ export const api = {
         const entryCode =
           detail.entry_code ||
           (Array.isArray(detail.qr_codes) &&
-          detail.qr_codes[0] &&
-          typeof detail.qr_codes[0] === 'object'
+            detail.qr_codes[0] &&
+            typeof detail.qr_codes[0] === 'object'
             ? detail.qr_codes[0].entry_code
             : null) ||
           meta.entry_code ||
@@ -437,17 +440,17 @@ export const api = {
 
   /** Admin: full ticket list from GET /tickets */
   getTickets: async (token) => {
-  try {
-    const data = await request('/tickets', { headers: authHeaders(token) })
-    return Array.isArray(data) ? data : data?.data || []
-  } catch (error) {
-    // Le swagger ne définit pas GET /api/tickets
-    if (String(error.message).includes('404')) {
-      return []
+    try {
+      const data = await request('/tickets', { headers: authHeaders(token) })
+      return Array.isArray(data) ? data : data?.data || []
+    } catch (error) {
+      // Le swagger ne définit pas GET /api/tickets
+      if (String(error.message).includes('404')) {
+        return []
+      }
+      throw error
     }
-    throw error
-  }
-},
+  },
 
   deleteTicket: async () => {
     throw new Error('La suppression de tickets n’est pas encore disponible sur le backend')

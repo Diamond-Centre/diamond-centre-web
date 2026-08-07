@@ -138,11 +138,10 @@ function Pagination({ page, totalPages, onChange, totalItems, pageSize }) {
               key={p}
               type="button"
               onClick={() => onChange(p)}
-              className={`min-w-9 h-9 px-2 rounded-lg text-sm font-semibold transition-colors ${
-                p === page
+              className={`min-w-9 h-9 px-2 rounded-lg text-sm font-semibold transition-colors ${p === page
                   ? 'bg-dice-blue text-white'
                   : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
-              }`}
+                }`}
             >
               {p}
             </button>
@@ -441,8 +440,8 @@ export default function AdminUsersPage() {
       const code = entry
         ? String(entry).replace(/\D/g, '').padStart(8, '0').slice(-8)
         : ticket.qr_codes?.[0]?.code ||
-          (typeof ticket.qr_codes?.[0] === 'string' ? ticket.qr_codes[0] : null) ||
-          `DC-${ticket.id}`
+        (typeof ticket.qr_codes?.[0] === 'string' ? ticket.qr_codes[0] : null) ||
+        `DC-${ticket.id}`
 
       const image = await QRCode.toDataURL(String(code), {
         width: 360,

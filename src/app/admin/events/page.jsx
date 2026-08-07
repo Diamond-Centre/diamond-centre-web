@@ -285,11 +285,10 @@ function Pagination({ page, totalPages, onChange, totalItems, pageSize }) {
               key={p}
               type="button"
               onClick={() => onChange(p)}
-              className={`min-w-10 h-10 px-2 rounded-xl text-sm font-bold transition-colors ${
-                p === page
+              className={`min-w-10 h-10 px-2 rounded-xl text-sm font-bold transition-colors ${p === page
                   ? 'bg-[#0A89F2] text-white shadow-[0_6px_16px_rgba(10,137,242,0.3)]'
                   : 'border border-[#E8EEF5] bg-white text-[#667085] hover:bg-[#F3F6FA]'
-              }`}
+                }`}
             >
               {p}
             </button>
@@ -596,11 +595,10 @@ export default function AdminEvents() {
                     key={f.id}
                     type="button"
                     onClick={() => setStatusFilter(f.id)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${
-                      statusFilter === f.id
+                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${statusFilter === f.id
                         ? 'bg-[#0A89F2] text-white'
                         : 'bg-[#F3F6FA] text-[#667085] hover:bg-[#E8F3FE] hover:text-[#0A89F2]'
-                    }`}
+                      }`}
                   >
                     {f.label}
                     {f.id !== 'all' && counts[f.id] != null ? ` (${counts[f.id]})` : ''}

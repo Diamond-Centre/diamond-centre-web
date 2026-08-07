@@ -8,9 +8,9 @@ import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { auth } from '@/lib/auth'
-import { 
+import {
   FaHome, FaCalendar, FaTicketAlt, FaUsers, FaCertificate, FaCalendarAlt,
-  FaSignOutAlt, 
+  FaSignOutAlt,
 } from 'react-icons/fa'
 
 const menuItems = [
@@ -31,12 +31,12 @@ export default function AdminLayout({ children }) {
   useEffect(() => {
     const token = auth.getToken()
     const storedUser = auth.getUser()
-    
+
     if (!token || !storedUser || (storedUser.role !== 'admin' && storedUser.role !== 'super_admin')) {
       router.push('/auth/login')
       return
     }
-    
+
     setUser(storedUser)
     setIsLoading(false)
   }, [router])
@@ -70,22 +70,21 @@ export default function AdminLayout({ children }) {
                 className="object-contain"
               />
             </div>
-         </div>
-          
+          </div>
+
           {/* Menu - Uniquement Dashboard, Événements, Tickets */}
           <nav className="space-y-3">
             {menuItems.map((item) => {
-              const isActive = pathname === item.href || 
-                               (item.href !== '/admin' && pathname?.startsWith(item.href))
+              const isActive = pathname === item.href ||
+                (item.href !== '/admin' && pathname?.startsWith(item.href))
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors ${
-                    isActive 
-                      ? 'bg-dice-blue text-white' 
+                  className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors ${isActive
+                      ? 'bg-dice-blue text-white'
                       : 'text-gray-600 hover:bg-gray-100'
-                  }`}
+                    }`}
                 >
                   <item.icon className={`text-lg ${isActive ? 'text-white' : 'text-gray-400'}`} />
                   <span className="font-medium text-sm">{item.label}</span>
@@ -94,7 +93,7 @@ export default function AdminLayout({ children }) {
             })}
           </nav>
         </div>
-        
+
         {/* Footer avec déconnexion */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
           <button

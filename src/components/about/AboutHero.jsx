@@ -1,124 +1,153 @@
 /**
- * Section Hero de la page À propos - Version responsive sans icônes
+ * Section Hero de la page À propos - Concept 1 : Manifeste Typographique Éditorial
  */
 'use client'
 
-import { motion } from 'framer-motion'
-import { FaPlay } from 'react-icons/fa'
+import { useEffect, useRef } from 'react'
+import { motion, useScroll, useTransform } from 'framer-motion'
+import { FaPlay, FaArrowDown } from 'react-icons/fa'
+import gsap from 'gsap'
 import Container from '@/components/ui/Container'
-import Button from '@/components/ui/Button'
-import Badge from '@/components/ui/Badge'
 
 export default function AboutHero({ onVideoClick }) {
+  const containerRef = useRef(null)
+
+  // Animation des halos lumineux en arrière-plan
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      gsap.to('.ambient-orb-1', {
+        x: 'random(-40, 40)',
+        y: 'random(-40, 40)',
+        duration: 12,
+        repeat: -1,
+        yoyo: true,
+        ease: 'sine.inOut',
+      })
+      gsap.to('.ambient-orb-2', {
+        x: 'random(-50, 50)',
+        y: 'random(-50, 50)',
+        duration: 15,
+        repeat: -1,
+        yoyo: true,
+        ease: 'sine.inOut',
+      })
+    }, containerRef)
+
+    return () => ctx.revert()
+  }, [])
+
+  // Parallaxe au scroll
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ['start start', 'end start'],
+  })
+
+  const textParallaxY = useTransform(scrollYProgress, [0, 1], ['0%', '20%'])
+  const opacityFade = useTransform(scrollYProgress, [0, 0.8], [1, 0])
+
+  const titleLine1 = "L'excellence ne s'invente pas."
+  const titleLine2 = "Elle se bâtit."
+
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-dice-blue/5 via-white to-purple-500/5 min-h-[80vh] md:min-h-[70vh] lg:min-h-[60vh] flex items-center">
-      {/* Effets de fond */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200px] sm:w-[300px] md:w-[500px] lg:w-[700px] xl:w-[900px] h-[200px] sm:h-[300px] md:h-[500px] lg:h-[700px] xl:h-[900px] bg-dice-blue/5 rounded-full blur-3xl" />
-        <div className="absolute -bottom-20 -right-20 md:bottom-0 md:right-0 w-[150px] sm:w-[200px] md:w-[300px] lg:w-[400px] h-[150px] sm:h-[200px] md:h-[300px] lg:h-[400px] bg-purple-500/5 rounded-full blur-3xl" />
-        <div className="absolute -top-20 -left-20 md:top-0 md:left-0 w-[150px] sm:w-[200px] md:w-[300px] lg:w-[400px] h-[150px] sm:h-[200px] md:h-[300px] lg:h-[400px] bg-blue-300/5 rounded-full blur-3xl" />
+    <section
+      ref={containerRef}
+      className="relative min-h-[90vh] md:min-h-screen bg-[#030816] text-white flex flex-col justify-between pt-36 pb-16 overflow-hidden"
+    >
+      {/* 1. Arrière-plan Éditorial & Halos Lumineux */}
+      <div className="absolute inset-0 pointer-events-none z-0">
+        <div className="about-crystal-grid opacity-20 h-full w-full" />
+
+        <div className="ambient-orb-1 absolute top-1/4 left-1/2 -translate-x-1/2 w-[65vw] h-[40vw] max-w-[800px] bg-gradient-to-tr from-[#0a89f2]/15 to-purple-600/10 rounded-full blur-[140px]" />
+        <div className="ambient-orb-2 absolute bottom-10 right-10 w-[40vw] h-[40vw] max-w-[500px] bg-[#0a89f2]/10 rounded-full blur-[120px]" />
+
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#030816]/40 to-[#030816]" />
       </div>
 
-      <Container className="relative z-10 py-8 sm:py-12 md:py-16 lg:py-20">
-        <div className="grid lg:grid-cols-2 gap-6 sm:gap-8 md:gap-12 lg:gap-16 items-center">
-          
-          {/* Texte - Version mobile centrée, desktop alignée à gauche */}
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center lg:text-left order-2 lg:order-1"
-          >
-            {/* Badge */}
-            <div className="flex justify-center lg:justify-start">
-              <Badge variant="default" className="mb-3 sm:mb-4 inline-block text-xs sm:text-sm">
-                À propos
-              </Badge>
-            </div>
+      <Container className="relative z-10 my-auto">
+        <motion.div style={{ y: textParallaxY, opacity: opacityFade }} className="max-w-6xl mx-auto">
 
-            {/* Titre - Tailles progressives */}
-            <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-gray-800 mb-3 sm:mb-4 md:mb-6 leading-tight">
-              <span className="block">Diamond Centre</span>
-              <span className="gradient-text block">L'excellence</span>
-              <span className="text-gray-600 block text-base xs:text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl mt-1">
-                depuis 2015
-              </span>
-            </h1>
 
-            {/* Description */}
-            <p className="text-sm xs:text-base md:text-lg lg:text-xl text-gray-600 mb-6 sm:mb-8 max-w-lg mx-auto lg:mx-0 leading-relaxed">
-              Nous sommes une structure dédiée au développement personnel et professionnel, 
-              offrant des formations, conférences et séminaires d'excellence.
-            </p>
-
-            {/* Bouton CTA */}
-            <div className="flex flex-wrap justify-center lg:justify-start gap-3 sm:gap-4">
-              <Button 
-                variant="primary" 
-                size="large" 
-                onClick={onVideoClick}
-                className="text-sm sm:text-base px-5 sm:px-6 md:px-8 py-3 sm:py-4"
+          {/* Titre Typographique Massif */}
+          <h1 className="text-4xl xs:text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight leading-[1.05] mb-12">
+            <span className="block text-white overflow-hidden">
+              <motion.span
+                className="block"
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
               >
-                <FaPlay className="mr-2 text-xs sm:text-sm" />
-                Découvrir notre histoire
-              </Button>
-            </div>
-          </motion.div>
+                {titleLine1}
+              </motion.span>
+            </span>
+            <span className="block bg-clip-text text-transparent bg-gradient-to-r from-[#0a89f2] via-blue-300 to-indigo-400 overflow-hidden mt-1">
+              <motion.span
+                className="block"
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                transition={{ duration: 1, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+              >
+                {titleLine2}
+              </motion.span>
+            </span>
+          </h1>
 
-          {/* Image/Illustration - Version sans icônes */}
+          {/* Layout Asymétrique : Promesse + Texte Manifeste + Action */}
           <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="relative order-1 lg:order-2 mx-auto w-full max-w-[280px] xs:max-w-[320px] sm:max-w-[380px] md:max-w-[420px] lg:max-w-[480px] xl:max-w-[520px]"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className="grid md:grid-cols-12 gap-8 items-start pt-10 border-t border-white/10"
           >
-            {/* Conteneur de l'image */}
-            <div className="relative aspect-square rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl sm:shadow-2xl">
-              {/* Fond avec dégradé */}
-              <div className="absolute inset-0 bg-gradient-to-br from-dice-blue/20 via-dice-blue/10 to-purple-600/20" />
-              
-              {/* Éléments décoratifs - Sans icônes */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  {/* Grand texte Diamond Centre */}
-                  <div className="text-4xl xs:text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-gray-800/20 leading-tight">
-                    DC
-                  </div>
-                  <div className="text-xs xs:text-sm sm:text-base md:text-lg text-gray-500/30 mt-2 sm:mt-3">
-                    Diamond Centre
-                  </div>
-                </div>
-              </div>
-
-              {/* Effet glassmorphisme */}
-              <div className="absolute inset-0 glass-white rounded-2xl sm:rounded-3xl" />
-              
-              {/* Bordure */}
-              <div className="absolute inset-0 border border-white/30 rounded-2xl sm:rounded-3xl" />
+            {/* Colonne 1 : Posture */}
+            <div className="md:col-span-4">
+              <p className="text-xs font-semibold tracking-wider text-gray-400 uppercase mb-2">
+                Notre Promesse Institutionnelle
+              </p>
+              <p className="text-lg sm:text-xl font-medium text-white/90 leading-snug">
+                Façonner la nouvelle génération de leaders et d'entrepreneurs d'impact.
+              </p>
             </div>
 
-            {/* Badge flottant - Sans icône */}
-            <motion.div
-              className="absolute -bottom-2 -right-2 xs:-bottom-3 xs:-right-3 sm:-bottom-4 sm:-right-4 md:-bottom-6 md:-right-6 glass-dark rounded-xl sm:rounded-2xl p-2 xs:p-2.5 sm:p-3 md:p-4 border border-white/10 shadow-lg"
-              initial={{ opacity: 0, scale: 0.8, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ delay: 0.4, type: "spring", stiffness: 300 }}
-              whileHover={{ scale: 1.05 }}
-            >
-              <div className="flex items-center gap-2 xs:gap-2.5 sm:gap-3">
-                {/* Texte du badge - Sans icône */}
-                <div className="min-w-[60px] xs:min-w-[70px] sm:min-w-[80px] md:min-w-[100px]">
-                  <div className="text-white font-bold text-xs xs:text-sm sm:text-base leading-tight">
-                    Diamond Centre
-                  </div>
-                  <div className="text-white/60 text-[8px] xs:text-[10px] sm:text-xs">
-                    Depuis 2015
-                  </div>
-                </div>
-              </div>
-            </motion.div>
+            {/* Colonne 2 : Texte Manifeste avec séparateur vertical */}
+            <div className="md:col-span-5 md:border-l md:border-white/10 md:pl-8">
+              <p className="text-base sm:text-lg text-gray-400 font-light leading-relaxed">
+                Chez Diamond Centre, nous croyons que le potentiel humain est la ressource la plus précieuse d'un continent. Depuis une décennie, nous concevons des écosystèmes d'excellence pour transformer les compétences individuelles en valeur mesurable et durable.
+              </p>
+            </div>
+
+            {/* Colonne 3 : Bouton Film Institutionnel Épuré */}
+            <div className="md:col-span-3 flex md:justify-end items-center">
+              <button
+                onClick={onVideoClick}
+                className="group flex items-center gap-4 px-6 py-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 text-white font-medium text-sm transition-all duration-300 backdrop-blur-md"
+              >
+                <span className="w-10 h-10 rounded-full bg-[#0a89f2] flex items-center justify-center text-white text-xs group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(10,137,242,0.4)]">
+                  <FaPlay className="ml-0.5" />
+                </span>
+                <span className="text-left leading-tight">
+                  Voir le film <br />
+                  <span className="text-xs text-gray-400 font-normal">2 min 30 s</span>
+                </span>
+              </button>
+            </div>
+
           </motion.div>
-        </div>
+
+        </motion.div>
+      </Container>
+
+      {/* 2. Pied de Section & Indicateur de Navigation */}
+      <Container className="relative z-10 mt-12">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8 }}
+          className="flex justify-between items-center text-xs text-gray-500 font-mono border-t border-white/5 pt-6"
+        >
+          <div className="flex items-center gap-2 text-gray-400">
+            <FaArrowDown className="animate-bounce text-[#0a89f2]" />
+          </div>
+        </motion.div>
       </Container>
     </section>
   )

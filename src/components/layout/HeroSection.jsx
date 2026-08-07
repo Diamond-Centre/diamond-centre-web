@@ -1,98 +1,128 @@
-/**
- * Hero Accueil — full-bleed, brand en typographie (logo = navbar uniquement)
- */
 'use client'
 
+import { useEffect, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
+import gsap from 'gsap'
 import { FaArrowRight } from 'react-icons/fa'
 
 const HERO_IMAGE =
-  'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1920&h=1080&fit=crop&crop=center'
+  'https://images.unsplash.com/photo-1511578314322-379afb476865?w=1920&h=1080&fit=crop&crop=center'
 
 export default function HeroSection() {
+  const heroRef = useRef(null)
+  const imageRef = useRef(null)
+
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({ defaults: { ease: 'power4.out' } })
+
+      tl.fromTo(
+        imageRef.current,
+        { scale: 1.15, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 1.8 }
+      )
+        .fromTo(
+          '.reveal-text',
+          { y: '100%', opacity: 0 },
+          { y: '0%', opacity: 1, duration: 1, stagger: 0.12 },
+          '-=1.2'
+        )
+        .fromTo(
+          '.fade-in-up',
+          { y: 30, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.8, stagger: 0.15 },
+          '-=0.6'
+        )
+    }, heroRef)
+
+    return () => ctx.revert()
+  }, [])
+
+  const handleMouseMove = (e) => {
+    if (!imageRef.current) return
+    const { clientX, clientY } = window.innerWidth ? e : { clientX: 0, clientY: 0 }
+    const xPos = (clientX / window.innerWidth - 0.5) * 20
+    const yPos = (clientY / window.innerHeight - 0.5) * 20
+
+    gsap.to(imageRef.current, {
+      x: xPos,
+      y: yPos,
+      duration: 1,
+      ease: 'power2.out',
+    })
+  }
+
   return (
-    <section className="relative flex min-h-[100svh] w-full items-center overflow-hidden bg-[#050A12]">
-      <motion.div
-        className="absolute inset-0"
-        initial={{ scale: 1.08 }}
-        animate={{ scale: 1 }}
-        transition={{ duration: 1.8, ease: [0.22, 1, 0.36, 1] }}
-      >
-        <Image
-          src={HERO_IMAGE}
-          alt="Public lors d’une conférence Diamond Centre"
-          fill
-          priority
-          className="object-cover object-center"
-          sizes="100vw"
-        />
-      </motion.div>
+    <section
+      ref={heroRef}
+      onMouseMove={handleMouseMove}
+      className="relative flex min-h-[100svh] w-full items-center overflow-hidden bg-[#03070C]"
+    >
+      <div className="absolute inset-0 overflow-hidden">
+        <div ref={imageRef} className="absolute -inset-10 h-[120%] w-[120%]">
+          <Image
+            src={HERO_IMAGE}
+            alt="Public lors d’une conférence Diamond Centre"
+            fill
+            priority
+            className="object-cover object-center grayscale-[20%] contrast-[110%]"
+            sizes="110vw"
+          />
+        </div>
+      </div>
 
-      <div className="absolute inset-0 bg-[#050A12]/45" />
-      <div className="absolute inset-0 bg-gradient-to-t from-[#050A12] via-[#050A12]/50 to-[#050A12]/20" />
-      <div className="absolute inset-0 bg-gradient-to-r from-[#050A12]/80 via-[#050A12]/35 to-transparent" />
+      <div className="absolute inset-0 bg-[#03070C]/35" />
 
-      <motion.div
-        aria-hidden
-        className="pointer-events-none absolute bottom-0 left-1/4 h-40 w-[50%] -translate-x-1/2 rounded-full bg-[#0A89F2]/20 blur-[80px]"
-        animate={{ opacity: [0.25, 0.45, 0.25] }}
-        transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
-      />
+      <div className="relative z-10 mx-auto w-full max-w-7xl px-6 pb-20 pt-32 sm:px-8 md:pb-28">
+        <div className="max-w-4xl">
 
-      <div className="relative z-10 mx-auto w-full max-w-6xl px-4 pb-20 pt-28 sm:px-6 md:pb-28 md:pt-32">
-        <motion.div
-          initial={{ opacity: 0, y: 32 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
-          className="max-w-3xl"
-        >
-          <motion.h1
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, duration: 0.6 }}
-            className="max-w-2xl text-3xl font-extrabold leading-[1.12] tracking-tight text-white sm:text-4xl md:text-5xl md:leading-[1.1]"
-          >
-            Conférences, séminaires et formations
-            <span className="text-white/70"> pour révéler votre potentiel.</span>
-          </motion.h1>
+          <div className="overflow-hidden mb-6">
+            <div className="reveal-text inline-flex items-center gap-3 border-l-2 border-white/60 pl-3 text-xs font-mono uppercase tracking-widest text-white/70">
+              Diamond Centre — Édition 2026
+            </div>
+          </div>
 
-          <motion.p
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.22, duration: 0.55 }}
-            className="mt-5 max-w-md text-base leading-relaxed text-white/60 sm:text-lg"
-          >
-            L’excellence DiCe, au service de votre parcours personnel et
-            professionnel.
-          </motion.p>
+          <h1 className="text-4xl font-black tracking-tight text-white sm:text-5xl md:text-7xl lg:leading-[1.05]">
+            <div className="overflow-hidden py-1">
+              <span className="reveal-text block">Conférences, séminaires</span>
+            </div>
+            <div className="overflow-hidden py-1">
+              <span className="reveal-text block font-light italic text-[#0A89F2]">
+                et formations <span className="not-italic text-white font-black">pour révéler</span>
+              </span>
+            </div>
+            <div className="overflow-hidden py-1">
+              <span className="reveal-text block">votre potentiel.</span>
+            </div>
+          </h1>
 
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35, duration: 0.55 }}
-            className="mt-9 flex flex-wrap items-center gap-3"
-          >
+          <p className="fade-in-up mt-6 max-w-xl text-lg leading-relaxed text-white/60 font-normal sm:text-xl opacity-0">
+            L’excellence DiCe, au service de votre parcours personnel et professionnel.
+          </p>
+
+          {/* Boutons d'action */}
+          <div className="fade-in-up mt-10 flex flex-wrap items-center gap-4 opacity-0">
             <Link
               href="/events"
-              className="group inline-flex items-center gap-2 rounded-full bg-[#0A89F2] px-7 py-3.5 text-sm font-semibold text-white shadow-[0_16px_40px_rgba(10,137,242,0.45)] transition hover:bg-[#0770cc]"
+              className="group relative inline-flex items-center gap-3 bg-[#0A89F2] px-8 py-4 text-sm font-semibold text-white transition-all duration-300 hover:bg-[#0770cc] hover:px-9"
             >
-              Voir les événements
-              <FaArrowRight className="text-xs transition group-hover:translate-x-0.5" />
+              <span>Voir les événements</span>
+              <FaArrowRight className="text-xs transition-transform duration-300 group-hover:translate-x-1" />
             </Link>
+
             <Link
               href="/about"
-              className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-7 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition hover:border-white/35 hover:bg-white/10"
+              className="inline-flex items-center gap-2 border border-white/20 bg-transparent px-8 py-4 text-sm font-semibold text-white transition-all duration-300 hover:border-white hover:bg-white/5"
             >
               Qui sommes-nous
             </Link>
-          </motion.div>
-        </motion.div>
+          </div>
+
+        </div>
       </div>
 
-      {/* Bottom edge line */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
     </section>
   )
 }
