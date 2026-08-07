@@ -10,14 +10,14 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   FaPlus, FaEye, FaEdit, FaTrash, FaCalendar,
   FaMapMarkerAlt, FaUsers, FaTicketAlt, FaSearch,
-  FaSync, FaSpinner, FaTag, FaChevronLeft, FaChevronRight,
+  FaSync, FaSpinner, FaTag, FaChevronLeft, FaChevronRight, FaSortAmountDown,
 } from 'react-icons/fa'
 import { api } from '@/lib/api'
 import { auth } from '@/lib/auth'
 import EventLightbox from '@/components/events/EventLightbox'
 import toast from 'react-hot-toast'
 
-const PAGE_SIZE = 9
+const PAGE_SIZE = 12
 
 const STATUS_FILTERS = [
   { id: 'all', label: 'Tous' },
@@ -35,6 +35,37 @@ const CATEGORY_FILTERS = [
   { id: 'atelier', label: 'Atelier' },
   { id: 'webinaire', label: 'Webinaire' },
 ]
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+
+function getImageUrl(event) {
+  if (!event) return null
+
+  let rawUrl =
+    event.image_url ||
+    event.imageUrl ||
+    (typeof event.image === 'string' ? event.image : event.image?.url || event.image?.path) ||
+    event.images?.[0]?.url ||
+    event.images?.[0]
+
+  if (!rawUrl || typeof rawUrl !== 'string') return null
+
+  if (!rawUrl.startsWith('http://') && !rawUrl.startsWith('https://') && !rawUrl.startsWith('data:')) {
+    const cleanPath = rawUrl.startsWith('/') ? rawUrl : `/${rawUrl}`
+    rawUrl = `${API_BASE_URL}${cleanPath}`
+  }
+
+  const updatedAt = event.updated_at || event.updatedAt
+  if (updatedAt) {
+    const time = new Date(updatedAt).getTime()
+    if (!Number.isNaN(time)) {
+      const separator = rawUrl.includes('?') ? '&' : '?'
+      return `${rawUrl}${separator}v=${time}`
+    }
+  }
+
+  return rawUrl
+}
 
 function statusMeta(status) {
   switch (String(status || '').toLowerCase()) {
@@ -85,6 +116,7 @@ function EventCard({ event, index, onView, onDelete, deleting }) {
   const capacity = Number(event.capacity) || 0
   const fill = capacity > 0 ? Math.min(100, Math.round((sold / capacity) * 100)) : 0
   const promo = hasPromo(event)
+  const imageUrl = getImageUrl(event)
 
   return (
     <motion.article
@@ -96,11 +128,15 @@ function EventCard({ event, index, onView, onDelete, deleting }) {
       className="group flex flex-col overflow-hidden rounded-[22px] border border-[#E8EEF5] bg-white shadow-[0_8px_24px_rgba(11,18,32,0.04)] hover:shadow-[0_16px_36px_rgba(10,137,242,0.14)] hover:border-[#0A89F2]/35 transition-all"
     >
       <div className="relative h-40 overflow-hidden bg-[#E8F3FE]">
-        {event.image_url ? (
+        {imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={event.image_url}
-            alt=""
+            key={imageUrl}
+            src={imageUrl}
+            alt={event.title || 'Événement'}
+            onError={(e) => {
+              e.currentTarget.style.display = 'none'
+            }}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
@@ -249,11 +285,10 @@ function Pagination({ page, totalPages, onChange, totalItems, pageSize }) {
               key={p}
               type="button"
               onClick={() => onChange(p)}
-              className={`min-w-10 h-10 px-2 rounded-xl text-sm font-bold transition-colors ${
-                p === page
+              className={`min-w-10 h-10 px-2 rounded-xl text-sm font-bold transition-colors ${p === page
                   ? 'bg-[#0A89F2] text-white shadow-[0_6px_16px_rgba(10,137,242,0.3)]'
                   : 'border border-[#E8EEF5] bg-white text-[#667085] hover:bg-[#F3F6FA]'
-              }`}
+                }`}
             >
               {p}
             </button>
@@ -281,6 +316,7 @@ export default function AdminEvents() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [categoryFilter, setCategoryFilter] = useState('all')
+  const [sortBy, setSortBy] = useState('closest_to_now')
   const [page, setPage] = useState(1)
   const [error, setError] = useState(null)
   const [selectedEvent, setSelectedEvent] = useState(null)
@@ -311,47 +347,123 @@ export default function AdminEvents() {
     loadEvents()
   }, [router, loadEvents])
 
+  // Met à jour dynamiquement le statut à 'completed' si la date de début dépasse la date système
+  const processedEvents = useMemo(() => {
+    const now = new Date()
+    return events.map((event) => {
+      if (!event.start_date) return event
+      const startDate = new Date(event.start_date)
+      const currentStatus = String(event.status || '').toLowerCase()
+
+      if (
+        currentStatus !== 'cancelled' &&
+        !Number.isNaN(startDate.getTime()) &&
+        startDate < now
+      ) {
+        return { ...event, status: 'completed' }
+      }
+      return event
+    })
+  }, [events])
+
   const counts = useMemo(() => {
     const byStatus = {
-      all: events.length,
+      all: processedEvents.length,
       published: 0,
       draft: 0,
       cancelled: 0,
       completed: 0,
     }
-    for (const e of events) {
+    for (const e of processedEvents) {
       const s = String(e.status || '').toLowerCase()
       if (byStatus[s] != null) byStatus[s] += 1
     }
     return byStatus
-  }, [events])
+  }, [processedEvents])
 
   const filteredEvents = useMemo(() => {
     const q = searchTerm.trim().toLowerCase()
-    return events.filter((event) => {
-      if (statusFilter !== 'all' && String(event.status).toLowerCase() !== statusFilter) {
-        return false
-      }
-      if (
-        categoryFilter !== 'all' &&
-        String(event.category || '').toLowerCase() !== categoryFilter
-      ) {
-        return false
-      }
-      if (!q) return true
-      return (
-        event.title?.toLowerCase().includes(q) ||
-        event.location?.toLowerCase().includes(q) ||
-        event.category?.toLowerCase().includes(q)
-      )
-    })
-  }, [events, searchTerm, statusFilter, categoryFilter])
+    const nowTime = Date.now()
+
+    return processedEvents
+      .filter((event) => {
+        if (statusFilter !== 'all' && String(event.status).toLowerCase() !== statusFilter) {
+          return false
+        }
+        if (
+          categoryFilter !== 'all' &&
+          String(event.category || '').toLowerCase() !== categoryFilter
+        ) {
+          return false
+        }
+        if (!q) return true
+        return (
+          event.title?.toLowerCase().includes(q) ||
+          event.location?.toLowerCase().includes(q) ||
+          event.category?.toLowerCase().includes(q)
+        )
+      })
+      .sort((a, b) => {
+        const getTime = (val) => {
+          if (!val) return 0
+          const t = new Date(val).getTime()
+          return Number.isNaN(t) ? 0 : t
+        }
+
+        const isCompletedA = String(a.status || '').toLowerCase() === 'completed'
+        const isCompletedB = String(b.status || '').toLowerCase() === 'completed'
+
+        // Regroupement prioritaire : événements actifs/publiés d'abord, terminés ensuite
+        if (!isCompletedA && isCompletedB) return -1
+        if (isCompletedA && !isCompletedB) return 1
+
+        // 1. Tri : Date de début la plus proche du système (Publiés → Terminés)
+        if (sortBy === 'closest_to_now') {
+          const timeA = getTime(a.start_date)
+          const timeB = getTime(b.start_date)
+          return Math.abs(timeA - nowTime) - Math.abs(timeB - nowTime)
+        }
+
+        // 2. Tri : Date de début la plus éloignée du système
+        if (sortBy === 'farthest_from_now') {
+          const timeA = getTime(a.start_date)
+          const timeB = getTime(b.start_date)
+          return Math.abs(timeB - nowTime) - Math.abs(timeA - nowTime)
+        }
+
+        // 3. Tri : Date de début (Récent -> Ancien)
+        if (sortBy === 'start_desc') {
+          return getTime(b.start_date) - getTime(a.start_date)
+        }
+
+        // 4. Tri : Date de début (Ancien -> Récent)
+        if (sortBy === 'start_asc') {
+          return getTime(a.start_date) - getTime(b.start_date)
+        }
+
+        // 5. Tri : Date de création (Récent -> Ancien)
+        if (sortBy === 'created_desc') {
+          const timeA = getTime(a.created_at || a.createdAt)
+          const timeB = getTime(b.created_at || b.createdAt)
+          return timeB - timeA
+        }
+
+        // 6. Tri : Date de création (Ancien -> Récent)
+        if (sortBy === 'created_asc') {
+          const timeA = getTime(a.created_at || a.createdAt)
+          const timeB = getTime(b.created_at || b.createdAt)
+          return timeA - timeB
+        }
+
+        return 0
+      })
+  }, [processedEvents, searchTerm, statusFilter, categoryFilter, sortBy])
 
   const totalPages = Math.max(1, Math.ceil(filteredEvents.length / PAGE_SIZE))
 
   useEffect(() => {
     setPage(1)
-  }, [searchTerm, statusFilter, categoryFilter])
+  }, [searchTerm, statusFilter, categoryFilter, sortBy])
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages)
@@ -389,13 +501,13 @@ export default function AdminEvents() {
 
   return (
     <>
-      <div className="relative -m-6 min-h-full">
+      <div className="relative min-h-screen w-full flex flex-col">
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute -top-24 -right-16 w-80 h-80 rounded-full bg-[#0A89F2]/[0.07] blur-3xl" />
           <div className="absolute top-1/2 -left-20 w-72 h-72 rounded-full bg-[#0A89F2]/[0.05] blur-3xl" />
         </div>
 
-        <div className="relative p-6 space-y-6 max-w-6xl">
+        <div className="relative p-4 sm:p-6 sm:px-8 space-y-6 w-full flex-1">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
@@ -449,15 +561,31 @@ export default function AdminEvents() {
 
           {/* Filters */}
           <div className="rounded-[24px] border border-[#E8EEF5] bg-white p-4 shadow-[0_8px_24px_rgba(11,18,32,0.04)] space-y-3">
-            <div className="relative">
-              <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#98A2B3] text-sm" />
-              <input
-                type="text"
-                placeholder="Rechercher par titre, lieu ou catégorie…"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 rounded-2xl border border-[#E8EEF5] bg-[#F8FAFC] text-sm focus:ring-2 focus:ring-[#0A89F2]/30 focus:border-[#0A89F2] focus:bg-white outline-none transition-colors"
-              />
+            {/* Barre de recherche + Tri */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#98A2B3] text-sm" />
+                <input
+                  type="text"
+                  placeholder="Rechercher par titre, lieu ou catégorie…"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 rounded-2xl border border-[#E8EEF5] bg-[#F8FAFC] text-sm focus:ring-2 focus:ring-[#0A89F2]/30 focus:border-[#0A89F2] focus:bg-white outline-none transition-colors"
+                />
+              </div>
+
+              <div className="relative shrink-0">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="w-full sm:w-auto pl-3.5 pr-8 py-3 rounded-2xl border border-[#E8EEF5] bg-[#F8FAFC] text-sm font-medium text-[#0B1220] focus:ring-2 focus:ring-[#0A89F2]/30 focus:border-[#0A89F2] focus:bg-white outline-none transition-colors cursor-pointer appearance-none"
+                >
+                  <option value="closest_to_now">Evenement le plus proche</option>
+                  <option value="created_desc">Date de création : Récent → Ancien</option>
+                  <option value="created_asc">Date de création : Ancien → Récent</option>
+                </select>
+                <FaSortAmountDown className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#98A2B3] text-xs pointer-events-none" />
+              </div>
             </div>
 
             <div className="flex flex-col lg:flex-row gap-3">
@@ -467,11 +595,10 @@ export default function AdminEvents() {
                     key={f.id}
                     type="button"
                     onClick={() => setStatusFilter(f.id)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${
-                      statusFilter === f.id
+                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${statusFilter === f.id
                         ? 'bg-[#0A89F2] text-white'
                         : 'bg-[#F3F6FA] text-[#667085] hover:bg-[#E8F3FE] hover:text-[#0A89F2]'
-                    }`}
+                      }`}
                   >
                     {f.label}
                     {f.id !== 'all' && counts[f.id] != null ? ` (${counts[f.id]})` : ''}
@@ -482,7 +609,7 @@ export default function AdminEvents() {
                 <select
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="w-full sm:w-auto px-3 py-2 rounded-xl border border-[#E8EEF5] bg-white text-sm text-[#0B1220] focus:ring-2 focus:ring-[#0A89F2]/30 outline-none"
+                  className="w-full sm:w-[280px] px-3.5 py-3 rounded-2xl border border-[#E8EEF5] bg-[#F8FAFC] text-sm font-medium text-[#0B1220] focus:ring-2 focus:ring-[#0A89F2]/30 focus:border-[#0A89F2] focus:bg-white outline-none transition-colors cursor-pointer"
                 >
                   {CATEGORY_FILTERS.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -533,7 +660,7 @@ export default function AdminEvents() {
           ) : (
             <>
               <AnimatePresence mode="popLayout">
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4 w-full">
                   {pageEvents.map((event, index) => (
                     <EventCard
                       key={event.id}

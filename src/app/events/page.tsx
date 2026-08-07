@@ -219,7 +219,6 @@ function EventsPageContent() {
                   </option>
                 ))}
               </select>
-
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2">

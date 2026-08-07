@@ -18,7 +18,7 @@ import { api } from '@/lib/api'
 import toast from 'react-hot-toast'
 import QRCode from 'qrcode'
 
-const PAGE_SIZE = 8
+const PAGE_SIZE = 9
 
 const STATUS_FILTERS = [
   { id: 'all', label: 'Tous' },
@@ -136,11 +136,10 @@ function Pagination({ page, totalPages, onChange, totalItems, pageSize }) {
               key={p}
               type="button"
               onClick={() => onChange(p)}
-              className={`min-w-10 h-10 px-2 rounded-xl text-sm font-bold transition-colors ${
-                p === page
+              className={`min-w-10 h-10 px-2 rounded-xl text-sm font-bold transition-colors ${p === page
                   ? 'bg-[#0A89F2] text-white shadow-[0_6px_16px_rgba(10,137,242,0.3)]'
                   : 'border border-[#E8EEF5] bg-white text-[#667085] hover:bg-[#F3F6FA]'
-              }`}
+                }`}
             >
               {p}
             </button>
@@ -320,7 +319,7 @@ export default function AdminTickets() {
 
   const filteredTickets = useMemo(() => {
     const q = searchTerm.trim().toLowerCase()
-    return tickets.filter((ticket) => {
+    const list = tickets.filter((ticket) => {
       const status = String(ticket.status || '').toLowerCase()
       if (statusFilter === 'confirmed') {
         if (!['confirmed', 'paid', 'payé'].includes(status)) return false
@@ -338,6 +337,13 @@ export default function AdminTickets() {
         ticket.qr_codes?.[0]?.code?.toLowerCase().includes(q) ||
         String(ticket.entry_code || '').includes(q)
       )
+    })
+
+    // Tri par date d'événement croissante (les plus proches en premier)
+    return list.sort((a, b) => {
+      const dateA = a.event_start_date ? new Date(a.event_start_date).getTime() : Infinity
+      const dateB = b.event_start_date ? new Date(b.event_start_date).getTime() : Infinity
+      return dateA - dateB
     })
   }, [tickets, searchTerm, statusFilter])
 
@@ -373,8 +379,8 @@ export default function AdminTickets() {
       const code = entry
         ? String(entry).replace(/\D/g, '').padStart(8, '0').slice(-8)
         : ticket.qr_codes?.[0]?.code ||
-          (typeof ticket.qr_codes?.[0] === 'string' ? ticket.qr_codes[0] : null) ||
-          `DC-${ticket.id}`
+        (typeof ticket.qr_codes?.[0] === 'string' ? ticket.qr_codes[0] : null) ||
+        `DC-${ticket.id}`
 
       const qrImage = await QRCode.toDataURL(String(code), {
         width: 360,
@@ -406,13 +412,13 @@ export default function AdminTickets() {
   }
 
   return (
-    <div className="relative -m-6 min-h-full">
+    <div className="relative min-h-screen w-full flex flex-col">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-24 -right-16 w-80 h-80 rounded-full bg-[#0A89F2]/[0.07] blur-3xl" />
         <div className="absolute top-1/2 -left-20 w-72 h-72 rounded-full bg-[#0A89F2]/[0.05] blur-3xl" />
       </div>
 
-      <div className="relative p-6 space-y-6 max-w-6xl">
+      <div className="relative p-4 sm:p-6 sm:px-8 space-y-6 w-full flex-1">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
@@ -480,11 +486,10 @@ export default function AdminTickets() {
                 key={f.id}
                 type="button"
                 onClick={() => setStatusFilter(f.id)}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${
-                  statusFilter === f.id
+                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${statusFilter === f.id
                     ? 'bg-[#0A89F2] text-white'
                     : 'bg-[#F3F6FA] text-[#667085] hover:bg-[#E8F3FE] hover:text-[#0A89F2]'
-                }`}
+                  }`}
               >
                 {f.label}
                 {f.id !== 'all' && counts[f.id] != null ? ` (${counts[f.id]})` : ''}
@@ -522,7 +527,7 @@ export default function AdminTickets() {
         ) : (
           <>
             <AnimatePresence mode="popLayout">
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 w-full">
                 {pageTickets.map((ticket, index) => (
                   <TicketCard
                     key={ticket.id}
@@ -595,8 +600,8 @@ export default function AdminTickets() {
                     <p className="mt-1 text-center font-mono text-2xl font-bold tracking-[0.25em] text-[#0A89F2]">
                       {String(
                         selectedTicket.entry_code ||
-                          selectedTicket.qr_codes?.[0]?.entry_code ||
-                          '--------'
+                        selectedTicket.qr_codes?.[0]?.entry_code ||
+                        '--------'
                       )
                         .replace(/\D/g, '')
                         .padStart(8, '0')

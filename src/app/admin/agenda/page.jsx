@@ -403,14 +403,22 @@ export default function AdminAgendaPage() {
   const monthLabel = `${MONTHS[focusedMonth.getMonth()]} ${focusedMonth.getFullYear()}`
 
   return (
+<<<<<<< HEAD
+    <div className="relative min-h-screen w-full flex flex-col">
+=======
     <div className="relative -m-6 min-h-[calc(100vh-0px)]">
+>>>>>>> origin/test
       {/* Atmosphere */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-24 -right-16 w-80 h-80 rounded-full bg-[#0A89F2]/[0.07] blur-3xl" />
         <div className="absolute top-1/3 -left-20 w-72 h-72 rounded-full bg-[#0A89F2]/[0.05] blur-3xl" />
       </div>
 
+<<<<<<< HEAD
+      <div className="relative p-4 sm:p-6 sm:px-8 space-y-6 w-full flex-1">
+=======
       <div className="relative p-6 space-y-6 max-w-6xl">
+>>>>>>> origin/test
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
@@ -546,7 +554,11 @@ export default function AdminAgendaPage() {
         </motion.div>
 
         {/* Main grid: calendar + list */}
+<<<<<<< HEAD
+        <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] xl:grid-cols-[420px_1fr] gap-6 items-start w-full">
+=======
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,420px)_1fr] gap-6 items-start">
+>>>>>>> origin/test
           {/* Calendar */}
           <div className="xl:sticky xl:top-6 rounded-[24px] border border-[#E8EEF5] bg-white p-4 sm:p-5 shadow-[0_8px_28px_rgba(11,18,32,0.05)]">
             <div className="flex items-center gap-1 mb-4">

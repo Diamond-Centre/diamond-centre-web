@@ -1,39 +1,103 @@
 /**
- * Modification d'événement - Admin (version simplifiée)
+ * Modification d'événement — design DiCe premium
  */
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { FaArrowLeft, FaSave, FaImage, FaTimes, FaUpload, FaTag } from 'react-icons/fa'
+import Link from 'next/link'
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+  FaArrowLeft, FaSave, FaImage, FaTimes, FaUpload, FaTag,
+  FaCalendarAlt, FaMapMarkerAlt, FaUsers, FaClock, FaCheck,
+} from 'react-icons/fa'
 import { api } from '@/lib/api'
 import { auth } from '@/lib/auth'
-import Button from '@/components/ui/Button'
 import toast from 'react-hot-toast'
-import Image from 'next/image'
 import LocationPicker from '@/components/maps/LocationPicker'
+
+const CATEGORIES = [
+  { id: 'conference', label: 'Conférence' },
+  { id: 'formation', label: 'Formation' },
+  { id: 'seminaire', label: 'Séminaire' },
+  { id: 'atelier', label: 'Atelier' },
+  { id: 'webinaire', label: 'Webinaire' },
+]
+
+const inputClass =
+  'w-full px-4 py-3 rounded-2xl border border-[#E8EEF5] bg-[#F8FAFC] text-sm text-[#0B1220] placeholder:text-[#98A2B3] focus:ring-2 focus:ring-[#0A89F2]/25 focus:border-[#0A89F2] focus:bg-white outline-none transition-colors'
+
+const labelClass = 'block text-xs font-bold uppercase tracking-wide text-[#667085] mb-1.5'
+
+function formatPreviewDate(value) {
+  if (!value) return 'Date à définir'
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return 'Date à définir'
+  return d.toLocaleDateString('fr-FR', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
+function Section({ icon: Icon, title, subtitle, children, accent = false }) {
+  return (
+    <section
+      className={`rounded-[24px] border p-5 sm:p-6 shadow-[0_8px_24px_rgba(11,18,32,0.04)] ${accent
+          ? 'border-[#F5D48A] bg-gradient-to-br from-[#FFF8E8] to-white'
+          : 'border-[#E8EEF5] bg-white'
+        }`}
+    >
+      <div className="flex items-start gap-3 mb-5">
+        <div
+          className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${accent ? 'bg-[#FFF4DE] text-[#B78103]' : 'bg-[#E8F3FE] text-[#0A89F2]'
+            }`}
+        >
+          <Icon />
+        </div>
+        <div>
+          <h2 className="text-base font-extrabold text-[#0B1220] tracking-tight">{title}</h2>
+          {subtitle && <p className="text-sm text-[#667085] mt-0.5">{subtitle}</p>}
+        </div>
+      </div>
+      {children}
+    </section>
+  )
+}
 
 export default function EditEvent() {
   const router = useRouter()
   const params = useParams()
-  const id = params.id
-  
-  const [loading, setLoading] = useState(false)
+  const id = params?.id
+
+  const fileInputRef = useRef(null)
   const [loadingEvent, setLoadingEvent] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState(null)
+
+  // Gestion de l'image
   const [imageFile, setImageFile] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
   const [currentImage, setCurrentImage] = useState(null)
   const [removeExistingImage, setRemoveExistingImage] = useState(false)
-  const [hasPromotion, setHasPromotion] = useState(false)
-  const fileInputRef = useRef(null)
 
-  // États pour les champs du formulaire
-  const [formData, setFormData] = useState({
+  // Promotion
+  const [hasPromotion, setHasPromotion] = useState(false)
+  const [promotion, setPromotion] = useState({
+    nombre: '',
+    sexe: 'tous',
+    pourcentage: '',
+    duree: '',
+    description: '',
+  })
+
+  // Formulaire
+  const [form, setForm] = useState({
     title: '',
     description: '',
-    price: 0,
+    price: '',
     currency: 'XAF',
     start_date: '',
     end_date: '',
@@ -43,16 +107,7 @@ export default function EditEvent() {
     latitude: null,
     longitude: null,
     category: 'conference',
-    capacity: 50,
-    image_url: '',
-    hasPromotion: false,
-    promotion: {
-      nombre: '',
-      sexe: 'tous',
-      pourcentage: '',
-      duree: '',
-      description: ''
-    }
+    capacity: '50',
   })
 
   useEffect(() => {
@@ -61,29 +116,39 @@ export default function EditEvent() {
       router.push('/auth/login')
       return
     }
-    loadEvent()
-  }, [id])
+    if (id) {
+      loadEvent(id, token)
+    }
+  }, [id, router])
 
-  const loadEvent = async () => {
+  const loadEvent = async (eventId, token) => {
     try {
       setLoadingEvent(true)
-      const token = auth.getToken()
-      const event = await api.getEventById(id, token)
-      
+      const event = await api.getEventById(eventId, token)
+
       if (!event) {
         toast.error('Événement non trouvé')
         router.push('/admin/events')
         return
       }
-      
+
       setCurrentImage(event.image_url || null)
-      
-      const hasPromo = event.promotion && event.promotion.pourcentage && Number(event.promotion.pourcentage) > 0
-      
-      setFormData({
+
+      const hasPromo = Boolean(
+        event.promotion &&
+        event.promotion.pourcentage &&
+        Number(event.promotion.pourcentage) > 0
+      )
+
+      // Normalisation de la catégorie
+      let cat = (event.category || 'conference').toLowerCase()
+      if (cat === 'conférence') cat = 'conference'
+      if (cat === 'séminaire') cat = 'seminaire'
+
+      setForm({
         title: event.title || '',
         description: event.description || '',
-        price: event.price || 0,
+        price: event.price !== undefined && event.price !== null ? String(event.price) : '',
         currency: event.currency || 'XAF',
         start_date: event.start_date || '',
         end_date: event.end_date || '',
@@ -92,44 +157,50 @@ export default function EditEvent() {
         location: event.location || '',
         latitude: event.latitude ?? null,
         longitude: event.longitude ?? null,
-        category: event.category || 'conférence',
-        capacity: event.capacity || 50,
-        image_url: event.image_url || '',
-        hasPromotion: hasPromo,
-        promotion: {
-          nombre: hasPromo ? event.promotion.nombre || '' : '',
-          sexe: hasPromo ? event.promotion.sexe || 'tous' : 'tous',
-          pourcentage: hasPromo ? event.promotion.pourcentage || '' : '',
-          duree: hasPromo ? event.promotion.duree || '' : '',
-          description: hasPromo ? event.promotion.description || '' : ''
-        }
+        category: cat,
+        capacity: event.capacity ? String(event.capacity) : '50',
       })
-      
+
       setHasPromotion(hasPromo)
-      
-    } catch (error) {
-      console.error('Erreur chargement:', error)
-      setError(error.message || 'Erreur lors du chargement')
-      toast.error(error.message || 'Erreur lors du chargement')
+      if (hasPromo) {
+        setPromotion({
+          nombre: event.promotion.nombre ? String(event.promotion.nombre) : '',
+          sexe: event.promotion.sexe || 'tous',
+          pourcentage: event.promotion.pourcentage ? String(event.promotion.pourcentage) : '',
+          duree: event.promotion.duree ? String(event.promotion.duree) : '',
+          description: event.promotion.description || '',
+        })
+      }
+    } catch (err) {
+      setError(err.message || 'Erreur lors du chargement de l’événement')
+      toast.error(err.message || 'Erreur lors du chargement')
     } finally {
       setLoadingEvent(false)
     }
   }
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0]
-    if (!file) return
+  const setField = (name, value) => {
+    setForm((prev) => ({ ...prev, [name]: value }))
+  }
 
+  const promoPrice = useMemo(() => {
+    const price = Number(form.price)
+    const pct = Number(promotion.pourcentage)
+    if (!(price > 0) || !(pct > 0) || !hasPromotion) return null
+    return Math.round(price * (1 - pct / 100))
+  }, [form.price, promotion.pourcentage, hasPromotion])
+
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
     if (!file.type.startsWith('image/')) {
       toast.error('Veuillez sélectionner une image')
       return
     }
-
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('L\'image ne doit pas dépasser 5MB')
+      toast.error("L'image ne doit pas dépasser 5MB")
       return
     }
-
     setImageFile(file)
     setImagePreview(URL.createObjectURL(file))
     setRemoveExistingImage(true)
@@ -137,39 +208,50 @@ export default function EditEvent() {
 
   const removeImage = () => {
     setImageFile(null)
+    if (imagePreview) URL.revokeObjectURL(imagePreview)
     setImagePreview(null)
-    setRemoveExistingImage(true)
     setCurrentImage(null)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
+    setRemoveExistingImage(true)
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
-  const handleInputChange = (e) => {
-    const { id, value, type, checked } = e.target
-    if (type === 'checkbox') {
-      setFormData(prev => ({ ...prev, [id]: checked }))
-      if (id === 'hasPromotion') {
-        setHasPromotion(checked)
-      }
-    } else if (id && id.startsWith('promotion_')) {
-      const field = id.replace('promotion_', '')
-      setFormData(prev => ({
-        ...prev,
-        promotion: { ...prev.promotion, [field]: value }
-      }))
-    } else {
-      setFormData(prev => ({ ...prev, [id]: value }))
+  const validate = () => {
+    if (!form.title.trim() || form.title.trim().length < 3) {
+      return 'Le titre doit contenir au moins 3 caractères'
     }
+    if (!form.description.trim() || form.description.trim().length < 10) {
+      return 'La description doit contenir au moins 10 caractères'
+    }
+    if (!form.start_date || !form.end_date) return 'Les dates sont requises'
+    if (new Date(form.end_date) < new Date(form.start_date)) {
+      return 'La date de fin doit être après la date de début'
+    }
+    if (!form.location.trim()) return 'Le lieu est requis'
+    if (!(Number(form.capacity) >= 1)) return 'La capacité minimale est 1'
+    if (Number(form.price) < 0 || form.price === '') return 'Le prix est requis'
+    if (hasPromotion) {
+      const nombre = Number(promotion.nombre)
+      const pourcentage = Number(promotion.pourcentage)
+      const duree = Number(promotion.duree)
+      if (!(nombre > 0 && pourcentage > 0 && pourcentage <= 100 && duree > 0)) {
+        return 'Promotion incomplète : places, % (1–100) et durée sont requis'
+      }
+    }
+    return null
   }
 
   const handleFormSubmit = async (e) => {
     e.preventDefault()
-    
+    const validationError = validate()
+    if (validationError) {
+      toast.error(validationError)
+      setError(validationError)
+      return
+    }
+
     try {
       setLoading(true)
       setError(null)
-      
       const token = auth.getToken()
       if (!token) {
         toast.error('Vous devez être connecté')
@@ -178,346 +260,324 @@ export default function EditEvent() {
       }
 
       let finalImageUrl = ''
-
       if (imageFile) {
         setUploading(true)
         try {
-          const uploadResult = await api.uploadImage(imageFile)
-          finalImageUrl = uploadResult.url
+          const uploadResult = await api.uploadImage(imageFile, token)
+          finalImageUrl = uploadResult.url || uploadResult.image_url || ''
+          //toast.success('Image téléchargée')
         } catch (err) {
-          toast.error(err.message || 'Erreur lors du téléchargement de l\'image')
+          toast.error(err.message || "Erreur lors de l'upload de l'image")
           setUploading(false)
           setLoading(false)
           return
         } finally {
           setUploading(false)
         }
-      } 
-      else if (removeExistingImage) {
+      } else if (removeExistingImage) {
         finalImageUrl = ''
-      } 
-      else if (currentImage) {
+      } else if (currentImage) {
         finalImageUrl = currentImage
       }
 
-      // Construire les données de promotion
-      let promotionData = undefined
-      if (formData.hasPromotion) {
-        const promo = formData.promotion
-        if (promo.pourcentage && Number(promo.pourcentage) > 0) {
-          promotionData = {
-            nombre: Number(promo.nombre) || 0,
-            sexe: promo.sexe || 'tous',
-            pourcentage: Number(promo.pourcentage),
-            duree: Number(promo.duree) || 0,
-            description: promo.description || ''
-          }
-        }
-      }
-
       const formattedData = {
-        title: formData.title.trim(),
-        description: formData.description.trim(),
-        price: Number(formData.price),
-        currency: formData.currency || 'XAF',
-        start_date: formData.start_date,
-        end_date: formData.end_date,
-        start_time: formData.start_time || '09:00',
-        end_time: formData.end_time || '17:00',
-        location: formData.location.trim(),
-        latitude: formData.latitude,
-        longitude: formData.longitude,
-        category: formData.category,
-        capacity: Number(formData.capacity),
+        title: form.title.trim(),
+        description: form.description.trim(),
+        price: Number(form.price),
+        currency: form.currency || 'XAF',
+        start_date: form.start_date,
+        end_date: form.end_date,
+        start_time: form.start_time || '09:00',
+        end_time: form.end_time || '17:00',
+        location: form.location.trim(),
+        latitude: form.latitude,
+        longitude: form.longitude,
+        category: form.category,
+        capacity: Number(form.capacity),
         image_url: finalImageUrl,
-        hasPromotion: formData.hasPromotion || false,
-        promotion: promotionData
+        status: 'published',
+        hasPromotion,
+        promotion: hasPromotion
+          ? {
+            nombre: Number(promotion.nombre),
+            sexe: promotion.sexe || 'tous',
+            pourcentage: Number(promotion.pourcentage),
+            duree: Number(promotion.duree),
+            description: promotion.description || '',
+          }
+          : undefined,
       }
 
       await api.updateEvent(id, formattedData, token)
-      
       toast.success('Événement mis à jour avec succès')
-      
-      setTimeout(() => {
-        router.push('/admin/events')
-      }, 1000)
-      
+      router.push('/admin/events')
     } catch (err) {
       setError(err.message)
-      toast.error(err.message || 'Erreur lors de la mise à jour')
+      toast.error(err.message || 'Erreur lors de la modification')
     } finally {
       setLoading(false)
     }
   }
 
+  const categoryLabel =
+    CATEGORIES.find((c) => c.id === form.category)?.label || form.category
+
+  const activeImage = imagePreview || currentImage
+
   if (loadingEvent) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-dice-blue border-t-transparent" />
+      <div className="min-h-[450px] flex flex-col justify-center items-center gap-3">
+        <div className="w-10 h-10 rounded-full border-4 border-[#0A89F2]/20 border-t-[#0A89F2] animate-spin" />
+        <p className="text-sm font-semibold text-[#667085]">Chargement de l’événement…</p>
       </div>
     )
   }
 
   return (
-    <div className="p-6">
-      <div className="flex items-center gap-4 mb-6">
-        <button
-          onClick={() => router.back()}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-        >
-          <FaArrowLeft className="text-gray-600" />
-        </button>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">Modifier l'événement</h1>
-          <p className="text-gray-500">Modifiez les informations de l'événement</p>
-        </div>
+    <div className="relative -m-6 min-h-full pb-28">
+      {/* Arrière-plan décoratif */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-24 -right-16 w-80 h-80 rounded-full bg-[#0A89F2]/[0.07] blur-3xl" />
+        <div className="absolute top-1/3 -left-20 w-72 h-72 rounded-full bg-[#0A89F2]/[0.05] blur-3xl" />
       </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 mb-6">
-          {error}
+      <div className="relative p-6 w-full space-y-6">
+        {/* En-tête */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="mt-1 p-2.5 rounded-2xl border border-[#E8EEF5] bg-white text-[#667085] hover:bg-[#F3F6FA] transition-colors"
+              aria-label="Retour"
+            >
+              <FaArrowLeft />
+            </button>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#0A89F2] mb-1">
+                Diamond Centre
+              </p>
+              <h1 className="text-[28px] sm:text-[32px] font-extrabold text-[#0B1220] tracking-tight">
+                Modifier l'événement
+              </h1>
+              <p className="text-[#667085] text-sm mt-1">
+                Mettez à jour les informations, la date ou les tarifs de votre événement.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/admin/events"
+            className="text-sm font-semibold text-[#0A89F2] hover:underline self-start sm:self-auto"
+          >
+            Voir la liste
+          </Link>
         </div>
-      )}
 
-      <form onSubmit={handleFormSubmit} className="space-y-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Informations générales</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Titre *
-              </label>
-              <input
-                id="title"
-                name="title"
-                value={formData.title}
-                onChange={handleInputChange}
-                placeholder="Titre de l'événement"
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Catégorie *
-              </label>
-              <select
-                id="category"
-                name="category"
-                value={formData.category}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
-              >
-                <option value="conference">Conférence</option>
-                <option value="seminaire">Séminaire</option>
-                <option value="formation">Formation</option>
-                <option value="atelier">Atelier</option>
-                <option value="webinaire">Webinaire</option>
-              </select>
-            </div>
+        {error && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
           </div>
+        )}
 
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description *
-            </label>
-            <textarea
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              rows={4}
-              placeholder="Description complète de l'événement"
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Prix (FCFA) *
-              </label>
-              <input
-                id="price"
-                name="price"
-                type="number"
-                value={formData.price}
-                onChange={handleInputChange}
-                placeholder="0"
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Capacité *
-              </label>
-              <input
-                id="capacity"
-                name="capacity"
-                type="number"
-                value={formData.capacity}
-                onChange={handleInputChange}
-                placeholder="50"
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
-                required
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Date de début *
-              </label>
-              <input
-                id="start_date"
-                name="start_date"
-                type="date"
-                value={formData.start_date}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Date de fin *
-              </label>
-              <input
-                id="end_date"
-                name="end_date"
-                type="date"
-                value={formData.end_date}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
-                required
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Heure de début *
-              </label>
-              <input
-                id="start_time"
-                name="start_time"
-                type="time"
-                value={formData.start_time}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Heure de fin *
-              </label>
-              <input
-                id="end_time"
-                name="end_time"
-                type="time"
-                value={formData.end_time}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
-                required
-              />
-            </div>
-          </div>
-
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Lieu *
-            </label>
-            <LocationPicker
-              location={formData.location}
-              latitude={formData.latitude}
-              longitude={formData.longitude}
-              required
-              inputClassName="w-full px-4 py-2 pl-10 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
-              onChange={({ location, latitude, longitude }) => {
-                setFormData((prev) => ({
-                  ...prev,
-                  location,
-                  latitude,
-                  longitude,
-                }))
-              }}
-            />
-          </div>
-
-          {/* Image */}
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Image de l'événement
-            </label>
-            
-            <div className="mt-2">
-              {imagePreview ? (
-                <div className="relative inline-block">
-                  <div className="relative w-48 h-48 rounded-lg overflow-hidden border-2 border-dice-blue shadow-md">
-                    <Image
-                      src={imagePreview}
-                      alt="Aperçu"
-                      fill
-                      className="object-cover"
-                    />
-                    <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-0.5 rounded">
-                      Nouvelle image
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={removeImage}
-                    className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
-                  >
-                    <FaTimes className="text-xs" />
-                  </button>
+        <form onSubmit={handleFormSubmit} className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-6 items-start">
+          <div className="space-y-5">
+            {/* Informations Générales */}
+            <Section
+              icon={FaCalendarAlt}
+              title="Informations générales"
+              subtitle="Titre, catégorie et description visibles par le public"
+            >
+              <div className="space-y-4">
+                <div>
+                  <label className={labelClass}>Titre *</label>
+                  <input
+                    value={form.title}
+                    onChange={(e) => setField('title', e.target.value)}
+                    placeholder="Ex. Formation Full-Stack JavaScript"
+                    className={inputClass}
+                    required
+                  />
                 </div>
-              ) : currentImage && !removeExistingImage ? (
-                <div className="relative inline-block">
-                  <div className="relative w-48 h-48 rounded-lg overflow-hidden border-2 border-gray-200 shadow-md">
-                    <Image
-                      src={currentImage}
-                      alt="Image actuelle"
-                      fill
-                      className="object-cover"
-                    />
-                    <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-0.5 rounded">
-                      Image actuelle
-                    </div>
+
+                <div>
+                  <label className={labelClass}>Catégorie *</label>
+                  <div className="flex flex-wrap gap-2">
+                    {CATEGORIES.map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => setField('category', c.id)}
+                        className={`px-3.5 py-2 rounded-full text-xs font-bold transition-all ${form.category === c.id
+                            ? 'bg-[#0A89F2] text-white shadow-[0_6px_16px_rgba(10,137,242,0.3)]'
+                            : 'bg-[#F3F6FA] text-[#667085] hover:bg-[#E8F3FE] hover:text-[#0A89F2]'
+                          }`}
+                      >
+                        {c.label}
+                      </button>
+                    ))}
                   </div>
+                </div>
+
+                <div>
+                  <label className={labelClass}>Description *</label>
+                  <textarea
+                    value={form.description}
+                    onChange={(e) => setField('description', e.target.value)}
+                    rows={5}
+                    placeholder="Décrivez le programme, le public cible et ce que les participants apprendront…"
+                    className={`${inputClass} resize-y min-h-[120px]`}
+                    required
+                  />
+                </div>
+              </div>
+            </Section>
+
+            {/* Planning */}
+            <Section
+              icon={FaClock}
+              title="Planning"
+              subtitle="Dates, horaires et lieu de l’événement"
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>Date de début *</label>
+                  <input
+                    type="date"
+                    value={form.start_date}
+                    onChange={(e) => {
+                      setField('start_date', e.target.value)
+                      if (!form.end_date || form.end_date < e.target.value) {
+                        setField('end_date', e.target.value)
+                      }
+                    }}
+                    className={inputClass}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Date de fin *</label>
+                  <input
+                    type="date"
+                    value={form.end_date}
+                    onChange={(e) => setField('end_date', e.target.value)}
+                    min={form.start_date || undefined}
+                    className={inputClass}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Heure de début *</label>
+                  <input
+                    type="time"
+                    value={form.start_time}
+                    onChange={(e) => setField('start_time', e.target.value)}
+                    className={inputClass}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Heure de fin *</label>
+                  <input
+                    type="time"
+                    value={form.end_time}
+                    onChange={(e) => setField('end_time', e.target.value)}
+                    className={inputClass}
+                    required
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className={labelClass}>Lieu *</label>
+                  <LocationPicker
+                    location={form.location}
+                    latitude={form.latitude}
+                    longitude={form.longitude}
+                    required
+                    inputClassName={`${inputClass} pl-10`}
+                    onChange={({ location, latitude, longitude }) => {
+                      setForm((prev) => ({
+                        ...prev,
+                        location,
+                        latitude,
+                        longitude,
+                      }))
+                    }}
+                  />
+                </div>
+              </div>
+            </Section>
+
+            {/* Places & tarif */}
+            <Section
+              icon={FaUsers}
+              title="Places & tarif"
+              subtitle="Capacité et prix affichés à la réservation"
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>Prix (FCFA) *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.price}
+                    onChange={(e) => setField('price', e.target.value)}
+                    placeholder="25000"
+                    className={inputClass}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Capacité *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={form.capacity}
+                    onChange={(e) => setField('capacity', e.target.value)}
+                    placeholder="50"
+                    className={inputClass}
+                    required
+                  />
+                </div>
+              </div>
+            </Section>
+
+            {/* Visuel */}
+            <Section
+              icon={FaImage}
+              title="Visuel"
+              subtitle="Image de couverture (PNG/JPG, max 5 Mo)"
+            >
+              {activeImage ? (
+                <div className="relative overflow-hidden rounded-[20px] border border-[#E8EEF5]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={activeImage}
+                    alt="Aperçu"
+                    className="w-full h-56 object-cover"
+                  />
                   <button
                     type="button"
                     onClick={removeImage}
-                    className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
+                    className="absolute top-3 right-3 p-2.5 rounded-full bg-white/95 text-red-500 shadow-md hover:bg-white"
+                    aria-label="Retirer l'image"
                   >
-                    <FaTimes className="text-xs" />
+                    <FaTimes />
                   </button>
                 </div>
               ) : (
-                <div 
-                  className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-dice-blue hover:bg-dice-blue/5 transition-all cursor-pointer"
+                <button
+                  type="button"
                   onClick={() => fileInputRef.current?.click()}
+                  className="w-full rounded-[20px] border-2 border-dashed border-[#C9DDED] bg-[#F4F7FA] hover:border-[#0A89F2] hover:bg-[#E8F3FE] transition-colors px-6 py-10 text-center"
                 >
-                  <FaImage className="text-4xl text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-500">Cliquez pour ajouter une image</p>
-                  <p className="text-xs text-gray-400 mt-1">PNG, JPG, JPEG • Max 5MB</p>
-                  <div className="mt-3 flex items-center justify-center gap-2 text-xs text-dice-blue">
+                  <div className="mx-auto mb-3 w-12 h-12 rounded-2xl bg-white text-[#0A89F2] flex items-center justify-center shadow-sm">
                     <FaUpload />
-                    <span>Choisir un fichier</span>
                   </div>
-                </div>
+                  <p className="text-sm font-semibold text-[#0B1220]">
+                    Cliquez pour ajouter une image
+                  </p>
+                  <p className="text-xs text-[#98A2B3] mt-1">PNG, JPG · Max 5MB</p>
+                </button>
               )}
-              
               <input
                 ref={fileInputRef}
                 type="file"
@@ -525,134 +585,244 @@ export default function EditEvent() {
                 onChange={handleImageChange}
                 className="hidden"
               />
-              
-              {currentImage && !removeExistingImage && !imagePreview && (
-                <p className="text-xs text-gray-400 mt-2">Image actuelle - Cliquez pour modifier</p>
-              )}
-            </div>
-          </div>
-        </div>
+            </Section>
 
-        {/* Section Promotion */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <FaTag className="text-dice-blue" />
-              <h2 className="text-lg font-semibold text-gray-800">Promotion</h2>
-            </div>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                id="hasPromotion"
-                name="hasPromotion"
-                type="checkbox"
-                checked={formData.hasPromotion}
-                onChange={handleInputChange}
-                className="w-4 h-4 text-dice-blue rounded focus:ring-dice-blue"
-              />
-              <span className="text-sm text-gray-600">Activer une promotion</span>
-            </label>
-          </div>
-
-          {formData.hasPromotion && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nombre de places *
-                </label>
-                <input
-                  id="promotion_nombre"
-                  name="promotion_nombre"
-                  type="number"
-                  value={formData.promotion.nombre}
-                  onChange={handleInputChange}
-                  placeholder="50"
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Sexe ciblé
-                </label>
-                <select
-                  id="promotion_sexe"
-                  name="promotion_sexe"
-                  value={formData.promotion.sexe}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
+            {/* Promotion */}
+            <Section
+              icon={FaTag}
+              title="Promotion"
+              subtitle="Réduction optionnelle pour cet événement"
+              accent={hasPromotion}
+            >
+              <button
+                type="button"
+                onClick={() => setHasPromotion((v) => !v)}
+                className={`w-full flex items-center justify-between gap-3 rounded-2xl border px-4 py-3.5 transition-colors ${hasPromotion
+                    ? 'border-[#F5D48A] bg-white'
+                    : 'border-[#E8EEF5] bg-[#F8FAFC] hover:bg-white'
+                  }`}
+              >
+                <div className="text-left">
+                  <p className="text-sm font-bold text-[#0B1220]">Activer une promotion</p>
+                  <p className="text-xs text-[#667085] mt-0.5">
+                    Places promo, pourcentage et durée
+                  </p>
+                </div>
+                <span
+                  className={`relative w-12 h-7 rounded-full transition-colors ${hasPromotion ? 'bg-[#0A89F2]' : 'bg-[#D0D5DD]'
+                    }`}
                 >
-                  <option value="tous">Tous</option>
-                  <option value="homme">Homme</option>
-                  <option value="femme">Femme</option>
-                </select>
-              </div>
+                  <span
+                    className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow transition-transform ${hasPromotion ? 'left-5' : 'left-0.5'
+                      }`}
+                  />
+                </span>
+              </button>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Pourcentage de réduction (%) *
-                </label>
-                <input
-                  id="promotion_pourcentage"
-                  name="promotion_pourcentage"
-                  type="number"
-                  value={formData.promotion.pourcentage}
-                  onChange={handleInputChange}
-                  placeholder="20"
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
-                />
-              </div>
+              <AnimatePresence>
+                {hasPromotion && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+                      <div>
+                        <label className={labelClass}>Places promo *</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={promotion.nombre}
+                          onChange={(e) =>
+                            setPromotion((p) => ({ ...p, nombre: e.target.value }))
+                          }
+                          placeholder="15"
+                          className={inputClass}
+                          required={hasPromotion}
+                        />
+                      </div>
+                      <div>
+                        <label className={labelClass}>Public ciblé</label>
+                        <select
+                          value={promotion.sexe}
+                          onChange={(e) =>
+                            setPromotion((p) => ({ ...p, sexe: e.target.value }))
+                          }
+                          className={inputClass}
+                        >
+                          <option value="tous">Tous</option>
+                          <option value="homme">Homme</option>
+                          <option value="femme">Femme</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className={labelClass}>Réduction (%) *</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="100"
+                          value={promotion.pourcentage}
+                          onChange={(e) =>
+                            setPromotion((p) => ({ ...p, pourcentage: e.target.value }))
+                          }
+                          placeholder="20"
+                          className={inputClass}
+                          required={hasPromotion}
+                        />
+                      </div>
+                      <div>
+                        <label className={labelClass}>Durée (jours) *</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={promotion.duree}
+                          onChange={(e) =>
+                            setPromotion((p) => ({ ...p, duree: e.target.value }))
+                          }
+                          placeholder="7"
+                          className={inputClass}
+                          required={hasPromotion}
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className={labelClass}>Description promo</label>
+                        <input
+                          value={promotion.description}
+                          onChange={(e) =>
+                            setPromotion((p) => ({ ...p, description: e.target.value }))
+                          }
+                          placeholder="Early bird -20%"
+                          className={inputClass}
+                        />
+                      </div>
+                      {promoPrice != null && (
+                        <div className="sm:col-span-2 rounded-2xl bg-white border border-[#F5D48A] px-4 py-3 text-sm">
+                          <span className="text-[#667085]">Prix promo estimé : </span>
+                          <span className="font-extrabold text-[#B78103]">
+                            {promoPrice.toLocaleString('fr-FR')} FCFA
+                          </span>
+                          <span className="text-[#98A2B3] line-through ml-2">
+                            {Number(form.price).toLocaleString('fr-FR')} FCFA
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </Section>
+          </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Durée (jours) *
-                </label>
-                <input
-                  id="promotion_duree"
-                  name="promotion_duree"
-                  type="number"
-                  value={formData.promotion.duree}
-                  onChange={handleInputChange}
-                  placeholder="7"
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
-                />
+          {/* Live preview */}
+          <aside className="xl:sticky xl:top-6 space-y-4">
+            <div className="rounded-[24px] border border-[#E8EEF5] bg-white overflow-hidden shadow-[0_12px_32px_rgba(11,18,32,0.06)]">
+              <div className="px-4 py-3 border-b border-[#E8EEF5] flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-wide text-[#667085]">
+                  Aperçu live
+                </p>
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#0B9B6B] bg-emerald-50 px-2 py-0.5 rounded-full">
+                  <FaCheck className="text-[9px]" />
+                  Publié
+                </span>
               </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description de la promotion
-                </label>
-                <input
-                  id="promotion_description"
-                  name="promotion_description"
-                  value={formData.promotion.description}
-                  onChange={handleInputChange}
-                  placeholder="Description de la promotion"
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
-                />
+              <div className="relative h-40 bg-[#E8F3FE]">
+                {activeImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={activeImage} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-[#0A89F2]/50">
+                    <FaImage className="text-3xl" />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                <div className="absolute bottom-3 left-3 right-3">
+                  <p className="text-[11px] font-semibold text-white/85 uppercase tracking-wide">
+                    {categoryLabel}
+                  </p>
+                  <p className="text-white font-extrabold text-lg leading-snug line-clamp-2">
+                    {form.title.trim() || 'Titre de l’événement'}
+                  </p>
+                </div>
+              </div>
+              <div className="p-4 space-y-2.5 text-sm">
+                <p className="flex items-center gap-2 text-[#667085]">
+                  <FaCalendarAlt className="text-[#0A89F2] text-xs" />
+                  {formatPreviewDate(form.start_date)}
+                  {form.start_time ? ` · ${form.start_time}` : ''}
+                </p>
+                <p className="flex items-center gap-2 text-[#667085]">
+                  <FaMapMarkerAlt className="text-[#0A89F2] text-xs" />
+                  {form.location.trim() || 'Lieu à préciser'}
+                </p>
+                <p className="flex items-center gap-2 text-[#667085]">
+                  <FaUsers className="text-[#0A89F2] text-xs" />
+                  {form.capacity || '—'} places
+                </p>
+                <div className="pt-2 border-t border-[#E8EEF5] flex items-end justify-between">
+                  <div>
+                    {promoPrice != null ? (
+                      <>
+                        <p className="text-lg font-extrabold text-[#0A89F2]">
+                          {promoPrice.toLocaleString('fr-FR')} FCFA
+                        </p>
+                        <p className="text-xs text-[#98A2B3] line-through">
+                          {Number(form.price || 0).toLocaleString('fr-FR')} FCFA
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-lg font-extrabold text-[#0A89F2]">
+                        {form.price !== ''
+                          ? `${Number(form.price).toLocaleString('fr-FR')} FCFA`
+                          : '— FCFA'}
+                      </p>
+                    )}
+                  </div>
+                  {hasPromotion && Number(promotion.pourcentage) > 0 && (
+                    <span className="text-[11px] font-bold bg-[#FFF4DE] text-[#B78103] px-2.5 py-1 rounded-full">
+                      -{promotion.pourcentage}%
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
-          )}
-        </div>
 
-        <div className="flex gap-4 justify-end">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => router.back()}
-          >
-            Annuler
-          </Button>
-          <Button
-            type="submit"
-            variant="primary"
-            loading={loading || uploading}
-            disabled={loading || uploading}
-          >
-            <FaSave className="mr-2" />
-            {uploading ? 'Téléchargement...' : 'Mettre à jour'}
-          </Button>
-        </div>
-      </form>
+            <div className="rounded-[20px] border border-[#E8EEF5] bg-[#E8F3FE]/60 px-4 py-3 text-xs text-[#136db8] leading-relaxed">
+              Les modifications seront enregistrées et répercutées instantanément sur la page publique DiCe.
+            </div>
+          </aside>
+
+          {/* Sticky actions */}
+          <div className="xl:col-span-2 fixed bottom-0 right-0 left-0 md:left-64 z-40 border-t border-[#E8EEF5] bg-white/95 backdrop-blur-md px-6 py-4 shadow-[0_-8px_24px_rgba(11,18,32,0.06)]">
+            <div className="w-full flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+              <p className="text-sm text-[#667085] hidden sm:block">
+                Vérifiez l’aperçu avant d'enregistrer vos modifications.
+              </p>
+              <div className="flex gap-2 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => router.back()}
+                  className="flex-1 sm:flex-none px-5 py-3 rounded-2xl border border-[#E8EEF5] text-sm font-semibold text-[#667085] hover:bg-[#F3F6FA] transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading || uploading}
+                  className="flex-1 sm:flex-none px-6 py-3 rounded-2xl bg-[#0A89F2] text-white text-sm font-bold hover:bg-[#0770cc] transition-colors disabled:opacity-50 inline-flex items-center justify-center gap-2 shadow-[0_8px_20px_rgba(10,137,242,0.3)]"
+                >
+                  <FaSave />
+                  {uploading
+                    ? 'Upload…'
+                    : loading
+                      ? 'Enregistrement…'
+                      : 'Enregistrer les modifications'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }

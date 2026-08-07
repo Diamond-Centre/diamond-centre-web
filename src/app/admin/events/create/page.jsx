@@ -44,17 +44,15 @@ function formatPreviewDate(value) {
 function Section({ icon: Icon, title, subtitle, children, accent = false }) {
   return (
     <section
-      className={`rounded-[24px] border p-5 sm:p-6 shadow-[0_8px_24px_rgba(11,18,32,0.04)] ${
-        accent
+      className={`rounded-[24px] border p-5 sm:p-6 shadow-[0_8px_24px_rgba(11,18,32,0.04)] ${accent
           ? 'border-[#F5D48A] bg-gradient-to-br from-[#FFF8E8] to-white'
           : 'border-[#E8EEF5] bg-white'
-      }`}
+        }`}
     >
       <div className="flex items-start gap-3 mb-5">
         <div
-          className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
-            accent ? 'bg-[#FFF4DE] text-[#B78103]' : 'bg-[#E8F3FE] text-[#0A89F2]'
-          }`}
+          className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${accent ? 'bg-[#FFF4DE] text-[#B78103]' : 'bg-[#E8F3FE] text-[#0A89F2]'
+            }`}
         >
           <Icon />
         </div>
@@ -188,7 +186,7 @@ export default function CreateEvent() {
         try {
           const uploadResult = await api.uploadImage(imageFile, token)
           finalImageUrl = uploadResult.url || uploadResult.image_url || ''
-          toast.success('Image téléchargée')
+          //toast.success('Image téléchargée')
         } catch (err) {
           toast.error(err.message || "Erreur lors de l'upload de l'image")
           setUploading(false)
@@ -218,12 +216,12 @@ export default function CreateEvent() {
         hasPromotion,
         promotion: hasPromotion
           ? {
-              nombre: Number(promotion.nombre),
-              sexe: promotion.sexe || 'tous',
-              pourcentage: Number(promotion.pourcentage),
-              duree: Number(promotion.duree),
-              description: promotion.description || '',
-            }
+            nombre: Number(promotion.nombre),
+            sexe: promotion.sexe || 'tous',
+            pourcentage: Number(promotion.pourcentage),
+            duree: Number(promotion.duree),
+            description: promotion.description || '',
+          }
           : undefined,
       }
 
@@ -248,7 +246,7 @@ export default function CreateEvent() {
         <div className="absolute top-1/3 -left-20 w-72 h-72 rounded-full bg-[#0A89F2]/[0.05] blur-3xl" />
       </div>
 
-      <div className="relative p-6 max-w-6xl space-y-6">
+      <div className="relative p-6 w-full space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div className="flex items-start gap-3">
@@ -286,7 +284,7 @@ export default function CreateEvent() {
           </div>
         )}
 
-        <form onSubmit={handleFormSubmit} className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-6 items-start">
+        <form onSubmit={handleFormSubmit} className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-6 items-start">
           <div className="space-y-5">
             {/* General */}
             <Section
@@ -314,11 +312,10 @@ export default function CreateEvent() {
                         key={c.id}
                         type="button"
                         onClick={() => setField('category', c.id)}
-                        className={`px-3.5 py-2 rounded-full text-xs font-bold transition-all ${
-                          form.category === c.id
+                        className={`px-3.5 py-2 rounded-full text-xs font-bold transition-all ${form.category === c.id
                             ? 'bg-[#0A89F2] text-white shadow-[0_6px_16px_rgba(10,137,242,0.3)]'
                             : 'bg-[#F3F6FA] text-[#667085] hover:bg-[#E8F3FE] hover:text-[#0A89F2]'
-                        }`}
+                          }`}
                       >
                         {c.label}
                       </button>
@@ -505,11 +502,10 @@ export default function CreateEvent() {
               <button
                 type="button"
                 onClick={() => setHasPromotion((v) => !v)}
-                className={`w-full flex items-center justify-between gap-3 rounded-2xl border px-4 py-3.5 transition-colors ${
-                  hasPromotion
+                className={`w-full flex items-center justify-between gap-3 rounded-2xl border px-4 py-3.5 transition-colors ${hasPromotion
                     ? 'border-[#F5D48A] bg-white'
                     : 'border-[#E8EEF5] bg-[#F8FAFC] hover:bg-white'
-                }`}
+                  }`}
               >
                 <div className="text-left">
                   <p className="text-sm font-bold text-[#0B1220]">Activer une promotion</p>
@@ -518,14 +514,12 @@ export default function CreateEvent() {
                   </p>
                 </div>
                 <span
-                  className={`relative w-12 h-7 rounded-full transition-colors ${
-                    hasPromotion ? 'bg-[#0A89F2]' : 'bg-[#D0D5DD]'
-                  }`}
+                  className={`relative w-12 h-7 rounded-full transition-colors ${hasPromotion ? 'bg-[#0A89F2]' : 'bg-[#D0D5DD]'
+                    }`}
                 >
                   <span
-                    className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow transition-transform ${
-                      hasPromotion ? 'left-5' : 'left-0.5'
-                    }`}
+                    className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow transition-transform ${hasPromotion ? 'left-5' : 'left-0.5'
+                      }`}
                   />
                 </span>
               </button>
@@ -705,7 +699,7 @@ export default function CreateEvent() {
 
           {/* Sticky actions */}
           <div className="xl:col-span-2 fixed bottom-0 right-0 left-0 md:left-64 z-40 border-t border-[#E8EEF5] bg-white/95 backdrop-blur-md px-6 py-4 shadow-[0_-8px_24px_rgba(11,18,32,0.06)]">
-            <div className="max-w-6xl mx-auto flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+            <div className="w-full flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
               <p className="text-sm text-[#667085] hidden sm:block">
                 Vérifiez l’aperçu avant de publier.
               </p>

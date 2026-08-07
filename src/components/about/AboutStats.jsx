@@ -5,10 +5,10 @@
 
 import { useEffect, useRef } from 'react'
 import { motion, useMotionValue, useTransform, animate, useInView } from 'framer-motion'
-import { 
-  FaUsers, 
-  FaGraduationCap, 
-  FaStar, 
+import {
+  FaUsers,
+  FaGraduationCap,
+  FaStar,
   FaAward,
   FaCalendar,
   FaGlobe
@@ -16,44 +16,44 @@ import {
 import Container from '@/components/ui/Container'
 
 const statsData = [
-  { 
-    icon: FaUsers, 
-    value: '5000+', 
+  {
+    icon: FaUsers,
+    value: '5000+',
     label: 'Participants formés',
     color: 'text-[#0a89f2]',
     bgGlow: 'rgba(10, 137, 242, 0.15)'
   },
-  { 
-    icon: FaGraduationCap, 
-    value: '50+', 
+  {
+    icon: FaGraduationCap,
+    value: '50+',
     label: 'Formations proposées',
     color: 'text-purple-400',
     bgGlow: 'rgba(168, 85, 247, 0.15)'
   },
-  { 
-    icon: FaStar, 
-    value: '98%', 
+  {
+    icon: FaStar,
+    value: '98%',
     label: 'Taux de satisfaction',
     color: 'text-yellow-400',
     bgGlow: 'rgba(234, 179, 8, 0.15)'
   },
-  { 
-    icon: FaAward, 
-    value: '20+', 
+  {
+    icon: FaAward,
+    value: '20+',
     label: 'Experts partenaires',
     color: 'text-emerald-400',
     bgGlow: 'rgba(16, 185, 129, 0.15)'
   },
-  { 
-    icon: FaCalendar, 
-    value: '10+', 
+  {
+    icon: FaCalendar,
+    value: '10+',
     label: "Années d'expérience",
     color: 'text-rose-400',
     bgGlow: 'rgba(244, 63, 94, 0.15)'
   },
-  { 
-    icon: FaGlobe, 
-    value: '5+', 
+  {
+    icon: FaGlobe,
+    value: '5+',
     label: 'Pays couverts',
     color: 'text-cyan-400',
     bgGlow: 'rgba(34, 211, 238, 0.15)'
@@ -63,11 +63,11 @@ const statsData = [
 function Counter({ value, duration = 2 }) {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: "-50px" })
-  
+
   // Extract number and suffix
   const numOnly = parseInt(value.replace(/[^0-9]/g, '')) || 0
   const suffix = value.replace(/[0-9]/g, '') // e.g., '+', '%'
-  
+
   const count = useMotionValue(0)
   const rounded = useTransform(count, (latest) => {
     const val = Math.round(latest)
@@ -101,7 +101,7 @@ export default function AboutStats() {
   const lineInView = useInView(sectionRef, { once: true, margin: "-100px" })
 
   return (
-    <section 
+    <section
       ref={sectionRef}
       className="relative py-24 md:py-32 bg-[#040d21] overflow-hidden border-y border-white/5"
     >
@@ -117,12 +117,12 @@ export default function AboutStats() {
           <div className="hidden lg:block absolute top-8 left-0 w-full h-1 pointer-events-none z-0">
             <svg className="w-full h-4 overflow-visible" fill="none">
               {/* Static background path */}
-              <line 
-                x1="8%" 
-                y1="8" 
-                x2="92%" 
-                y2="8" 
-                className="stroke-white/10 stroke-[2]" 
+              <line
+                x1="8%"
+                y1="8"
+                x2="92%"
+                y2="8"
+                className="stroke-white/10 stroke-[2]"
               />
               {/* Animated overlay path */}
               <motion.line
@@ -149,12 +149,12 @@ export default function AboutStats() {
           {/* Animated Connecting SVG Line - Mobile & Tablet */}
           <div className="lg:hidden absolute top-0 left-6 sm:left-8 w-0.5 h-full pointer-events-none z-0">
             <svg className="w-full h-full overflow-visible" fill="none">
-              <line 
-                x1="2" 
-                y1="4%" 
-                x2="2" 
-                y2="96%" 
-                className="stroke-white/10 stroke-[2]" 
+              <line
+                x1="2"
+                y1="4%"
+                x2="2"
+                y2="96%"
+                className="stroke-white/10 stroke-[2]"
               />
               <motion.line
                 x1="2"
@@ -193,11 +193,11 @@ export default function AboutStats() {
                   {/* Node Circle with Icon */}
                   <div className="relative mb-0 lg:mb-6 mr-6 lg:mr-0">
                     {/* Ring highlight effect */}
-                    <div 
+                    <div
                       className="absolute -inset-2 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
                       style={{ backgroundColor: stat.bgGlow }}
                     />
-                    
+
                     {/* Glowing outer circle */}
                     <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-slate-900 border border-white/10 flex items-center justify-center relative z-10 transition-all duration-300 group-hover:border-white/30 group-hover:scale-110 shadow-2xl">
                       <Icon className={`text-base sm:text-xl ${stat.color} transition-transform duration-300 group-hover:scale-125`} />

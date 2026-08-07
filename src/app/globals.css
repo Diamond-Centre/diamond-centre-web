@@ -56,13 +56,27 @@ body {
 
 /* Animations */
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-20px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-20px);
+  }
 }
 
 @keyframes pulse-glow {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 0.8; }
+
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 0.8;
+  }
 }
 
 .animate-float {
@@ -429,8 +443,13 @@ body {
 }
 
 @keyframes border-glow-slide {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 /* Prism Reflection Shimmer effect */
@@ -446,15 +465,13 @@ body {
   left: -60%;
   width: 30%;
   height: 200%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(10, 137, 242, 0.08) 30%,
-    rgba(108, 92, 231, 0.12) 50%,
-    rgba(236, 72, 153, 0.08) 70%,
-    rgba(255, 255, 255, 0) 100%
-  );
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(10, 137, 242, 0.08) 30%,
+      rgba(108, 92, 231, 0.12) 50%,
+      rgba(236, 72, 153, 0.08) 70%,
+      rgba(255, 255, 255, 0) 100%);
   transform: rotate(35deg);
   transition: all 0.75s ease;
   z-index: 2;
@@ -464,4 +481,4 @@ body {
 .prism-shimmer:hover::before {
   left: 130%;
   transition: all 1s ease;
-}
+}

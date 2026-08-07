@@ -223,7 +223,7 @@ export default function AdminCertificatesPage() {
     } finally {
       setLoading(false)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- initial/refresh load; avoid loop on selectedTickets
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- initial/refresh load; avoid loop on selectedTickets
   }, [])
 
   useEffect(() => {
@@ -252,7 +252,7 @@ export default function AdminCertificatesPage() {
       setSelectedId(nextId)
       loadEligible(nextId, { preserveSelection: false })
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scope])
 
   const selectFormation = (id) => {
@@ -348,9 +348,6 @@ export default function AdminCertificatesPage() {
             <FaCertificate className="text-dice-blue" />
             Certificats
           </h1>
-          <p className="text-gray-500 text-sm mt-1">
-            Formations passées, participants présents, puis délivrance — comme sur l’app mobile.
-          </p>
         </div>
         <button
           type="button"
@@ -392,18 +389,16 @@ export default function AdminCertificatesPage() {
               <button
                 type="button"
                 onClick={() => setScope('past')}
-                className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${
-                  scope === 'past' ? 'bg-dice-blue text-white' : 'text-gray-600 hover:bg-gray-50'
-                }`}
+                className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${scope === 'past' ? 'bg-dice-blue text-white' : 'text-gray-600 hover:bg-gray-50'
+                  }`}
               >
                 Passées ({pastCount})
               </button>
               <button
                 type="button"
                 onClick={() => setScope('all')}
-                className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${
-                  scope === 'all' ? 'bg-dice-blue text-white' : 'text-gray-600 hover:bg-gray-50'
-                }`}
+                className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${scope === 'all' ? 'bg-dice-blue text-white' : 'text-gray-600 hover:bg-gray-50'
+                  }`}
               >
                 Toutes ({formations.length})
               </button>
@@ -437,11 +432,10 @@ export default function AdminCertificatesPage() {
                     key={f.id}
                     type="button"
                     onClick={() => selectFormation(f.id)}
-                    className={`shrink-0 w-56 text-left rounded-xl border p-3 transition-colors ${
-                      selected
+                    className={`shrink-0 w-56 text-left rounded-xl border p-3 transition-colors ${selected
                         ? 'bg-dice-blue border-dice-blue text-white'
                         : 'bg-white border-gray-200 hover:border-dice-blue/40'
-                    }`}
+                      }`}
                   >
                     <p className={`font-semibold text-sm line-clamp-2 ${selected ? 'text-white' : 'text-gray-800'}`}>
                       {f.title}
@@ -451,13 +445,12 @@ export default function AdminCertificatesPage() {
                       {!ended ? ' · à venir' : ''}
                     </p>
                     <span
-                      className={`inline-block mt-2 text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                        selected
+                      className={`inline-block mt-2 text-[11px] font-bold px-2 py-0.5 rounded-full ${selected
                           ? 'bg-white/20 text-white'
                           : pending > 0
                             ? 'bg-orange-100 text-orange-800'
                             : 'bg-emerald-50 text-emerald-700'
-                      }`}
+                        }`}
                     >
                       {pending > 0 ? `${pending} à délivrer` : 'À jour'}
                     </span>
@@ -531,9 +524,8 @@ export default function AdminCertificatesPage() {
                 <button
                   type="button"
                   onClick={() => setTab('pending')}
-                  className={`flex-1 sm:flex-none px-4 py-2 text-sm font-semibold rounded-md transition-colors ${
-                    tab === 'pending' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
-                  }`}
+                  className={`flex-1 sm:flex-none px-4 py-2 text-sm font-semibold rounded-md transition-colors ${tab === 'pending' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+                    }`}
                 >
                   À délivrer
                   <span className="ml-2 text-xs px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600">
@@ -543,9 +535,8 @@ export default function AdminCertificatesPage() {
                 <button
                   type="button"
                   onClick={() => setTab('issued')}
-                  className={`flex-1 sm:flex-none px-4 py-2 text-sm font-semibold rounded-md transition-colors ${
-                    tab === 'issued' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
-                  }`}
+                  className={`flex-1 sm:flex-none px-4 py-2 text-sm font-semibold rounded-md transition-colors ${tab === 'issued' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+                    }`}
                 >
                   Délivrés
                   <span className="ml-2 text-xs px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600">
@@ -609,14 +600,12 @@ export default function AdminCertificatesPage() {
                           key={p.ticket_id}
                           type="button"
                           onClick={() => toggleTicket(p.ticket_id)}
-                          className={`w-full flex items-center gap-3 p-3 rounded-xl border bg-white text-left transition-colors ${
-                            on ? 'border-dice-blue/50 bg-dice-blue/5' : 'border-gray-200 hover:border-gray-300'
-                          }`}
+                          className={`w-full flex items-center gap-3 p-3 rounded-xl border bg-white text-left transition-colors ${on ? 'border-dice-blue/50 bg-dice-blue/5' : 'border-gray-200 hover:border-gray-300'
+                            }`}
                         >
                           <div
-                            className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
-                              on ? 'bg-dice-blue/15 text-dice-blue' : 'bg-gray-100 text-gray-500'
-                            }`}
+                            className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${on ? 'bg-dice-blue/15 text-dice-blue' : 'bg-gray-100 text-gray-500'
+                              }`}
                           >
                             {initialOf(p.customer_name)}
                           </div>

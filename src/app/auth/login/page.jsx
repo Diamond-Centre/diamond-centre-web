@@ -40,11 +40,24 @@ export default function LoginPage() {
     }
   })
 
+  // Handlers pour la connexion sociale
+  const handleGoogleRegister = () => {
+    toast("L'inscription Google sera bientôt disponible", {
+      icon: 'ℹ️',
+    })
+  }
+
+  const handleFacebookRegister = () => {
+    toast("L'inscription Facebook sera bientôt disponible", {
+      icon: 'ℹ️',
+    })
+  }
+
   // Vérifier si déjà connecté
   useEffect(() => {
     const token = auth.getToken()
     const user = auth.getUser()
-    
+
     if (token && user) {
       if (user.role === 'admin' || user.role === 'super_admin') {
         window.location.href = '/admin'
@@ -202,7 +215,8 @@ export default function LoginPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <button
-                  onClick={() => toast.info('Connexion avec Google bientôt disponible')}
+                  type="button"
+                  onClick={handleGoogleRegister}
                   disabled={isSubmitting || loading}
                   className="flex items-center justify-center gap-2.5 py-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
                 >
@@ -210,7 +224,8 @@ export default function LoginPage() {
                   <span className="text-sm font-medium text-gray-700">Google</span>
                 </button>
                 <button
-                  onClick={() => toast.info('Connexion avec Facebook bientôt disponible')}
+                  type="button"
+                  onClick={handleFacebookRegister}
                   disabled={isSubmitting || loading}
                   className="flex items-center justify-center gap-2.5 py-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
                 >

@@ -70,8 +70,8 @@ export default function AboutTimeline() {
   const lineHeight = useTransform(scrollYProgress, [0, 1], ["0%", "100%"])
 
   return (
-    <section 
-      ref={containerRef} 
+    <section
+      ref={containerRef}
       className="relative py-24 sm:py-32 bg-[#f8fafc] overflow-hidden"
     >
       {/* Background Decoratives */}
@@ -81,7 +81,7 @@ export default function AboutTimeline() {
       </div>
 
       <Container className="relative z-10">
-        
+
         {/* Header Section */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -105,13 +105,13 @@ export default function AboutTimeline() {
 
         {/* Timeline Path container */}
         <div className="relative max-w-5xl mx-auto mt-20">
-          
+
           {/* Static Background Line */}
           <div className="absolute left-4 md:left-1/2 top-0 bottom-0 w-0.5 bg-gray-200 -translate-x-1/2 pointer-events-none z-0" />
 
           {/* Animated Scrolling Progress Line */}
-          <motion.div 
-            style={{ height: lineHeight }} 
+          <motion.div
+            style={{ height: lineHeight }}
             className="absolute left-4 md:left-1/2 top-0 w-0.5 bg-gradient-to-b from-[#0a89f2] via-purple-500 to-pink-500 -translate-x-1/2 pointer-events-none z-10 origin-top shadow-[0_0_12px_rgba(10,137,242,0.5)]"
           />
 
@@ -122,15 +122,14 @@ export default function AboutTimeline() {
               const isEven = index % 2 === 0
 
               return (
-                <div 
+                <div
                   key={index}
-                  className={`relative flex flex-col md:flex-row items-stretch ${
-                    isEven ? '' : 'md:flex-row-reverse'
-                  }`}
+                  className={`relative flex flex-col md:flex-row items-stretch ${isEven ? '' : 'md:flex-row-reverse'
+                    }`}
                 >
                   {/* Timeline Center Bullet Pin */}
                   <div className="absolute left-4 md:left-1/2 top-8 md:top-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
-                    <motion.div 
+                    <motion.div
                       className="w-8 h-8 rounded-full bg-white border-2 border-gray-200 flex items-center justify-center shadow-lg transition-colors group-hover:border-[#0a89f2]"
                       whileInView={{
                         borderColor: ["#e5e7eb", "#0a89f2"],
@@ -145,10 +144,9 @@ export default function AboutTimeline() {
                   </div>
 
                   {/* Card Content Column */}
-                  <div className={`w-full md:w-1/2 pl-12 md:pl-0 ${
-                    isEven ? 'md:pr-16 lg:pr-24 text-left md:text-right' : 'md:pl-16 lg:pl-24 text-left'
-                  }`}>
-                    
+                  <div className={`w-full md:w-1/2 pl-12 md:pl-0 ${isEven ? 'md:pr-16 lg:pr-24 text-left md:text-right' : 'md:pl-16 lg:pl-24 text-left'
+                    }`}>
+
                     <motion.div
                       initial={{ opacity: 0, x: isEven ? -40 : 40, y: 20 }}
                       whileInView={{ opacity: 1, x: 0, y: 0 }}
@@ -157,18 +155,16 @@ export default function AboutTimeline() {
                       className="relative p-6 sm:p-8 rounded-3xl about-glass-card hover-glow-border border border-gray-200/50 hover:shadow-2xl transition-all duration-500 overflow-hidden group"
                     >
                       {/* Giant background Year Text serving as backdrop art */}
-                      <div className={`absolute -top-6 select-none pointer-events-none z-0 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity duration-500 ${
-                        isEven ? 'left-4' : 'right-4'
-                      }`}>
+                      <div className={`absolute -top-6 select-none pointer-events-none z-0 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity duration-500 ${isEven ? 'left-4' : 'right-4'
+                        }`}>
                         <span className="text-7xl sm:text-8xl md:text-9xl font-black text-slate-900 tracking-tighter">
                           {event.year}
                         </span>
                       </div>
 
                       {/* Header details */}
-                      <div className={`flex flex-col mb-4 ${
-                        isEven ? 'md:items-end' : 'md:items-start'
-                      }`}>
+                      <div className={`flex flex-col mb-4 ${isEven ? 'md:items-end' : 'md:items-start'
+                        }`}>
                         <span className="text-base sm:text-lg font-bold text-[#0a89f2] mb-1 font-mono tracking-wider">
                           {event.year}
                         </span>
