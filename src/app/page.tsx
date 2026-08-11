@@ -21,20 +21,20 @@ export default function Home() {
   }, [fetchPublicEvents])
 
   const upcomingEvents = (events || [])
-    .filter((e) => {
+    .filter((e: any) => {
       if (e.status && e.status !== 'published') return false
       const d = new Date(e.end_date || e.start_date || 0)
       if (Number.isNaN(d.getTime())) return true
       return d.getTime() >= Date.now() - 86400000
     })
     .sort(
-      (a, b) =>
+      (a: any, b: any) =>
         new Date(a.start_date || 0).getTime() -
         new Date(b.start_date || 0).getTime()
     )
     .slice(0, 3)
 
-  const openReservation = (event) => {
+  const openReservation = (event: any) => {
     if (!isAuthenticated) {
       toast.error('Veuillez vous connecter pour réserver')
       return
@@ -61,7 +61,7 @@ export default function Home() {
           setSelectedEvent(null)
         }}
         event={selectedEvent}
-        onSuccess={(ticket) => {
+        onSuccess={(ticket: any) => {
           const qty = Math.max(1, Number(ticket?.quantity ?? 1))
           toast.success(
             `${qty} ticket${qty > 1 ? 's' : ''} réservé${qty > 1 ? 's' : ''} ! Retrouvez-les dans Mon espace.`

@@ -19,7 +19,7 @@ import EventLocationMap from '@/components/maps/EventLocationMap'
 export default function EventDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const { getEventById } = useEvents()
+  const { getEvent } = useEvents()
   const [event, setEvent] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -31,7 +31,7 @@ export default function EventDetailPage() {
     async function load() {
       try {
         setLoading(true)
-        const data = await getEventById(params.id)
+        const data = await getEvent(params.id)
         if (!cancelled) {
           setEvent(data)
           setError(null)
@@ -49,7 +49,7 @@ export default function EventDetailPage() {
     return () => {
       cancelled = true
     }
-  }, [params?.id, getEventById])
+  }, [params?.id, getEvent])
 
   if (loading) {
     return (
@@ -74,7 +74,7 @@ export default function EventDetailPage() {
   const hasValidDate = parsedDate && !Number.isNaN(parsedDate.getTime())
   const placesRestantes = Math.max(
     0,
-    Number(event.available_tickets ?? (event.nbPlaces - event.nbInscrits) ?? 0)
+    Number((event.available_tickets ?? (event.nbPlaces - event.nbInscrits)) || 0)
   )
 
   return (
@@ -90,6 +90,7 @@ export default function EventDetailPage() {
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
+          // @ts-ignore - framer-motion types issue with className
           className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100"
         >
           <div className="relative h-64 md:h-80 bg-gray-100">

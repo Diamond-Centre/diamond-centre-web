@@ -24,7 +24,7 @@ import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import toast from 'react-hot-toast'
 
-function parseDate(value) {
+function parseDate(value: any) {
   if (!value) return null
   if (value instanceof Date) return isValid(value) ? value : null
   const iso = parseISO(String(value))
@@ -33,13 +33,13 @@ function parseDate(value) {
   return isValid(d) ? d : null
 }
 
-function formatDay(value) {
+function formatDay(value: any) {
   const d = parseDate(value)
   if (!d) return 'Date à confirmer'
   return format(d, 'd MMM yyyy', { locale: fr })
 }
 
-function normalizeTime(value, fallbackDate) {
+function normalizeTime(value: any, fallbackDate: any) {
   if (value && /^\d{1,2}:\d{2}/.test(String(value))) {
     return String(value).slice(0, 5)
   }
@@ -48,7 +48,7 @@ function normalizeTime(value, fallbackDate) {
   return null
 }
 
-function formatPrice(amount, currency = 'XAF') {
+function formatPrice(amount: any, currency = 'XAF') {
   const n = Number(amount)
   if (Number.isNaN(n)) return '—'
   try {
@@ -58,8 +58,8 @@ function formatPrice(amount, currency = 'XAF') {
   }
 }
 
-function sexeLabel(sexe) {
-  const map = {
+function sexeLabel(sexe: any) {
+  const map: Record<string, string> = {
     tous: 'Tous publics',
     homme: 'Hommes',
     femme: 'Femmes',
@@ -75,7 +75,7 @@ function PromotionModal({
   promoPrice,
   currency,
   eventTitle,
-}) {
+}: any) {
   const pct = Number(promotion?.pourcentage) || 0
   const places = Number(promotion?.nombre)
   const days = Number(promotion?.duree)
@@ -92,15 +92,17 @@ function PromotionModal({
           role="presentation"
         >
           <motion.div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="promo-modal-title"
+            {...{
+              role: "dialog",
+              "aria-modal": "true",
+              "aria-labelledby": "promo-modal-title",
+              className: "max-h-[90vh] w-full overflow-y-auto rounded-t-3xl bg-white shadow-2xl sm:max-w-md sm:rounded-3xl"
+            } as any}
             initial={{ y: 36, opacity: 0, scale: 0.98 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 36, opacity: 0, scale: 0.98 }}
             transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            onClick={(e) => e.stopPropagation()}
-            className="max-h-[90vh] w-full overflow-y-auto rounded-t-3xl bg-white shadow-2xl sm:max-w-md sm:rounded-3xl"
+            onClick={(e: any) => e.stopPropagation()}
           >
             <div className="relative overflow-hidden bg-gradient-to-br from-[#FFB020] to-[#E89A00] px-5 pb-6 pt-5 text-white">
               <div className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-white/15" />
@@ -209,13 +211,21 @@ function PromotionModal({
   )
 }
 
+export interface EventCardProps {
+  event: any;
+  className?: string;
+  onReserve?: (event: any) => void;
+  showReserveButton?: boolean;
+  index?: number;
+}
+
 export default function EventCard({
   event,
   className,
   onReserve,
   showReserveButton = true,
   index = 0,
-}) {
+}: EventCardProps) {
   const { isAuthenticated } = useAuth()
   const [imgError, setImgError] = useState(false)
   const [promoOpen, setPromoOpen] = useState(false)
@@ -275,7 +285,7 @@ export default function EventCard({
 
   const canReserve = !isPast && !isFull
 
-  const handleReserve = (e) => {
+  const handleReserve = (e: any) => {
     e.preventDefault()
     e.stopPropagation()
     if (!isAuthenticated) {
@@ -299,6 +309,12 @@ export default function EventCard({
   return (
     <>
       <motion.article
+            {...{
+              className: cn(
+                'group flex h-full flex-col overflow-hidden rounded-[22px] border border-[#E8EEF5] bg-white shadow-[0_8px_24px_rgba(11,18,32,0.045)] transition-shadow duration-300 hover:border-[#0A89F2]/30 hover:shadow-[0_14px_32px_rgba(10,137,242,0.12)]',
+                className
+              )
+            } as any}
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{
@@ -307,10 +323,6 @@ export default function EventCard({
           ease: [0.22, 1, 0.36, 1],
         }}
         whileHover={{ y: -3 }}
-        className={cn(
-          'group flex h-full flex-col overflow-hidden rounded-[22px] border border-[#E8EEF5] bg-white shadow-[0_8px_24px_rgba(11,18,32,0.045)] transition-shadow duration-300 hover:border-[#0A89F2]/30 hover:shadow-[0_14px_32px_rgba(10,137,242,0.12)]',
-          className
-        )}
       >
         {/* Media — shorter */}
         <div className="relative h-40 shrink-0 overflow-hidden bg-[#0B1220]">

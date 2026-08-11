@@ -2,14 +2,19 @@
  * Composant badge pour les étiquettes
  */
 import { cn } from '@/lib/utils'
+import { HTMLAttributes } from 'react'
 
-export default function Badge({ 
-  children, 
+export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
+  variant?: 'default' | 'success' | 'danger' | 'warning' | 'purple' | 'pink' | string;
+}
+
+export default function Badge({
+  children,
   variant = 'default',
   className,
-  ...props 
-}) {
-  const variants = {
+  ...props
+}: BadgeProps) {
+  const variants: Record<string, string> = {
     default: 'bg-blue-100 text-blue-800',
     success: 'bg-green-100 text-green-800',
     danger: 'bg-red-100 text-red-800',
@@ -19,7 +24,7 @@ export default function Badge({
   }
 
   return (
-    <span 
+    <span
       className={cn(
         'inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold',
         variants[variant],

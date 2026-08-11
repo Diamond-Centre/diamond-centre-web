@@ -98,7 +98,7 @@ function EventsPageContent() {
     fetchPublicEvents()
   }, [fetchPublicEvents])
 
-  const getEffectivePrice = (event) => {
+  const getEffectivePrice = (event: any) => {
     if (event.promotion && event.promotion.pourcentage) {
       const discount = (event.price * event.promotion.pourcentage) / 100
       return Math.round(event.price - discount)
@@ -121,10 +121,10 @@ function EventsPageContent() {
       case 'created_at': {
         const dateA = new Date(a.created_at || a.createdAt || 0)
         const dateB = new Date(b.created_at || b.createdAt || 0)
-        return dateB - dateA
+        return dateB.getTime() - dateA.getTime()
       }
       case 'date':
-        return new Date(a.start_date) - new Date(b.start_date)
+        return new Date(a.start_date || a.date).getTime() - new Date(b.start_date || b.date).getTime()
       case 'popularity': {
         const popularityA = (a.nb_inscrits || 0) / (a.capacity || 1)
         const popularityB = (b.nb_inscrits || 0) / (b.capacity || 1)
@@ -139,7 +139,7 @@ function EventsPageContent() {
     }
   })
 
-  const openReservation = (event) => {
+  const openReservation = (event: any) => {
     if (!isAuthenticated) {
       toast.error('Veuillez vous connecter pour réserver')
       return
@@ -222,7 +222,7 @@ function EventsPageContent() {
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2">
-              {categories.map((cat) => (
+              {categories.map((cat: any) => (
                 <button
                   key={cat.id}
                   type="button"
@@ -293,7 +293,7 @@ function EventsPageContent() {
           setSelectedEvent(null)
         }}
         event={selectedEvent}
-        onSuccess={(ticket) => {
+        onSuccess={(ticket: any) => {
           const qty = Math.max(1, Number(ticket?.quantity ?? 1))
           toast.success(
             `${qty} ticket${qty > 1 ? 's' : ''} réservé${qty > 1 ? 's' : ''} ! Retrouvez-les dans Mon espace.`

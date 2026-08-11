@@ -8,7 +8,7 @@ export const metadata = {
   description: 'Plateforme de formations professionnelles, séminaires et ateliers',
 }
 
-export default function RootLayout({ children }) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr">
       <body>

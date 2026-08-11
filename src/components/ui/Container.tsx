@@ -2,14 +2,19 @@
  * Composant conteneur responsive
  */
 import { cn } from '@/lib/utils'
+import { HTMLAttributes } from 'react'
+
+export interface ContainerProps extends HTMLAttributes<HTMLDivElement> {
+  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '7xl' | 'full' | string;
+}
 
 export default function Container({ 
   children, 
   className,
   maxWidth = '7xl',
   ...props 
-}) {
-  const maxWidths = {
+}: ContainerProps) {
+  const maxWidths: Record<string, string> = {
     sm: 'max-w-screen-sm',
     md: 'max-w-screen-md',
     lg: 'max-w-screen-lg',
