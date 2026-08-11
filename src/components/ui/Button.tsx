@@ -3,11 +3,18 @@
  * Variantes : primary, secondary, outline, glass
  * Tailles : small, medium, large
  */
-import { forwardRef } from 'react'
+import { forwardRef, ButtonHTMLAttributes } from 'react'
 import { cn } from '@/lib/utils'
 import Spinner from './Spinner'
 
-const Button = forwardRef(({ 
+export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'primary' | 'secondary' | 'glass' | 'outline' | 'outlineWhite' | string;
+  size?: 'small' | 'medium' | 'large' | string;
+  fullWidth?: boolean;
+  loading?: boolean;
+}
+
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(({ 
   children,
   variant = 'primary',
   size = 'medium',
@@ -20,7 +27,7 @@ const Button = forwardRef(({
   ...props
 }, ref) => {
   // Styles par variante
-  const variants = {
+  const variants: Record<string, string> = {
     primary: 'bg-dice-blue text-white hover:bg-dice-blue-dark focus:ring-dice-blue',
     secondary: 'bg-gray-200 text-gray-800 hover:bg-gray-300 focus:ring-gray-500',
     glass: 'glass glass-hover text-white border border-white/20 hover:border-white/40',
@@ -29,7 +36,7 @@ const Button = forwardRef(({
   }
 
   // Styles par taille
-  const sizes = {
+  const sizes: Record<string, string> = {
     small: 'px-3 py-1.5 text-sm',
     medium: 'px-4 py-2 text-base',
     large: 'px-6 py-3 text-lg'

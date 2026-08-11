@@ -6,9 +6,9 @@ import { api } from '@/lib/api'
 import { auth } from '@/lib/auth'
 
 export function useEvents() {
-  const [events, setEvents] = useState([])
+  const [events, setEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState<string | null>(null)
 
   // Récupérer les événements publics
   const fetchPublicEvents = useCallback(async () => {
@@ -20,7 +20,7 @@ export function useEvents() {
       console.log('📥 Événements reçus:', data?.length || 0)
       setEvents(data || [])
       return data
-    } catch (err) {
+    } catch (err: any) {
       console.error('❌ Erreur fetchPublicEvents:', err)
       setError(err.message)
       setEvents([])
@@ -41,7 +41,7 @@ export function useEvents() {
       console.log('📥 Événements reçus:', data?.length || 0)
       setEvents(data || [])
       return data
-    } catch (err) {
+    } catch (err: any) {
       console.error('❌ Erreur fetchEvents:', err)
       setError(err.message)
       setEvents([])
@@ -51,14 +51,14 @@ export function useEvents() {
     }
   }, [])
 
-  const getEvent = useCallback(async (id) => {
+  const getEvent = useCallback(async (id: any) => {
     setLoading(true)
     setError(null)
     try {
       const token = auth.getToken()
       const data = await api.getEventById(id, token)
       return data
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message)
       throw err
     } finally {
@@ -66,7 +66,7 @@ export function useEvents() {
     }
   }, [])
 
-  const createEvent = useCallback(async (data) => {
+  const createEvent = useCallback(async (data: any) => {
     setLoading(true)
     setError(null)
     try {
@@ -75,7 +75,7 @@ export function useEvents() {
       // Recharger après création
       await fetchEvents()
       return result
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message)
       throw err
     } finally {
@@ -83,7 +83,7 @@ export function useEvents() {
     }
   }, [fetchEvents])
 
-  const updateEvent = useCallback(async (id, data) => {
+  const updateEvent = useCallback(async (id: any, data: any) => {
     setLoading(true)
     setError(null)
     try {
@@ -92,7 +92,7 @@ export function useEvents() {
       // Recharger après mise à jour
       await fetchEvents()
       return result
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message)
       throw err
     } finally {
@@ -100,7 +100,7 @@ export function useEvents() {
     }
   }, [fetchEvents])
 
-  const deleteEvent = useCallback(async (id) => {
+  const deleteEvent = useCallback(async (id: any) => {
     setLoading(true)
     setError(null)
     try {
@@ -109,7 +109,7 @@ export function useEvents() {
       // Recharger après suppression
       await fetchEvents()
       return true
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message)
       throw err
     } finally {

@@ -13,14 +13,20 @@ import EventCard from '@/components/events/EventCard'
 
 gsap.registerPlugin(ScrollTrigger)
 
+export interface FormationsSectionProps {
+  events?: any[];
+  loading?: boolean;
+  onReserve?: (event: any) => void;
+}
+
 export default function FormationsSection({
   events = [],
   loading = false,
   onReserve,
-}) {
-  const sectionRef = useRef(null)
-  const headerRef = useRef(null)
-  const gridRef = useRef(null)
+}: FormationsSectionProps) {
+  const sectionRef = useRef<HTMLElement | null>(null)
+  const headerRef = useRef<HTMLDivElement | null>(null)
+  const gridRef = useRef<HTMLDivElement | null>(null)
 
   const list = Array.isArray(events) ? events.slice(0, 3) : []
 
@@ -105,7 +111,7 @@ export default function FormationsSection({
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="rounded-3xl border border-dashed border-[#E8EEF5] bg-[#F4F7FB] px-6 py-16 text-center"
+            {...{ className: "rounded-3xl border border-dashed border-[#E8EEF5] bg-[#F4F7FB] px-6 py-16 text-center" } as any}
           >
             <p className="text-lg font-bold text-[#0B1220]">
               Aucun événement publié pour le moment
@@ -128,7 +134,7 @@ export default function FormationsSection({
                 key={event.id}
                 whileHover={{ y: -8 }}
                 transition={{ duration: 0.3, ease: 'easeOut' }}
-                className="h-full"
+                {...{ className: "h-full" } as any}
               >
                 <EventCard
                   event={event}
