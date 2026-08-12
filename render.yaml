@@ -1,0 +1,24 @@
+# Render Blueprint — Diamond Centre Web (Next.js)
+# Set BACKEND_URL to the dice-api public URL after the API is live.
+# Example: https://dice-api.onrender.com
+
+services:
+  - type: web
+    name: dice-web
+    runtime: node
+    plan: free
+    region: oregon
+    branch: test
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        value: /api
+      - key: NEXT_PUBLIC_APP_NAME
+        value: Diamond Centre
+      - key: BACKEND_URL
+        sync: false
+      - key: NODE_VERSION
+        value: "20"
