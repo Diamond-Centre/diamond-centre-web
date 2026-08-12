@@ -4,38 +4,113 @@
  */
 const API_URL = (process.env.NEXT_PUBLIC_API_URL || '/api').replace(/\/+$/, '')
 
+function createApiError(status, message) {
+  const messages = {
+    400: "La requête est invalide.",
+    401: "Votre session a expiré. Veuillez vous reconnecter.",
+    403: "Vous n'êtes pas autorisé à effectuer cette action.",
+    404: "La ressource demandée est introuvable.",
+    408: "Le délai d'attente a été dépassé.",
+    422: "Certaines informations sont invalides.",
+    429: "Trop de tentatives. Veuillez réessayer plus tard.",
+  }
+
+  return {
+    status,
+    message:
+      status >= 500
+        ? "Le service est momentanément indisponible. Veuillez réessayer plus tard."
+        : messages[status] || message || "Une erreur est survenue.",
+  }
+}
+
 async function parseJson(response) {
   const text = await response.text()
-  if (!text) return null
+
+  if (!text) {
+    return null
+  }
+
   try {
     return JSON.parse(text)
-  } catch {
-    const isHtml = text.trim().startsWith('<') || text.includes('<!DOCTYPE') || text.includes('<html')
+  } catch (error) {
+    // Informations utiles uniquement pour le développement
+    console.error("[API] Réponse non JSON reçue", {
+      url: response.url,
+      status: response.status,
+      statusText: response.statusText,
+      body: text.slice(0, 300),
+      error,
+    })
+
+    // Le serveur a renvoyé une page HTML (404, 500, proxy, etc.)
+    const isHtml =
+      text.trim().startsWith("<") ||
+      text.includes("<!DOCTYPE") ||
+      text.includes("<html")
+
     if (isHtml) {
-      throw new Error(`Erreur ${response.status}: Impossible de contacter le serveur`)
+      throw new Error(
+        "Le service est momentanément indisponible. Veuillez réessayer plus tard."
+      )
     }
-    const snippet = text.replace(/\s+/g, ' ').slice(0, 120)
+
+    // Réponse texte inattendue
+    if (!response.ok) {
+      throw new Error(
+        "Une erreur est survenue lors de la communication avec le service."
+      )
+    }
+
+    // Le serveur a répondu 200 mais le contenu est invalide
     throw new Error(
-      response.ok
-        ? `Réponse invalide du serveur: ${snippet}`
-        : `Erreur ${response.status}: ${snippet || response.statusText}`
+      "Réponse invalide."
     )
   }
 }
 
 async function request(path, options = {}) {
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`
-  const response = await fetch(`${API_URL}${normalizedPath}`, options)
-  const data = await parseJson(response)
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`
 
-  if (!response.ok) {
-    const message =
-      (data && (data.message || data.error)) ||
-      `Erreur ${response.status}`
-    throw new Error(typeof message === 'string' ? message : `Erreur ${response.status}`)
+  try {
+    const response = await fetch(`${API_URL}${normalizedPath}`, options)
+
+    const data = await parseJson(response)
+
+    if (!response.ok) {
+      const error = createApiError(
+        response.status,
+        data?.message || data?.error
+      )
+
+      // Logs développeur
+      console.error("[API]", {
+        url: normalizedPath,
+        status: response.status,
+        response: data,
+      })
+
+      throw new Error(error.message)
+    }
+
+    return data
+  } catch (error) {
+    // erreur réseau
+    if (
+      error instanceof TypeError ||
+      error.message.includes("fetch") ||
+      error.message.includes("Network")
+    ) {
+      console.error("NETWORK ERROR :", error)
+
+      throw new Error(
+        "Impossible de communiquer avec le service. Veuillez réessayer plus tard."
+      )
+    }
+
+    // erreur déjà normalisée
+    throw error
   }
-
-  return data
 }
 
 function authHeaders(token, extra = {}) {

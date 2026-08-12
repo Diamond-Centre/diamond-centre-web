@@ -14,17 +14,25 @@ export function useEvents() {
   const fetchPublicEvents = useCallback(async () => {
     setLoading(true)
     setError(null)
+
     try {
-      console.log('📤 Chargement des événements publics...')
       const data = await api.getPublicEvents()
-      console.log('📥 Événements reçus:', data?.length || 0)
-      setEvents(data || [])
+
+      setEvents(Array.isArray(data) ? data : [])
+
       return data
-    } catch (err: any) {
-      console.error('❌ Erreur fetchPublicEvents:', err)
-      setError(err.message)
+    } catch (error) {
+      console.error("EVENTS : Impossible de charger les événements", error)
+
       setEvents([])
-      throw err
+
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Impossible de charger les événements."
+      )
+
+      return []
     } finally {
       setLoading(false)
     }
@@ -34,18 +42,27 @@ export function useEvents() {
   const fetchEvents = useCallback(async () => {
     setLoading(true)
     setError(null)
+
     try {
       const token = auth.getToken()
-      console.log('📤 Chargement des événements avec token...')
+
       const data = await api.getEvents(token)
-      console.log('📥 Événements reçus:', data?.length || 0)
-      setEvents(data || [])
+
+      setEvents(Array.isArray(data) ? data : [])
+
       return data
-    } catch (err: any) {
-      console.error('❌ Erreur fetchEvents:', err)
-      setError(err.message)
+    } catch (error) {
+      console.error("[EVENTS] Impossible de charger les événements.", error)
+
       setEvents([])
-      throw err
+
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Impossible de charger les événements."
+      )
+
+      return []
     } finally {
       setLoading(false)
     }
@@ -58,9 +75,16 @@ export function useEvents() {
       const token = auth.getToken()
       const data = await api.getEventById(id, token)
       return data
-    } catch (err: any) {
-      setError(err.message)
-      throw err
+    } catch (error) {
+      console.error("EVENTS : Impossible de charger l'événement.", error)
+
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Impossible de charger l'événement."
+      )
+
+      throw error
     } finally {
       setLoading(false)
     }
@@ -75,9 +99,16 @@ export function useEvents() {
       // Recharger après création
       await fetchEvents()
       return result
-    } catch (err: any) {
-      setError(err.message)
-      throw err
+    } catch (error) {
+      console.error("EVENTS : Création impossible.", error)
+
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Impossible de créer l'événement."
+      )
+
+      throw error
     } finally {
       setLoading(false)
     }
@@ -92,9 +123,16 @@ export function useEvents() {
       // Recharger après mise à jour
       await fetchEvents()
       return result
-    } catch (err: any) {
-      setError(err.message)
-      throw err
+    } catch (error) {
+      console.error("EVENTS : Création impossible.", error)
+
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Impossible de créer l'événement."
+      )
+
+      throw error
     } finally {
       setLoading(false)
     }
@@ -109,9 +147,16 @@ export function useEvents() {
       // Recharger après suppression
       await fetchEvents()
       return true
-    } catch (err: any) {
-      setError(err.message)
-      throw err
+    } catch (error) {
+      console.error("EVENTS : Création impossible.", error)
+
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Impossible de créer l'événement."
+      )
+
+      throw error
     } finally {
       setLoading(false)
     }
