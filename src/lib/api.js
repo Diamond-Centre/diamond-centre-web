@@ -1,6 +1,11 @@
 /**
  * API client — DICE backend (via Next /api proxy)
  * Safe JSON parsing so HTML 404 pages never crash as JSON.parse errors.
+ *
+ * FIX : lorsque le serveur backend est éteint / injoignable (fetch qui échoue,
+ * ou réponse 500/502/503/504 générique, ou page d'erreur HTML), on affiche un
+ * message clair et actionnable au lieu du message technique brut
+ * ("Erreur 500: Internal Server Error").
  */
 const API_URL = (process.env.NEXT_PUBLIC_API_URL || '/api').replace(/\/+$/, '')
 
@@ -66,6 +71,27 @@ async function parseJson(response) {
     throw new Error(
       "Réponse invalide."
     )
+  }
+
+  return false
+}
+
+function isHtmlResponse(rawText) {
+  const t = (rawText || '').trim()
+  return t.startsWith('<') || t.includes('<!DOCTYPE') || t.includes('<html')
+}
+
+/**
+ * Lit le corps de la réponse en texte, puis tente un JSON.parse.
+ * Ne lève jamais d'exception : retourne toujours { data, raw }.
+ */
+async function readBody(response) {
+  const raw = await response.text()
+  if (!raw) return { data: null, raw: '' }
+  try {
+    return { data: JSON.parse(raw), raw }
+  } catch {
+    return { data: null, raw }
   }
 }
 
@@ -139,6 +165,82 @@ function formatDateKey(value) {
   const m = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
   return `${y}-${m}-${day}`
+}
+
+/**
+ * Construit le payload de promotion à envoyer à l'API.
+ * Règle : seul `pourcentage` est obligatoire (aligné avec la validation backend).
+ * `nombre` et `duree` ne sont inclus que s'ils ont été réellement renseignés
+ * (sinon `null`, pour ne jamais afficher de valeur par défaut côté front).
+ */
+function buildPromotionPayload(promo) {
+  if (!promo) return null
+
+  const pourcentage = Number(promo.pourcentage)
+  if (!(pourcentage > 0 && pourcentage <= 100)) {
+    // Le pourcentage est le seul champ obligatoire : sans lui, pas de promotion valide.
+    return null
+  }
+
+  const nombreRaw = promo.nombre
+  const nombre =
+    nombreRaw === '' || nombreRaw === null || nombreRaw === undefined
+      ? null
+      : Number(nombreRaw)
+  const hasNombre = nombre !== null && Number.isFinite(nombre) && nombre > 0
+
+  const dureeRaw = promo.duree
+  const duree =
+    dureeRaw === '' || dureeRaw === null || dureeRaw === undefined
+      ? null
+      : Number(dureeRaw)
+  const hasDuree = duree !== null && Number.isFinite(duree) && duree > 0
+
+  const description = String(promo.description || '').trim()
+
+  return {
+    nombre: hasNombre ? nombre : null,
+    sexe: promo.sexe || 'tous',
+    pourcentage,
+    duree: hasDuree ? duree : null,
+    description: description || '',
+  }
+}
+
+/**
+ * Fetch "brut" partagé par les endpoints certificats qui téléchargent un
+ * fichier / du HTML sans passer par request(). Applique la même détection
+ * "serveur backend éteint" que request().
+ */
+async function rawFetch(url, options = {}) {
+  let response
+  try {
+    response = await fetch(url, options)
+  } catch {
+    throw new ApiError(BACKEND_DOWN_MESSAGE, { backendDown: true })
+  }
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '')
+
+    if (looksLikeBackendDown(response.status, text) || isHtmlResponse(text)) {
+      throw new ApiError(BACKEND_DOWN_MESSAGE, {
+        status: response.status,
+        backendDown: true,
+      })
+    }
+
+    let message = `Erreur ${response.status}`
+    try {
+      const json = JSON.parse(text)
+      message = json.message || json.error || message
+    } catch {
+      /* ignore */
+    }
+    throw new ApiError(message, { status: response.status })
+  }
+
+  return response
 }
 
 export const api = {
@@ -228,34 +330,12 @@ export const api = {
       status: data.status || 'published',
     }
 
-    // Same promotion rules as update — only send when complete & valid
+    // La promotion est envoyée dès que le pourcentage est renseigné.
+    // nombre/duree restent optionnels (null si vides) — cohérent avec la validation backend.
     if (data.hasPromotion && data.promotion) {
-      const promo = data.promotion
-      const nombre = Number(promo.nombre)
-      const pourcentage = Number(promo.pourcentage)
-      const duree = Number(promo.duree)
-      if (nombre > 0 && pourcentage > 0 && duree > 0) {
-        payload.promotion = {
-          nombre,
-          sexe: promo.sexe || 'tous',
-          pourcentage,
-          duree,
-          description: promo.description || '',
-        }
-      }
-    } else if (data.promotion && typeof data.promotion === 'object') {
-      const promo = data.promotion
-      const nombre = Number(promo.nombre)
-      const pourcentage = Number(promo.pourcentage)
-      const duree = Number(promo.duree)
-      if (nombre > 0 && pourcentage > 0 && duree > 0) {
-        payload.promotion = {
-          nombre,
-          sexe: promo.sexe || 'tous',
-          pourcentage,
-          duree,
-          description: promo.description || '',
-        }
+      const promotionPayload = buildPromotionPayload(data.promotion)
+      if (promotionPayload) {
+        payload.promotion = promotionPayload
       }
     }
 
@@ -288,22 +368,14 @@ export const api = {
       capacity: Number(data.capacity),
       image_url: data.image_url || '',
       status: data.status || 'published',
+      // null = supprime la promotion existante (géré par le backend : input.promotion === null)
       promotion: null,
     }
 
     if (data.hasPromotion && data.promotion) {
-      const promo = data.promotion
-      const nombre = Number(promo.nombre)
-      const pourcentage = Number(promo.pourcentage)
-      const duree = Number(promo.duree)
-      if (nombre > 0 && pourcentage > 0 && duree > 0) {
-        payload.promotion = {
-          nombre,
-          sexe: promo.sexe || 'tous',
-          pourcentage,
-          duree,
-          description: promo.description || '',
-        }
+      const promotionPayload = buildPromotionPayload(data.promotion)
+      if (promotionPayload) {
+        payload.promotion = promotionPayload
       }
     }
 
@@ -546,21 +618,10 @@ export const api = {
 
   /** Opens authenticated PDF download for the signed-in user */
   downloadMyCertificatePdf: async (code, token) => {
-    const response = await fetch(
+    const response = await rawFetch(
       `${API_URL}/certificates/me/${encodeURIComponent(code)}/pdf`,
       { headers: token ? { Authorization: `Bearer ${token}` } : {} }
     )
-    if (!response.ok) {
-      const text = await response.text()
-      let message = `Erreur ${response.status}`
-      try {
-        const json = JSON.parse(text)
-        message = json.message || json.error || message
-      } catch {
-        /* ignore */
-      }
-      throw new Error(message)
-    }
     const blob = await response.blob()
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -573,21 +634,10 @@ export const api = {
   },
 
   getMyCertificateHtml: async (code, token) => {
-    const response = await fetch(
+    const response = await rawFetch(
       `${API_URL}/certificates/me/${encodeURIComponent(code)}/html`,
       { headers: token ? { Authorization: `Bearer ${token}` } : {} }
     )
-    if (!response.ok) {
-      const text = await response.text()
-      let message = `Erreur ${response.status}`
-      try {
-        const json = JSON.parse(text)
-        message = json.message || json.error || message
-      } catch {
-        /* ignore */
-      }
-      throw new Error(message)
-    }
     return response.text()
   },
 
@@ -718,13 +768,60 @@ export const api = {
       }),
     }),
 
-  updateUser: async () => {
-    throw new Error('Fonctionnalité à venir')
+  updateUser: async (id, data, token) => {
+    const payload = {
+      email: data.email,
+      name: data.name,
+      telephone: data.telephone,
+      sexe: data.sexe,
+    }
+    if (data.password && data.password.trim() !== '') {
+      payload.password = data.password
+    }
+    if (data.picture) {
+      payload.picture = data.picture
+    }
+
+    return request(`/users/admins/${id}`, {
+      method: 'PUT',
+      headers: authHeaders(token),
+      body: JSON.stringify(payload),
+    })
   },
 
-  deleteUser: async () => {
-    throw new Error('Fonctionnalité à venir')
+  deleteUser: async (id, token) =>
+    request(`/users/admins/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(token),
+    }),
+
+  // ===== CLIENTS (espace-client) =====
+  updateClient: async (id, data, token) => {
+    const payload = {
+      email: data.email,
+      name: data.name,
+      telephone: data.telephone,
+      sexe: data.sexe,
+    }
+    if (data.password && data.password.trim() !== '') {
+      payload.password = data.password
+    }
+    if (data.picture) {
+      payload.picture = data.picture
+    }
+
+    return request(`/users/clients/${id}`, {
+      method: 'PUT',
+      headers: authHeaders(token),
+      body: JSON.stringify(payload),
+    })
   },
+
+  deleteClient: async (id, token) =>
+    request(`/users/clients/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(token),
+  }),
 
   getDashboardStats: async (token) =>
     request('/users/dashboard', { headers: authHeaders(token) }),

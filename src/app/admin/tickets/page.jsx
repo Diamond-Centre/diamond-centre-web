@@ -3,7 +3,7 @@
  */
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo,useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -286,11 +286,13 @@ export default function AdminTickets() {
       setTickets(Array.isArray(data) ? data : [])
     } catch (err) {
       setError(err.message)
-      toast.error(err.message || 'Erreur lors du chargement des tickets')
+      toast.error(err.message || 'Erreur lors du chargement des tickets', { id: 'tickets-load-error' })
     } finally {
       setLoading(false)
     }
   }, [])
+
+  const didInit = useRef(false)
 
   useEffect(() => {
     const token = auth.getToken()
@@ -298,6 +300,8 @@ export default function AdminTickets() {
       router.push('/auth/login')
       return
     }
+    if (didInit.current) return
+    didInit.current = true
     loadTickets()
   }, [router, loadTickets])
 
@@ -339,11 +343,11 @@ export default function AdminTickets() {
       )
     })
 
-    // Tri par date d'événement croissante (les plus proches en premier)
+    // Tri par date de création décroissante (les plus récents en premier)
     return list.sort((a, b) => {
-      const dateA = a.event_start_date ? new Date(a.event_start_date).getTime() : Infinity
-      const dateB = b.event_start_date ? new Date(b.event_start_date).getTime() : Infinity
-      return dateA - dateB
+      const dateA = a.created_at ? new Date(a.created_at).getTime() : 0
+      const dateB = b.created_at ? new Date(b.created_at).getTime() : 0
+      return dateB - dateA
     })
   }, [tickets, searchTerm, statusFilter])
 
@@ -403,7 +407,7 @@ export default function AdminTickets() {
     link.download = `ticket-${selectedTicket.id}-qr.png`
     link.href = qrCodeImage
     link.click()
-    toast.success('QR code téléchargé')
+    toast.success('QR code téléchargé', { id: `qr-download-${selectedTicket.id}` })
   }
 
   const closeQr = () => {

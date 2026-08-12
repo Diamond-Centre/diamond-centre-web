@@ -95,7 +95,7 @@ function EventsPageContent() {
   }
 
   useEffect(() => {
-    fetchPublicEvents()
+    fetchPublicEvents().catch(() => {})
   }, [fetchPublicEvents])
 
   const getEffectivePrice = (event: any) => {
@@ -170,7 +170,7 @@ function EventsPageContent() {
           <Button
             variant="primary"
             className="mt-4"
-            onClick={() => fetchPublicEvents()}
+            onClick={() => fetchPublicEvents().catch(() => {})}
           >
             Réessayer
           </Button>
@@ -265,7 +265,7 @@ function EventsPageContent() {
                 onClick={() => {
                   setSearchTerm('')
                   handleCategoryChange('all')
-                  fetchPublicEvents()
+                  fetchPublicEvents().catch(() => {})
                 }}
               >
                 Réinitialiser
@@ -298,7 +298,7 @@ function EventsPageContent() {
           toast.success(
             `${qty} ticket${qty > 1 ? 's' : ''} réservé${qty > 1 ? 's' : ''} ! Retrouvez-les dans Mon espace.`
           )
-          fetchPublicEvents()
+          fetchPublicEvents().catch(() => {})
         }}
       />
     </>

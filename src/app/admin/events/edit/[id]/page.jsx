@@ -44,15 +44,17 @@ function formatPreviewDate(value) {
 function Section({ icon: Icon, title, subtitle, children, accent = false }) {
   return (
     <section
-      className={`rounded-[24px] border p-5 sm:p-6 shadow-[0_8px_24px_rgba(11,18,32,0.04)] ${accent
+      className={`rounded-[24px] border p-5 sm:p-6 shadow-[0_8px_24px_rgba(11,18,32,0.04)] ${
+        accent
           ? 'border-[#F5D48A] bg-gradient-to-br from-[#FFF8E8] to-white'
           : 'border-[#E8EEF5] bg-white'
-        }`}
+      }`}
     >
       <div className="flex items-start gap-3 mb-5">
         <div
-          className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${accent ? 'bg-[#FFF4DE] text-[#B78103]' : 'bg-[#E8F3FE] text-[#0A89F2]'
-            }`}
+          className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
+            accent ? 'bg-[#FFF4DE] text-[#B78103]' : 'bg-[#E8F3FE] text-[#0A89F2]'
+          }`}
         >
           <Icon />
         </div>
@@ -66,12 +68,87 @@ function Section({ icon: Icon, title, subtitle, children, accent = false }) {
   )
 }
 
+/**
+ * Hook qui fait "suivre" un élément (l'aperçu live) pendant le scroll :
+ * - il reste collé à `topGap` px du haut de l'écran tant qu'il y a de la place
+ * - quand sa colonne (containerRef) touche à sa fin, il s'arrête pour ne pas déborder
+ * - il ne passe jamais sous la barre d'actions fixe en bas (actionBarRef)
+ * - désactivé en dessous du breakpoint xl (1280px), où l'aperçu reste dans le flux normal
+ */
+function useFollowAside(containerRef, asideRef, actionBarRef, { topGap = 24, bottomGap = 16 } = {}) {
+  const [offset, setOffset] = useState(0)
+
+  useEffect(() => {
+    let ticking = false
+
+    function update() {
+      const isDesktop = window.matchMedia('(min-width: 1280px)').matches
+      const container = containerRef.current
+      const aside = asideRef.current
+
+      if (!isDesktop || !container || !aside) {
+        setOffset(0)
+        return
+      }
+
+      const containerRect = container.getBoundingClientRect()
+      const asideHeight = aside.offsetHeight
+      const containerHeight = container.offsetHeight
+      const viewportHeight = window.innerHeight
+      const barHeight = actionBarRef.current?.offsetHeight || 0
+
+      // Position idéale : collé à `topGap` du haut de l'écran
+      let top = topGap - containerRect.top
+      if (top < 0) top = 0
+
+      // Ne jamais dépasser le bas de la colonne de gauche
+      const maxTop = Math.max(containerHeight - asideHeight, 0)
+      if (top > maxTop) top = maxTop
+
+      // Ne jamais passer sous la barre d'actions fixe en bas
+      const asideBottomInViewport = containerRect.top + top + asideHeight
+      const limit = viewportHeight - barHeight - bottomGap
+      if (asideBottomInViewport > limit) {
+        top -= asideBottomInViewport - limit
+      }
+      if (top < 0) top = 0
+      if (top > maxTop) top = maxTop
+
+      setOffset(top)
+    }
+
+    function onScrollOrResize() {
+      if (!ticking) {
+        ticking = true
+        requestAnimationFrame(() => {
+          update()
+          ticking = false
+        })
+      }
+    }
+
+    update()
+    window.addEventListener('scroll', onScrollOrResize, { passive: true })
+    window.addEventListener('resize', onScrollOrResize)
+    return () => {
+      window.removeEventListener('scroll', onScrollOrResize)
+      window.removeEventListener('resize', onScrollOrResize)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  return offset
+}
+
 export default function EditEvent() {
   const router = useRouter()
   const params = useParams()
   const id = params?.id
 
   const fileInputRef = useRef(null)
+  const previewContainerRef = useRef(null)
+  const previewRef = useRef(null)
+  const actionBarRef = useRef(null)
   const [loadingEvent, setLoadingEvent] = useState(true)
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -110,6 +187,8 @@ export default function EditEvent() {
     capacity: '50',
   })
 
+  const previewOffset = useFollowAside(previewContainerRef, previewRef, actionBarRef)
+
   useEffect(() => {
     const token = auth.getToken()
     if (!token) {
@@ -136,8 +215,8 @@ export default function EditEvent() {
 
       const hasPromo = Boolean(
         event.promotion &&
-        event.promotion.pourcentage &&
-        Number(event.promotion.pourcentage) > 0
+          event.promotion.pourcentage &&
+          Number(event.promotion.pourcentage) > 0
       )
 
       // Normalisation de la catégorie
@@ -230,11 +309,9 @@ export default function EditEvent() {
     if (!(Number(form.capacity) >= 1)) return 'La capacité minimale est 1'
     if (Number(form.price) < 0 || form.price === '') return 'Le prix est requis'
     if (hasPromotion) {
-      const nombre = Number(promotion.nombre)
       const pourcentage = Number(promotion.pourcentage)
-      const duree = Number(promotion.duree)
-      if (!(nombre > 0 && pourcentage > 0 && pourcentage <= 100 && duree > 0)) {
-        return 'Promotion incomplète : places, % (1–100) et durée sont requis'
+      if (!(pourcentage > 0 && pourcentage <= 100)) {
+        return 'Promotion incomplète : la réduction (%) est requise (1–100)'
       }
     }
     return null
@@ -299,12 +376,12 @@ export default function EditEvent() {
         hasPromotion,
         promotion: hasPromotion
           ? {
-            nombre: Number(promotion.nombre),
-            sexe: promotion.sexe || 'tous',
-            pourcentage: Number(promotion.pourcentage),
-            duree: Number(promotion.duree),
-            description: promotion.description || '',
-          }
+              nombre: promotion.nombre !== '' ? Number(promotion.nombre) : null,
+              sexe: promotion.sexe || 'tous',
+              pourcentage: Number(promotion.pourcentage),
+              duree: promotion.duree !== '' ? Number(promotion.duree) : null,
+              description: promotion.description || '',
+            }
           : undefined,
       }
 
@@ -379,7 +456,7 @@ export default function EditEvent() {
           </div>
         )}
 
-        <form onSubmit={handleFormSubmit} className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-6 items-start">
+        <form onSubmit={handleFormSubmit} className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-6 items-start xl:items-stretch">
           <div className="space-y-5">
             {/* Informations Générales */}
             <Section
@@ -407,10 +484,11 @@ export default function EditEvent() {
                         key={c.id}
                         type="button"
                         onClick={() => setField('category', c.id)}
-                        className={`px-3.5 py-2 rounded-full text-xs font-bold transition-all ${form.category === c.id
+                        className={`px-3.5 py-2 rounded-full text-xs font-bold transition-all ${
+                          form.category === c.id
                             ? 'bg-[#0A89F2] text-white shadow-[0_6px_16px_rgba(10,137,242,0.3)]'
                             : 'bg-[#F3F6FA] text-[#667085] hover:bg-[#E8F3FE] hover:text-[#0A89F2]'
-                          }`}
+                        }`}
                       >
                         {c.label}
                       </button>
@@ -597,24 +675,27 @@ export default function EditEvent() {
               <button
                 type="button"
                 onClick={() => setHasPromotion((v) => !v)}
-                className={`w-full flex items-center justify-between gap-3 rounded-2xl border px-4 py-3.5 transition-colors ${hasPromotion
+                className={`w-full flex items-center justify-between gap-3 rounded-2xl border px-4 py-3.5 transition-colors ${
+                  hasPromotion
                     ? 'border-[#F5D48A] bg-white'
                     : 'border-[#E8EEF5] bg-[#F8FAFC] hover:bg-white'
-                  }`}
+                }`}
               >
                 <div className="text-left">
                   <p className="text-sm font-bold text-[#0B1220]">Activer une promotion</p>
                   <p className="text-xs text-[#667085] mt-0.5">
-                    Places promo, pourcentage et durée
+                    Seule la réduction (%) est obligatoire
                   </p>
                 </div>
                 <span
-                  className={`relative w-12 h-7 rounded-full transition-colors ${hasPromotion ? 'bg-[#0A89F2]' : 'bg-[#D0D5DD]'
-                    }`}
+                  className={`relative w-12 h-7 rounded-full transition-colors ${
+                    hasPromotion ? 'bg-[#0A89F2]' : 'bg-[#D0D5DD]'
+                  }`}
                 >
                   <span
-                    className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow transition-transform ${hasPromotion ? 'left-5' : 'left-0.5'
-                      }`}
+                    className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow transition-transform ${
+                      hasPromotion ? 'left-5' : 'left-0.5'
+                    }`}
                   />
                 </span>
               </button>
@@ -629,7 +710,7 @@ export default function EditEvent() {
                   >
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
                       <div>
-                        <label className={labelClass}>Places promo *</label>
+                        <label className={labelClass}>Places promo</label>
                         <input
                           type="number"
                           min="1"
@@ -639,7 +720,6 @@ export default function EditEvent() {
                           }
                           placeholder="15"
                           className={inputClass}
-                          required={hasPromotion}
                         />
                       </div>
                       <div>
@@ -672,7 +752,7 @@ export default function EditEvent() {
                         />
                       </div>
                       <div>
-                        <label className={labelClass}>Durée (jours) *</label>
+                        <label className={labelClass}>Durée (jours)</label>
                         <input
                           type="number"
                           min="1"
@@ -682,7 +762,6 @@ export default function EditEvent() {
                           }
                           placeholder="7"
                           className={inputClass}
-                          required={hasPromotion}
                         />
                       </div>
                       <div className="sm:col-span-2">
@@ -692,7 +771,7 @@ export default function EditEvent() {
                           onChange={(e) =>
                             setPromotion((p) => ({ ...p, description: e.target.value }))
                           }
-                          placeholder="Early bird -20%"
+                          placeholder="Ex: Promotion spéciale pour les 10 premiers jours"
                           className={inputClass}
                         />
                       </div>
@@ -714,86 +793,95 @@ export default function EditEvent() {
             </Section>
           </div>
 
-          {/* Live preview */}
-          <aside className="xl:sticky xl:top-6 space-y-4">
-            <div className="rounded-[24px] border border-[#E8EEF5] bg-white overflow-hidden shadow-[0_12px_32px_rgba(11,18,32,0.06)]">
-              <div className="px-4 py-3 border-b border-[#E8EEF5] flex items-center justify-between">
-                <p className="text-xs font-bold uppercase tracking-wide text-[#667085]">
-                  Aperçu live
-                </p>
-                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#0B9B6B] bg-emerald-50 px-2 py-0.5 rounded-full">
-                  <FaCheck className="text-[9px]" />
-                  Publié
-                </span>
-              </div>
-              <div className="relative h-40 bg-[#E8F3FE]">
-                {activeImage ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={activeImage} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-[#0A89F2]/50">
-                    <FaImage className="text-3xl" />
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                <div className="absolute bottom-3 left-3 right-3">
-                  <p className="text-[11px] font-semibold text-white/85 uppercase tracking-wide">
-                    {categoryLabel}
+          {/* Live preview — suit le scroll entre le haut et le bas de sa colonne */}
+          <div ref={previewContainerRef} className="xl:relative">
+            <aside
+              ref={previewRef}
+              className="space-y-4 xl:absolute xl:left-0 xl:right-0 xl:top-0 transition-transform duration-150 ease-out will-change-transform"
+              style={{ transform: `translateY(${previewOffset}px)` }}
+            >
+              <div className="rounded-[24px] border border-[#E8EEF5] bg-white overflow-hidden shadow-[0_12px_32px_rgba(11,18,32,0.06)]">
+                <div className="px-4 py-3 border-b border-[#E8EEF5] flex items-center justify-between">
+                  <p className="text-xs font-bold uppercase tracking-wide text-[#667085]">
+                    Aperçu live
                   </p>
-                  <p className="text-white font-extrabold text-lg leading-snug line-clamp-2">
-                    {form.title.trim() || 'Titre de l’événement'}
-                  </p>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#0B9B6B] bg-emerald-50 px-2 py-0.5 rounded-full">
+                    <FaCheck className="text-[9px]" />
+                    Publié
+                  </span>
                 </div>
-              </div>
-              <div className="p-4 space-y-2.5 text-sm">
-                <p className="flex items-center gap-2 text-[#667085]">
-                  <FaCalendarAlt className="text-[#0A89F2] text-xs" />
-                  {formatPreviewDate(form.start_date)}
-                  {form.start_time ? ` · ${form.start_time}` : ''}
-                </p>
-                <p className="flex items-center gap-2 text-[#667085]">
-                  <FaMapMarkerAlt className="text-[#0A89F2] text-xs" />
-                  {form.location.trim() || 'Lieu à préciser'}
-                </p>
-                <p className="flex items-center gap-2 text-[#667085]">
-                  <FaUsers className="text-[#0A89F2] text-xs" />
-                  {form.capacity || '—'} places
-                </p>
-                <div className="pt-2 border-t border-[#E8EEF5] flex items-end justify-between">
-                  <div>
-                    {promoPrice != null ? (
-                      <>
+                <div className="relative h-40 bg-[#E8F3FE]">
+                  {activeImage ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={activeImage} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-[#0A89F2]/50">
+                      <FaImage className="text-3xl" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                  <div className="absolute bottom-3 left-3 right-3">
+                    <p className="text-[11px] font-semibold text-white/85 uppercase tracking-wide">
+                      {categoryLabel}
+                    </p>
+                    <p className="text-white font-extrabold text-lg leading-snug line-clamp-2">
+                      {form.title.trim() || 'Titre de l’événement'}
+                    </p>
+                  </div>
+                </div>
+                <div className="p-4 space-y-2.5 text-sm">
+                  <p className="flex items-center gap-2 text-[#667085]">
+                    <FaCalendarAlt className="text-[#0A89F2] text-xs" />
+                    {formatPreviewDate(form.start_date)}
+                    {form.start_time ? ` · ${form.start_time}` : ''}
+                  </p>
+                  <p className="flex items-center gap-2 text-[#667085]">
+                    <FaMapMarkerAlt className="text-[#0A89F2] text-xs" />
+                    {form.location.trim() || 'Lieu à préciser'}
+                  </p>
+                  <p className="flex items-center gap-2 text-[#667085]">
+                    <FaUsers className="text-[#0A89F2] text-xs" />
+                    {form.capacity || '—'} places
+                  </p>
+                  <div className="pt-2 border-t border-[#E8EEF5] flex items-end justify-between">
+                    <div>
+                      {promoPrice != null ? (
+                        <>
+                          <p className="text-lg font-extrabold text-[#0A89F2]">
+                            {promoPrice.toLocaleString('fr-FR')} FCFA
+                          </p>
+                          <p className="text-xs text-[#98A2B3] line-through">
+                            {Number(form.price || 0).toLocaleString('fr-FR')} FCFA
+                          </p>
+                        </>
+                      ) : (
                         <p className="text-lg font-extrabold text-[#0A89F2]">
-                          {promoPrice.toLocaleString('fr-FR')} FCFA
+                          {form.price !== ''
+                            ? `${Number(form.price).toLocaleString('fr-FR')} FCFA`
+                            : '— FCFA'}
                         </p>
-                        <p className="text-xs text-[#98A2B3] line-through">
-                          {Number(form.price || 0).toLocaleString('fr-FR')} FCFA
-                        </p>
-                      </>
-                    ) : (
-                      <p className="text-lg font-extrabold text-[#0A89F2]">
-                        {form.price !== ''
-                          ? `${Number(form.price).toLocaleString('fr-FR')} FCFA`
-                          : '— FCFA'}
-                      </p>
+                      )}
+                    </div>
+                    {hasPromotion && Number(promotion.pourcentage) > 0 && (
+                      <span className="text-[11px] font-bold bg-[#FFF4DE] text-[#B78103] px-2.5 py-1 rounded-full">
+                        -{promotion.pourcentage}%
+                      </span>
                     )}
                   </div>
-                  {hasPromotion && Number(promotion.pourcentage) > 0 && (
-                    <span className="text-[11px] font-bold bg-[#FFF4DE] text-[#B78103] px-2.5 py-1 rounded-full">
-                      -{promotion.pourcentage}%
-                    </span>
-                  )}
                 </div>
               </div>
-            </div>
 
-            <div className="rounded-[20px] border border-[#E8EEF5] bg-[#E8F3FE]/60 px-4 py-3 text-xs text-[#136db8] leading-relaxed">
-              Les modifications seront enregistrées et répercutées instantanément sur la page publique DiCe.
-            </div>
-          </aside>
+              <div className="rounded-[20px] border border-[#E8EEF5] bg-[#E8F3FE]/60 px-4 py-3 text-xs text-[#136db8] leading-relaxed">
+                Les modifications seront enregistrées et répercutées instantanément sur la page publique DiCe.
+              </div>
+            </aside>
+          </div>
 
           {/* Sticky actions */}
-          <div className="xl:col-span-2 fixed bottom-0 right-0 left-0 md:left-64 z-40 border-t border-[#E8EEF5] bg-white/95 backdrop-blur-md px-6 py-4 shadow-[0_-8px_24px_rgba(11,18,32,0.06)]">
+          <div
+            ref={actionBarRef}
+            className="xl:col-span-2 fixed bottom-0 right-0 left-0 md:left-64 z-40 border-t border-[#E8EEF5] bg-white/95 backdrop-blur-md px-6 py-4 shadow-[0_-8px_24px_rgba(11,18,32,0.06)]"
+          >
             <div className="w-full flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
               <p className="text-sm text-[#667085] hidden sm:block">
                 Vérifiez l’aperçu avant d'enregistrer vos modifications.
