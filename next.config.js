@@ -1,7 +1,17 @@
 /** @type {import('next').NextConfig} */
-// Default points at the shared DICE backend host on the LAN so teammates
-// work with zero config. Override with BACKEND_URL in .env if needed.
-const backendUrl = (process.env.BACKEND_URL || 'http://127.0.0.1:3001').replace(/\/$/, '')
+const path = require('path')
+const fs = require('fs')
+
+// Always load project-root .env (never .env.example)
+const envPath = path.join(__dirname, '.env')
+if (fs.existsSync(envPath)) {
+  require('dotenv').config({ path: envPath })
+}
+
+const backendUrl = (process.env.BACKEND_URL || 'http://127.0.0.1:3001').replace(
+  /\/$/,
+  ''
+)
 
 const nextConfig = {
   reactStrictMode: true,
@@ -16,7 +26,6 @@ const nextConfig = {
         hostname: 'localhost',
       },
     ],
-    // Avoid hard crashes when local placeholder assets are missing in dev
     unoptimized: process.env.NODE_ENV === 'development',
   },
   experimental: {
@@ -24,7 +33,7 @@ const nextConfig = {
       bodySizeLimit: '2mb',
     },
   },
-  // Browser calls same-origin /api → Next proxies to DICE backend (no CORS in browser)
+  // Browser calls same-origin /api → Next proxies to DICE backend
   async rewrites() {
     return [
       {
@@ -33,6 +42,6 @@ const nextConfig = {
       },
     ]
   },
-};
+}
 
-module.exports = nextConfig;
+module.exports = nextConfig
