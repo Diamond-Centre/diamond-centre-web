@@ -2,8 +2,7 @@
  * Gestion des événements — design DiCe + pagination
  */
 'use client'
-
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -332,11 +331,13 @@ export default function AdminEvents() {
       setEvents(list)
     } catch (err) {
       setError(err.message)
-      //toast.error('Erreur lors du chargement des événements')
+      toast.error('Erreur lors du chargement des événements', { id: 'events-load-error' })
     } finally {
       setLoading(false)
     }
   }, [])
+
+  const didInit = useRef(false)
 
   useEffect(() => {
     const token = auth.getToken()
@@ -344,6 +345,8 @@ export default function AdminEvents() {
       router.push('/auth/login')
       return
     }
+    if (didInit.current) return
+    didInit.current = true
     loadEvents()
   }, [router, loadEvents])
 
@@ -480,10 +483,10 @@ export default function AdminEvents() {
       setDeletingId(event.id)
       const token = auth.getToken()
       await api.deleteEvent(event.id, token)
-      toast.success('Événement supprimé')
+      toast.success('Événement supprimé', { id: `event-delete-${event.id}` })
       await loadEvents()
     } catch (err) {
-      toast.error(err.message || 'Erreur lors de la suppression')
+      toast.error(err.message || 'Erreur lors de la suppression', { id: `event-delete-${event.id}` })
     } finally {
       setDeletingId(null)
     }

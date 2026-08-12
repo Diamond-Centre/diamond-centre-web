@@ -768,13 +768,60 @@ export const api = {
       }),
     }),
 
-  updateUser: async () => {
-    throw new Error('Fonctionnalité à venir')
+  updateUser: async (id, data, token) => {
+    const payload = {
+      email: data.email,
+      name: data.name,
+      telephone: data.telephone,
+      sexe: data.sexe,
+    }
+    if (data.password && data.password.trim() !== '') {
+      payload.password = data.password
+    }
+    if (data.picture) {
+      payload.picture = data.picture
+    }
+
+    return request(`/users/admins/${id}`, {
+      method: 'PUT',
+      headers: authHeaders(token),
+      body: JSON.stringify(payload),
+    })
   },
 
-  deleteUser: async () => {
-    throw new Error('Fonctionnalité à venir')
+  deleteUser: async (id, token) =>
+    request(`/users/admins/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(token),
+    }),
+
+  // ===== CLIENTS (espace-client) =====
+  updateClient: async (id, data, token) => {
+    const payload = {
+      email: data.email,
+      name: data.name,
+      telephone: data.telephone,
+      sexe: data.sexe,
+    }
+    if (data.password && data.password.trim() !== '') {
+      payload.password = data.password
+    }
+    if (data.picture) {
+      payload.picture = data.picture
+    }
+
+    return request(`/users/clients/${id}`, {
+      method: 'PUT',
+      headers: authHeaders(token),
+      body: JSON.stringify(payload),
+    })
   },
+
+  deleteClient: async (id, token) =>
+    request(`/users/clients/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(token),
+  }),
 
   getDashboardStats: async (token) =>
     request('/users/dashboard', { headers: authHeaders(token) }),

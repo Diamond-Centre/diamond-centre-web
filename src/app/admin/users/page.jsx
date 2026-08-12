@@ -394,16 +394,19 @@ export default function AdminUsersPage() {
 
   // Fermer le menu au scroll / resize pour éviter un mauvais positionnement
   // (le menu est en `fixed`, donc sa position stockée devient obsolète si la page bouge)
+  const didInit = useRef(false)
+
   useEffect(() => {
-    if (!dropdownMenu) return
-    const close = () => setDropdownMenu(null)
-    window.addEventListener('scroll', close, true)
-    window.addEventListener('resize', close)
-    return () => {
-      window.removeEventListener('scroll', close, true)
-      window.removeEventListener('resize', close)
+    const token = auth.getToken()
+    const storedUser = auth.getUser()
+    if (!token || !storedUser || (storedUser.role !== 'admin' && storedUser.role !== 'super_admin')) {
+      router.push('/auth/login')
+      return
     }
-  }, [dropdownMenu])
+    if (didInit.current) return
+    didInit.current = true
+    loadUsers()
+  }, [router])
 
   const loadUsers = async () => {
     try {
@@ -414,7 +417,7 @@ export default function AdminUsersPage() {
       setUsers(Array.isArray(data) ? data : [])
     } catch (err) {
       setError(err.message || 'Erreur lors du chargement des utilisateurs')
-      //toast.error(err.message || 'Erreur lors du chargement des utilisateurs')
+      toast.error(err.message || 'Erreur lors du chargement des utilisateurs', { id: 'users-load-error' })
     } finally {
       setLoading(false)
     }
@@ -481,7 +484,7 @@ export default function AdminUsersPage() {
 
       setTicketsList(filtered)
     } catch (err) {
-      toast.error(err.message || 'Impossible de récupérer les tickets')
+      toast.error(err.message || 'Impossible de récupérer les tickets', { id: 'client-tickets-error' })
     } finally {
       setLoadingTickets(false)
     }
@@ -543,7 +546,7 @@ export default function AdminUsersPage() {
 
       setCertificatsList(merged)
     } catch (err) {
-      toast.error(err.message || 'Impossible de récupérer les certificats')
+      toast.error(err.message || 'Impossible de récupérer les certificats', { id: 'client-certs-error' })
     } finally {
       setLoadingCertificats(false)
     }
@@ -597,7 +600,7 @@ export default function AdminUsersPage() {
     link.download = `ticket-${qrTicket.id}-qr.png`
     link.href = qrImage
     link.click()
-    toast.success('QR code téléchargé')
+    toast.success('QR code téléchargé', { id: `client-qr-download-${qrTicket.id}` })
   }
 
   const closeClientQR = () => {

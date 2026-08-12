@@ -2,8 +2,7 @@
  * Agenda admin — design premium aligné DiCe + logique mobile
  */
 'use client'
-
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -263,11 +262,13 @@ export default function AdminAgendaPage() {
       setEvents(list)
     } catch (err) {
       setError(err.message || 'Impossible de charger l’agenda')
-      //toast.error(err.message || 'Erreur de chargement')
+      toast.error(err.message || 'Erreur de chargement', { id: 'agenda-load-error' })
     } finally {
       setLoading(false)
     }
   }, [])
+
+  const didInit = useRef(false)
 
   useEffect(() => {
     const token = auth.getToken()
@@ -276,6 +277,8 @@ export default function AdminAgendaPage() {
       router.push('/auth/login')
       return
     }
+    if (didInit.current) return
+    didInit.current = true
     loadEvents()
   }, [router, loadEvents])
 
