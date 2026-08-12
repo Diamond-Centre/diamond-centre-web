@@ -286,7 +286,7 @@ export default function AdminTickets() {
       setTickets(Array.isArray(data) ? data : [])
     } catch (err) {
       setError(err.message)
-      toast.error(err.message || 'Erreur lors du chargement des tickets')
+      //toast.error(err.message || 'Erreur lors du chargement des tickets')
     } finally {
       setLoading(false)
     }
@@ -339,11 +339,11 @@ export default function AdminTickets() {
       )
     })
 
-    // Tri par date d'événement croissante (les plus proches en premier)
+    // Tri par date de création décroissante (les plus récents en premier)
     return list.sort((a, b) => {
-      const dateA = a.event_start_date ? new Date(a.event_start_date).getTime() : Infinity
-      const dateB = b.event_start_date ? new Date(b.event_start_date).getTime() : Infinity
-      return dateA - dateB
+      const dateA = a.created_at ? new Date(a.created_at).getTime() : 0
+      const dateB = b.created_at ? new Date(b.created_at).getTime() : 0
+      return dateB - dateA
     })
   }, [tickets, searchTerm, statusFilter])
 

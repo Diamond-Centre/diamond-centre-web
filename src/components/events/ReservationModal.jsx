@@ -6,12 +6,11 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  FaTimes, FaTicketAlt, FaUser, FaEnvelope, FaPhone, 
-  FaMobileAlt, FaCheckCircle, FaArrowRight, FaCalendar, 
-  FaMapMarker, FaClock, FaEuroSign, FaDownload, 
-  FaVenusMars, FaTag, FaExclamationTriangle,
-  FaSpinner, FaLock, FaEye, FaEyeSlash
+import {
+  FaTimes, FaTicketAlt, FaEnvelope, FaPhone,
+  FaMobileAlt, FaCheckCircle, FaArrowRight, FaCalendar,
+  FaMapMarker, FaClock, FaEuroSign, FaDownload,
+  FaVenusMars, FaLock, FaEye, FaEyeSlash
 } from 'react-icons/fa'
 import { GiDiamondRing } from 'react-icons/gi'
 import { api } from '@/lib/api'
@@ -21,23 +20,23 @@ import toast from 'react-hot-toast'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
 
-export default function ReservationModal({ 
-  isOpen, 
-  onClose, 
+export default function ReservationModal({
+  isOpen,
+  onClose,
   event,
-  onSuccess 
+  onSuccess
 }) {
   const router = useRouter()
   const [step, setStep] = useState('form')
   const [loading, setLoading] = useState(false)
   const [user, setUser] = useState(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
-  
+
   // Formulaire de réservation - Uniquement la quantité
   const [formData, setFormData] = useState({
     quantity: 1
   })
-  
+
   // Formulaire de connexion
   const [loginData, setLoginData] = useState({
     email: '',
@@ -45,7 +44,7 @@ export default function ReservationModal({
   })
   const [showLoginPassword, setShowLoginPassword] = useState(false)
   const [loginError, setLoginError] = useState(null)
-  
+
   // Formulaire d'inscription
   const [registerData, setRegisterData] = useState({
     name: '',
@@ -59,7 +58,7 @@ export default function ReservationModal({
   const [showRegisterPassword, setShowRegisterPassword] = useState(false)
   const [showRegisterConfirmPassword, setShowRegisterConfirmPassword] = useState(false)
   const [registerError, setRegisterError] = useState(null)
-  
+
   // Données du ticket
   const [ticket, setTicket] = useState(null)
   const [payment, setPayment] = useState(null)
@@ -69,9 +68,22 @@ export default function ReservationModal({
 
   const availablePlaces = Math.max(0, Number(event?.available_tickets ?? 0))
   const maxTickets = Math.max(1, Math.min(10, availablePlaces || 1))
-  const hasPromotion = event?.promotion && event.promotion.pourcentage > 0
-  const promoPrice = hasPromotion 
-    ? Math.round(event.price - (event.price * event.promotion.pourcentage) / 100)
+
+  // --- Promotion : ne considérer QUE ce qui a été réellement renseigné ---
+  const promo = event?.promotion
+  const promoPct = Number(promo?.pourcentage) || 0
+  const hasPromoPrice =
+    promo?.prix_promo !== null &&
+    promo?.prix_promo !== undefined &&
+    Number.isFinite(Number(promo.prix_promo)) &&
+    Number(promo.prix_promo) < Number(event?.price)
+
+  const hasPromotion = Boolean(promo && (promoPct > 0 || hasPromoPrice))
+
+  const promoPrice = hasPromotion
+    ? (hasPromoPrice
+        ? Number(promo.prix_promo)
+        : Math.round(Number(event.price) - (Number(event.price) * promoPct) / 100))
     : event?.price || 0
 
   // Vérifier l'authentification à l'ouverture du modal
@@ -89,10 +101,7 @@ export default function ReservationModal({
   const checkAuth = () => {
     const token = auth.getToken()
     const storedUser = auth.getUser()
-    
-    console.log('🔍 Vérification auth - Token:', !!token)
-    console.log('🔍 Vérification auth - User:', storedUser)
-    
+
     if (token && storedUser) {
       setUser(storedUser)
       setIsAuthenticated(true)
@@ -120,7 +129,7 @@ export default function ReservationModal({
     e.preventDefault()
     setLoading(true)
     setLoginError(null)
-    
+
     try {
       const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
@@ -130,9 +139,9 @@ export default function ReservationModal({
           password: loginData.password
         })
       })
-      
+
       const text = await response.text()
-      
+
       if (!response.ok) {
         let errorMessage
         try {
@@ -143,7 +152,7 @@ export default function ReservationModal({
         }
         throw new Error(errorMessage)
       }
-      
+
       const result = (() => {
         try {
           return JSON.parse(text)
@@ -151,16 +160,16 @@ export default function ReservationModal({
           throw new Error(`Réponse invalide du serveur (${response.status})`)
         }
       })()
-      
+
       auth.setToken(result.access_token)
       auth.setUser(result.user)
-      
+
       setUser(result.user)
       setIsAuthenticated(true)
-      
+
       toast.success('Connexion réussie !')
       setStep('form')
-      
+
     } catch (error) {
       console.error('❌ Erreur connexion:', error)
       setLoginError(error.message)
@@ -174,23 +183,23 @@ export default function ReservationModal({
     e.preventDefault()
     setLoading(true)
     setRegisterError(null)
-    
+
     const { confirmPassword, acceptTerms, ...userData } = registerData
-    
+
     if (userData.password !== confirmPassword) {
       setRegisterError('Les mots de passe ne correspondent pas')
       toast.error('Les mots de passe ne correspondent pas')
       setLoading(false)
       return
     }
-    
+
     if (!acceptTerms) {
       setRegisterError('Veuillez accepter les conditions d\'utilisation')
       toast.error('Veuillez accepter les conditions d\'utilisation')
       setLoading(false)
       return
     }
-    
+
     try {
       const registerPayload = {
         email: userData.email.trim(),
@@ -200,15 +209,15 @@ export default function ReservationModal({
         sexe: userData.sexe || 'homme',
         picture: `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.name.trim())}&background=0a89f2&color=fff&size=128`
       }
-      
+
       const registerResponse = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(registerPayload)
       })
-      
+
       const registerText = await registerResponse.text()
-      
+
       if (!registerResponse.ok) {
         let errorMessage
         try {
@@ -219,9 +228,9 @@ export default function ReservationModal({
         }
         throw new Error(errorMessage)
       }
-      
+
       toast.success('Compte créé avec succès !')
-      
+
       const loginResponse = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -230,24 +239,24 @@ export default function ReservationModal({
           password: userData.password
         })
       })
-      
+
       const loginText = await loginResponse.text()
-      
+
       if (!loginResponse.ok) {
         throw new Error('Connexion automatique échouée')
       }
-      
+
       const loginResult = JSON.parse(loginText)
-      
+
       auth.setToken(loginResult.access_token)
       auth.setUser(loginResult.user)
-      
+
       setUser(loginResult.user)
       setIsAuthenticated(true)
-      
+
       setStep('form')
       toast.success('Connecté automatiquement !')
-      
+
     } catch (error) {
       console.error('❌ Erreur inscription:', error)
       setRegisterError(error.message)
@@ -259,10 +268,10 @@ export default function ReservationModal({
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
+
     const token = auth.getToken()
     const storedUser = auth.getUser()
-    
+
     if (!token || !storedUser) {
       toast.error('Veuillez vous connecter pour réserver')
       setStep('login')
@@ -285,20 +294,12 @@ export default function ReservationModal({
       )
       return
     }
-    
+
     setIsAuthenticated(true)
     setUser(storedUser)
 
     setLoading(true)
     try {
-      console.log('📤 Réservation pour:', {
-        eventId: event.id,
-        quantity: formData.quantity,
-        customerName: storedUser.name,
-        customerEmail: storedUser.email,
-        customerPhone: storedUser.telephone
-      })
-      
       const reservation = await api.reserveTickets({
         eventId: event.id,
         quantity: formData.quantity,
@@ -315,12 +316,11 @@ export default function ReservationModal({
             : null,
       }, token)
 
-      console.log('✅ Réservation créée:', reservation)
       setTicket(reservation)
 
       const ticketId = reservation?.id ?? reservation?.ticket_id
       if (!ticketId) {
-        throw new Error('La réservation n’a pas renvoyé d’identifiant de ticket')
+        throw new Error('La réservation n\'a pas renvoyé d\'identifiant de ticket')
       }
 
       const paymentData = await api.initiatePayment({
@@ -445,7 +445,7 @@ export default function ReservationModal({
     canvas.width = 300
     canvas.height = 300
     const ctx = canvas.getContext('2d')
-    
+
     const firstTicket = ticket?.tickets?.[0] || ticket
     const qr = firstTicket?.qr_codes?.[0]
     const entry =
@@ -455,7 +455,7 @@ export default function ReservationModal({
 
     ctx.fillStyle = 'white'
     ctx.fillRect(0, 0, 300, 300)
-    
+
     ctx.fillStyle = '#0a89f2'
     ctx.font = 'bold 20px Arial'
     ctx.textAlign = 'center'
@@ -469,7 +469,7 @@ export default function ReservationModal({
     ctx.fillStyle = '#0a89f2'
     ctx.font = 'bold 28px monospace'
     ctx.fillText(String(entry).padStart(8, '0').slice(0, 8), 150, 245)
-    
+
     const link = document.createElement('a')
     link.download = `ticket-${firstTicket?.id || ticket?.id || 'event'}.png`
     link.href = canvas.toDataURL()
@@ -565,9 +565,11 @@ export default function ReservationModal({
                         <FaEuroSign className="text-dice-blue" />
                         <span className="font-bold text-dice-blue">{promoPrice} FCFA</span>
                         <span className="text-gray-400 line-through text-sm">{event?.price} FCFA</span>
-                        <span className="text-xs bg-green-500 text-white px-2 py-0.5 rounded-full">
-                          -{event?.promotion?.pourcentage}%
-                        </span>
+                        {promoPct > 0 && (
+                          <span className="text-xs bg-green-500 text-white px-2 py-0.5 rounded-full">
+                            -{promoPct}%
+                          </span>
+                        )}
                       </div>
                     ) : (
                       <>
@@ -591,9 +593,9 @@ export default function ReservationModal({
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
-                      onClick={() => setFormData(prev => ({ 
-                        ...prev, 
-                        quantity: Math.max(1, prev.quantity - 1) 
+                      onClick={() => setFormData(prev => ({
+                        ...prev,
+                        quantity: Math.max(1, prev.quantity - 1)
                       }))}
                       className="w-10 h-10 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors text-lg font-bold"
                       disabled={formData.quantity <= 1}
@@ -618,9 +620,9 @@ export default function ReservationModal({
                     />
                     <button
                       type="button"
-                      onClick={() => setFormData(prev => ({ 
-                        ...prev, 
-                        quantity: Math.min(maxTickets, prev.quantity + 1) 
+                      onClick={() => setFormData(prev => ({
+                        ...prev,
+                        quantity: Math.min(maxTickets, prev.quantity + 1)
                       }))}
                       className="w-10 h-10 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors text-lg font-bold"
                       disabled={formData.quantity >= maxTickets || availablePlaces <= 0}
@@ -758,8 +760,6 @@ export default function ReservationModal({
                     {registerError}
                   </div>
                 )}
-
-
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
@@ -954,7 +954,7 @@ export default function ReservationModal({
                       Temps restant : {Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, '0')}
                     </p>
                     <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
-                      <div 
+                      <div
                         className="bg-dice-blue h-1.5 rounded-full transition-all duration-1000"
                         style={{ width: `${(countdown / 300) * 100}%` }}
                       />

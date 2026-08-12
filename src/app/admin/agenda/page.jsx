@@ -263,7 +263,7 @@ export default function AdminAgendaPage() {
       setEvents(list)
     } catch (err) {
       setError(err.message || 'Impossible de charger l’agenda')
-      toast.error(err.message || 'Erreur de chargement')
+      //toast.error(err.message || 'Erreur de chargement')
     } finally {
       setLoading(false)
     }

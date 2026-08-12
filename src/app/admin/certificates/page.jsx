@@ -219,7 +219,7 @@ export default function AdminCertificatesPage() {
       }
     } catch (err) {
       setError(err.message || 'Impossible de charger les formations')
-      toast.error(err.message || 'Erreur de chargement')
+      //toast.error(err.message || 'Erreur de chargement')
     } finally {
       setLoading(false)
     }

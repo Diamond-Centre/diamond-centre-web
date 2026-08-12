@@ -1,10 +1,19 @@
 /**
  * Carte événement — DiCe (compacte)
  * Promo complète via popup « Détails de la promotion »
+ * -> N'affiche que les champs de promotion réellement renseignés à la création/modification
+ *
+ * FIX (prod) :
+ * - Le modal de promotion est rendu via un React Portal (document.body) pour ne jamais
+ *   être piégé par un ancêtre avec `transform` (ex: conteneur de liste animé en framer-motion),
+ *   ce qui causait la carte "disparaît/réapparaît" au scroll.
+ * - Le scroll du body est verrouillé tant que le modal est ouvert, et restauré proprement
+ *   à la fermeture / au démontage.
  */
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import Image from 'next/image'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -60,11 +69,48 @@ function formatPrice(amount: any, currency = 'XAF') {
 
 function sexeLabel(sexe: any) {
   const map: Record<string, string> = {
-    tous: 'Tous publics',
     homme: 'Hommes',
     femme: 'Femmes',
   }
-  return map[String(sexe || '').toLowerCase()] || 'Tous publics'
+  return map[String(sexe || '').toLowerCase().trim()] || null
+}
+
+/**
+ * Verrouille le scroll du body tant que `locked` est true.
+ * Compense la largeur de la scrollbar pour éviter un "jump" de layout.
+ */
+function useBodyScrollLock(locked: boolean) {
+  useEffect(() => {
+    if (!locked) return
+
+    const scrollBarWidth =
+      window.innerWidth - document.documentElement.clientWidth
+    const { overflow, paddingRight } = document.body.style
+
+    document.body.style.overflow = 'hidden'
+    if (scrollBarWidth > 0) {
+      document.body.style.paddingRight = `${scrollBarWidth}px`
+    }
+
+    return () => {
+      document.body.style.overflow = overflow
+      document.body.style.paddingRight = paddingRight
+    }
+  }, [locked])
+}
+
+/**
+ * Portail SSR-safe : ne rend rien côté serveur, monte dans document.body côté client.
+ */
+function ModalPortal({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) return null
+  return createPortal(children, document.body)
 }
 
 function PromotionModal({
@@ -76,147 +122,191 @@ function PromotionModal({
   currency,
   eventTitle,
 }: any) {
+  useBodyScrollLock(open)
+
+  if (!promotion) return null
+
   const pct = Number(promotion?.pourcentage) || 0
+
+  // --- On ne considère QUE ce qui a été réellement renseigné ---
   const places = Number(promotion?.nombre)
+  const hasPlaces =
+    promotion?.nombre !== null &&
+    promotion?.nombre !== undefined &&
+    Number.isFinite(places) &&
+    places > 0
+
   const days = Number(promotion?.duree)
+  const hasDays =
+    promotion?.duree !== null &&
+    promotion?.duree !== undefined &&
+    Number.isFinite(days) &&
+    days > 0
+
+  const sexeVal = String(promotion?.sexe || '').toLowerCase().trim()
+  const hasSexe = sexeVal === 'homme' || sexeVal === 'femme'
+  const sexeLbl = sexeLabel(sexeVal)
+
+  const desc = promotion?.description?.trim() || ''
+  const isDefaultDesc =
+    desc.toLowerCase().startsWith('réduction de') ||
+    desc.toLowerCase().startsWith('reduction de')
+  const hasDescription = Boolean(desc) && !isDefaultDesc
+
   const finalPrice =
     promotion?.prix_promo != null ? promotion.prix_promo : promoPrice
   const savings = Math.max(0, Number(price) - Number(finalPrice))
 
   return (
-    <AnimatePresence>
-      {open && promotion ? (
-        <div
-          className="fixed inset-0 z-[80] flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-4"
-          onClick={onClose}
-          role="presentation"
-        >
-          <motion.div
-            {...{
-              role: "dialog",
-              "aria-modal": "true",
-              "aria-labelledby": "promo-modal-title",
-              className: "max-h-[90vh] w-full overflow-y-auto rounded-t-3xl bg-white shadow-2xl sm:max-w-md sm:rounded-3xl"
-            } as any}
-            initial={{ y: 36, opacity: 0, scale: 0.98 }}
-            animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: 36, opacity: 0, scale: 0.98 }}
-            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            onClick={(e: any) => e.stopPropagation()}
+    <ModalPortal>
+      <AnimatePresence>
+        {open ? (
+          <div
+            className="fixed inset-0 z-[80] flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+            onClick={onClose}
+            role="presentation"
           >
-            <div className="relative overflow-hidden bg-gradient-to-br from-[#FFB020] to-[#E89A00] px-5 pb-6 pt-5 text-white">
-              <div className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-white/15" />
-              <div className="relative flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/85">
-                    Offre promotionnelle
-                  </p>
-                  <h3
-                    id="promo-modal-title"
-                    className="mt-1 text-xl font-extrabold leading-snug"
-                  >
-                    −{pct}% sur cet événement
-                  </h3>
-                  {eventTitle ? (
-                    <p className="mt-1 line-clamp-2 text-sm text-white/85">
-                      {eventTitle}
+            <motion.div
+              {...({
+                role: 'dialog',
+                'aria-modal': 'true',
+                'aria-labelledby': 'promo-modal-title',
+                className:
+                  'max-h-[90vh] w-full overflow-y-auto rounded-t-3xl bg-white shadow-2xl sm:max-w-md sm:rounded-3xl',
+              } as any)}
+              initial={{ y: 36, opacity: 0, scale: 0.98 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 36, opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              onClick={(e: any) => e.stopPropagation()}
+            >
+              <div className="relative overflow-hidden bg-gradient-to-br from-[#FFB020] to-[#E89A00] px-5 pb-6 pt-5 text-white">
+                <div className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-white/15" />
+                <div className="relative flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/85">
+                      Offre promotionnelle
                     </p>
-                  ) : null}
+                    <h3
+                      id="promo-modal-title"
+                      className="mt-1 text-xl font-extrabold leading-snug"
+                    >
+                      −{pct}% sur cet événement
+                    </h3>
+                    {eventTitle ? (
+                      <p className="mt-1 line-clamp-2 text-sm text-white/85">
+                        {eventTitle}
+                      </p>
+                    ) : null}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="rounded-full bg-white/20 p-2 transition hover:bg-white/30"
+                    aria-label="Fermer"
+                  >
+                    <FaTimes />
+                  </button>
                 </div>
+              </div>
+
+              <div className="space-y-4 px-5 py-5">
+                {hasDescription ? (
+                  <p className="rounded-2xl bg-[#FFF8EB] px-4 py-3 text-sm leading-relaxed text-[#0B1220]">
+                    {promotion.description}
+                  </p>
+                ) : null}
+
+                {hasPlaces || hasDays || hasSexe || pct > 0 ? (
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {pct > 0 ? (
+                      <div className="rounded-2xl border border-[#E8EEF5] bg-[#F8FAFC] p-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-[#98A2B3]">
+                          Remise
+                        </p>
+                        <p className="mt-1 text-lg font-extrabold text-[#B78103]">
+                          −{pct}%
+                        </p>
+                      </div>
+                    ) : null}
+
+                    {hasPlaces ? (
+                      <div className="rounded-2xl border border-[#E8EEF5] bg-[#F8FAFC] p-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-[#98A2B3]">
+                          Places promo
+                        </p>
+                        <p className="mt-1 inline-flex items-center gap-1.5 text-lg font-extrabold text-[#0B1220]">
+                          <FaTicketAlt className="text-sm text-[#0A89F2]" />
+                          {places}
+                        </p>
+                      </div>
+                    ) : null}
+
+                    {hasDays ? (
+                      <div className="rounded-2xl border border-[#E8EEF5] bg-[#F8FAFC] p-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-[#98A2B3]">
+                          Durée
+                        </p>
+                        <p className="mt-1 inline-flex items-center gap-1.5 text-lg font-extrabold text-[#0B1220]">
+                          <FaClock className="text-sm text-[#0A89F2]" />
+                          {days} {days > 1 ? 'jours' : 'jour'}
+                        </p>
+                      </div>
+                    ) : null}
+
+                    {hasSexe ? (
+                      <div className="rounded-2xl border border-[#E8EEF5] bg-[#F8FAFC] p-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-[#98A2B3]">
+                          Public
+                        </p>
+                        <p className="mt-1 inline-flex items-center gap-1.5 text-base font-extrabold text-[#0B1220]">
+                          <FaVenusMars className="text-sm text-[#0A89F2]" />
+                          {sexeLbl}
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                <div className="rounded-2xl border border-[#E8EEF5] p-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#98A2B3]">
+                    Tarif
+                  </p>
+                  <div className="mt-1 flex flex-wrap items-baseline gap-2">
+                    <span className="text-2xl font-extrabold tabular-nums text-[#0B9B6B]">
+                      {formatPrice(finalPrice, currency)}
+                    </span>
+                    <span className="text-sm text-[#98A2B3] line-through">
+                      {formatPrice(price, currency)}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm font-medium text-[#0B9B6B]">
+                    Vous économisez {formatPrice(savings, currency)}
+                  </p>
+                </div>
+
                 <button
                   type="button"
                   onClick={onClose}
-                  className="rounded-full bg-white/20 p-2 transition hover:bg-white/30"
-                  aria-label="Fermer"
+                  className="w-full rounded-2xl bg-[#0A89F2] py-3.5 text-sm font-semibold text-white transition hover:bg-[#0770cc]"
                 >
-                  <FaTimes />
+                  Compris
                 </button>
               </div>
-            </div>
-
-            <div className="space-y-4 px-5 py-5">
-              {promotion.description ? (
-                <p className="rounded-2xl bg-[#FFF8EB] px-4 py-3 text-sm leading-relaxed text-[#0B1220]">
-                  {promotion.description}
-                </p>
-              ) : null}
-
-              <div className="grid grid-cols-2 gap-2.5">
-                <div className="rounded-2xl border border-[#E8EEF5] bg-[#F8FAFC] p-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-[#98A2B3]">
-                    Remise
-                  </p>
-                  <p className="mt-1 text-lg font-extrabold text-[#B78103]">
-                    −{pct}%
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-[#E8EEF5] bg-[#F8FAFC] p-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-[#98A2B3]">
-                    Places promo
-                  </p>
-                  <p className="mt-1 inline-flex items-center gap-1.5 text-lg font-extrabold text-[#0B1220]">
-                    <FaTicketAlt className="text-sm text-[#0A89F2]" />
-                    {Number.isFinite(places) && places > 0 ? places : '—'}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-[#E8EEF5] bg-[#F8FAFC] p-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-[#98A2B3]">
-                    Durée
-                  </p>
-                  <p className="mt-1 inline-flex items-center gap-1.5 text-lg font-extrabold text-[#0B1220]">
-                    <FaClock className="text-sm text-[#0A89F2]" />
-                    {Number.isFinite(days) && days > 0 ? `${days} jours` : '—'}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-[#E8EEF5] bg-[#F8FAFC] p-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-[#98A2B3]">
-                    Public
-                  </p>
-                  <p className="mt-1 inline-flex items-center gap-1.5 text-base font-extrabold text-[#0B1220]">
-                    <FaVenusMars className="text-sm text-[#0A89F2]" />
-                    {sexeLabel(promotion.sexe)}
-                  </p>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-[#E8EEF5] p-4">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#98A2B3]">
-                  Tarif
-                </p>
-                <div className="mt-1 flex flex-wrap items-baseline gap-2">
-                  <span className="text-2xl font-extrabold tabular-nums text-[#0B9B6B]">
-                    {formatPrice(finalPrice, currency)}
-                  </span>
-                  <span className="text-sm text-[#98A2B3] line-through">
-                    {formatPrice(price, currency)}
-                  </span>
-                </div>
-                <p className="mt-2 text-sm font-medium text-[#0B9B6B]">
-                  Vous économisez {formatPrice(savings, currency)}
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={onClose}
-                className="w-full rounded-2xl bg-[#0A89F2] py-3.5 text-sm font-semibold text-white transition hover:bg-[#0770cc]"
-              >
-                Compris
-              </button>
-            </div>
-          </motion.div>
-        </div>
-      ) : null}
-    </AnimatePresence>
+            </motion.div>
+          </div>
+        ) : null}
+      </AnimatePresence>
+    </ModalPortal>
   )
 }
 
 export interface EventCardProps {
-  event: any;
-  className?: string;
-  onReserve?: (event: any) => void;
-  showReserveButton?: boolean;
-  index?: number;
+  event: any
+  className?: string
+  onReserve?: (event: any) => void
+  showReserveButton?: boolean
+  index?: number
 }
 
 export default function EventCard({
@@ -264,13 +354,21 @@ export default function EventCard({
 
   const isFull = placesRestantes <= 0
   const isPublished = !status || status === 'published'
-  const hasPromotion =
-    promotion && promotion.pourcentage && Number(promotion.pourcentage) > 0
+
+  // Une promotion n'est considérée valide que si la réduction (%) a été renseignée
+  // OU qu'un prix promo explicite (inférieur au prix normal) a été défini.
+  const promoPct = Number(promotion?.pourcentage) || 0
+  const hasPromoPrice =
+    promotion?.prix_promo !== null &&
+    promotion?.prix_promo !== undefined &&
+    Number.isFinite(Number(promotion.prix_promo)) &&
+    Number(promotion.prix_promo) < Number(price)
+  const hasPromotion = Boolean(promotion && (promoPct > 0 || hasPromoPrice))
 
   const promoPrice = hasPromotion
-    ? Math.round(
-        Number(price) - (Number(price) * Number(promotion.pourcentage)) / 100
-      )
+    ? hasPromoPrice
+      ? Number(promotion.prix_promo)
+      : Math.round(Number(price) - (Number(price) * promoPct) / 100)
     : Number(price)
 
   const startT = normalizeTime(start_time, start_date)
@@ -302,19 +400,17 @@ export default function EventCard({
   if (!isPublished) return null
 
   const dayNum = dayStart ? format(dayStart, 'd') : '—'
-  const monthLabel = dayStart
-    ? format(dayStart, 'MMM', { locale: fr })
-    : ''
+  const monthLabel = dayStart ? format(dayStart, 'MMM', { locale: fr }) : ''
 
   return (
     <>
       <motion.article
-            {...{
-              className: cn(
-                'group flex h-full flex-col overflow-hidden rounded-[22px] border border-[#E8EEF5] bg-white shadow-[0_8px_24px_rgba(11,18,32,0.045)] transition-shadow duration-300 hover:border-[#0A89F2]/30 hover:shadow-[0_14px_32px_rgba(10,137,242,0.12)]',
-                className
-              )
-            } as any}
+        {...({
+          className: cn(
+            'group flex h-full flex-col overflow-hidden rounded-[22px] border border-[#E8EEF5] bg-white shadow-[0_8px_24px_rgba(11,18,32,0.045)] transition-shadow duration-300 hover:border-[#0A89F2]/30 hover:shadow-[0_14px_32px_rgba(10,137,242,0.12)]',
+            className
+          ),
+        } as any)}
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{
@@ -357,9 +453,9 @@ export default function EventCard({
           </div>
 
           <div className="absolute right-2.5 top-2.5 flex flex-col items-end gap-1.5">
-            {hasPromotion ? (
+            {hasPromotion && promoPct > 0 ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-[#FFB020] px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
-                <FaTag className="text-[8px]" />−{promotion.pourcentage}%
+                <FaTag className="text-[8px]" />−{promoPct}%
               </span>
             ) : null}
             {isPast ? (
@@ -429,12 +525,7 @@ export default function EventCard({
               {hasPromotion ? (
                 <div className="mt-0.5 flex flex-wrap items-baseline gap-1.5">
                   <span className="text-lg font-extrabold tabular-nums text-[#0A89F2]">
-                    {formatPrice(
-                      promotion.prix_promo != null
-                        ? promotion.prix_promo
-                        : promoPrice,
-                      currency
-                    )}
+                    {formatPrice(promoPrice, currency)}
                   </span>
                   <span className="text-xs text-[#98A2B3] line-through">
                     {formatPrice(price, currency)}
@@ -442,9 +533,7 @@ export default function EventCard({
                 </div>
               ) : (
                 <p className="mt-0.5 text-lg font-extrabold tabular-nums text-[#0A89F2]">
-                  {Number(price) === 0
-                    ? 'Gratuit'
-                    : formatPrice(price, currency)}
+                  {Number(price) === 0 ? 'Gratuit' : formatPrice(price, currency)}
                 </p>
               )}
             </div>
@@ -469,7 +558,7 @@ export default function EventCard({
                 href={`/events/${id}`}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#E8EEF5] py-2.5 text-sm font-semibold text-[#0B1220] transition hover:border-[#0A89F2]/40 hover:text-[#0A89F2]"
               >
-                Voir l’événement
+                Voir l'événement
                 <FaArrowRight className="text-xs" />
               </Link>
             )}
