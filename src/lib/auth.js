@@ -3,90 +3,111 @@
  */
 export const auth = {
   setToken: (token) => {
-    if (typeof window !== 'undefined') {
-      console.log('💾 Stockage du token:', token ? '✅' : '❌')
+    if (typeof window === 'undefined') return
+
+    try {
       localStorage.setItem('token', token)
-      document.cookie = `token=${token}; path=/; max-age=86400; SameSite=Lax`
+    } catch (error) {
+      console.error('AUTH : Impossible de stocker le token.', error)
     }
+
+    document.cookie = `token=${encodeURIComponent(token)}; path=/; max-age=86400; SameSite=Lax`
   },
 
   getToken: () => {
-    if (typeof window !== 'undefined') {
-      // localStorage d'abord
+    if (typeof window === 'undefined') return null
+
+    try {
       const token = localStorage.getItem('token')
       if (token) return token
-      
-      // Cookies ensuite
-      const cookies = document.cookie.split('; ')
-      const cookie = cookies.find(row => row.startsWith('token='))
-      if (cookie) {
-        const value = cookie.split('=')[1]
-        localStorage.setItem('token', value)
-        return value
-      }
-      return null
+    } catch (error) {
+      console.error('AUTH : Impossible de lire le token.', error)
     }
-    return null
+
+    const cookie = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('token='))
+
+    if (!cookie) return null
+
+    const token = decodeURIComponent(cookie.split('=')[1])
+
+    try {
+      localStorage.setItem('token', token)
+    } catch { }
+
+    return token
   },
 
   setUser: (user) => {
-    if (typeof window !== 'undefined') {
-      console.log('💾 Stockage de l\'utilisateur:', user ? '✅' : '❌')
-      localStorage.setItem('user', JSON.stringify(user))
-      document.cookie = `user=${encodeURIComponent(JSON.stringify(user))}; path=/; max-age=86400; SameSite=Lax`
+    if (typeof window === 'undefined') return
+
+    const serialized = JSON.stringify(user)
+
+    try {
+      localStorage.setItem('user', serialized)
+    } catch (error) {
+      console.error('[AUTH] Impossible de stocker l’utilisateur.', error)
     }
+
+    document.cookie = `user=${encodeURIComponent(serialized)}; path=/; max-age=86400; SameSite=Lax`
   },
 
   getUser: () => {
-    if (typeof window !== 'undefined') {
-      // localStorage d'abord
-      const user = localStorage.getItem('user')
-      if (user) {
-        try {
-          return JSON.parse(user)
-        } catch {
-          return null
-        }
+    if (typeof window === 'undefined') return null
+
+    try {
+      const cached = localStorage.getItem('user')
+
+      if (cached) {
+        return JSON.parse(cached)
       }
-      
-      // Cookies ensuite
-      const cookies = document.cookie.split('; ')
-      const cookie = cookies.find(row => row.startsWith('user='))
-      if (cookie) {
-        try {
-          const value = decodeURIComponent(cookie.split('=')[1])
-          const userData = JSON.parse(value)
-          localStorage.setItem('user', JSON.stringify(userData))
-          return userData
-        } catch {
-          return null
-        }
-      }
+    } catch (error) {
+      console.error('[AUTH] Données utilisateur invalides.', error)
+      localStorage.removeItem('user')
+    }
+
+    const cookie = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('user='))
+
+    if (!cookie) return null
+
+    try {
+      const user = JSON.parse(
+        decodeURIComponent(cookie.split('=')[1])
+      )
+
+      localStorage.setItem('user', JSON.stringify(user))
+
+      return user
+    } catch (error) {
+      console.error('AUTH : Cookie utilisateur invalide.', error)
       return null
     }
-    return null
   },
 
   isAuthenticated: () => {
-    const token = auth.getToken()
-    const user = auth.getUser()
-    const isAuth = !!(token && user)
-    console.log('🔍 isAuthenticated:', isAuth)
-    return isAuth
+    return Boolean(auth.getToken() && auth.getUser())
   },
 
   isAdmin: () => {
     const user = auth.getUser()
-    return user && (user.role === 'admin' || user.role === 'super_admin')
+
+    return ['admin', 'super_admin'].includes(user?.role)
   },
 
   logout: () => {
-    if (typeof window !== 'undefined') {
-      console.log('🚪 Déconnexion')
+    if (typeof window === 'undefined') return
+
+    try {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
-      document.cookie = 'token=; path=/; max-age=0'
-      document.cookie = 'user=; path=/; max-age=0'
+    } catch (error) {
+      console.error('[AUTH] Erreur lors de la suppression des données.', error)
     }
-  }
+
+    document.cookie = 'token=; path=/; max-age=0; SameSite=Lax'
+    document.cookie = 'user=; path=/; max-age=0; SameSite=Lax'
+  },
 }

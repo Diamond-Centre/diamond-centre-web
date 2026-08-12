@@ -9,41 +9,67 @@
  */
 const API_URL = (process.env.NEXT_PUBLIC_API_URL || '/api').replace(/\/+$/, '')
 
-const BACKEND_DOWN_MESSAGE =
-  'Impossible de contacter le serveur. Veuillez démarrer le serveur backend puis réessayer.'
+function createApiError(status, message) {
+  const messages = {
+    400: "La requête est invalide.",
+    401: "Votre session a expiré. Veuillez vous reconnecter.",
+    403: "Vous n'êtes pas autorisé à effectuer cette action.",
+    404: "La ressource demandée est introuvable.",
+    408: "Le délai d'attente a été dépassé.",
+    422: "Certaines informations sont invalides.",
+    429: "Trop de tentatives. Veuillez réessayer plus tard.",
+  }
 
-/**
- * Erreur API enrichie : `status` (code HTTP si disponible) et `backendDown`
- * (true si l'erreur est très probablement due à un serveur backend éteint).
- * `err instanceof Error` reste vrai, donc tout code existant qui lit
- * `err.message` continue de fonctionner sans changement.
- */
-class ApiError extends Error {
-  constructor(message, { status = null, backendDown = false } = {}) {
-    super(message)
-    this.name = 'ApiError'
-    this.status = status
-    this.backendDown = backendDown
+  return {
+    status,
+    message:
+      status >= 500
+        ? "Le service est momentanément indisponible. Veuillez réessayer plus tard."
+        : messages[status] || message || "Une erreur est survenue.",
   }
 }
 
-/**
- * Heuristique : ce statut/contenu ressemble-t-il à un serveur backend
- * injoignable plutôt qu'à une vraie erreur métier ?
- */
-function looksLikeBackendDown(status, rawText) {
-  if ([502, 503, 504].includes(status)) return true
+async function parseJson(response) {
+  const text = await response.text()
 
-  if (status === 500) {
-    const t = (rawText || '').toLowerCase().trim()
-    if (!t) return true // 500 sans corps exploitable = probablement un proxy/serveur mort
-    return (
-      t.includes('econnrefused') ||
-      t.includes('enotfound') ||
-      t.includes('etimedout') ||
-      t.includes('fetch failed') ||
-      t.includes('socket hang up') ||
-      t.includes('internal server error')
+  if (!text) {
+    return null
+  }
+
+  try {
+    return JSON.parse(text)
+  } catch (error) {
+    // Informations utiles uniquement pour le développement
+    console.error("[API] Réponse non JSON reçue", {
+      url: response.url,
+      status: response.status,
+      statusText: response.statusText,
+      body: text.slice(0, 300),
+      error,
+    })
+
+    // Le serveur a renvoyé une page HTML (404, 500, proxy, etc.)
+    const isHtml =
+      text.trim().startsWith("<") ||
+      text.includes("<!DOCTYPE") ||
+      text.includes("<html")
+
+    if (isHtml) {
+      throw new Error(
+        "Le service est momentanément indisponible. Veuillez réessayer plus tard."
+      )
+    }
+
+    // Réponse texte inattendue
+    if (!response.ok) {
+      throw new Error(
+        "Une erreur est survenue lors de la communication avec le service."
+      )
+    }
+
+    // Le serveur a répondu 200 mais le contenu est invalide
+    throw new Error(
+      "Réponse invalide."
     )
   }
 
@@ -70,38 +96,47 @@ async function readBody(response) {
 }
 
 async function request(path, options = {}) {
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`
 
-  let response
   try {
-    response = await fetch(`${API_URL}${normalizedPath}`, options)
-  } catch {
-    // Le fetch lui-même a échoué (connexion refusée, DNS, timeout réseau...) :
-    // c'est le signe le plus fiable que le serveur backend est éteint.
-    throw new ApiError(BACKEND_DOWN_MESSAGE, { backendDown: true })
-  }
+    const response = await fetch(`${API_URL}${normalizedPath}`, options)
 
-  const { data, raw } = await readBody(response)
+    const data = await parseJson(response)
 
-  if (!response.ok) {
-    if (looksLikeBackendDown(response.status, raw) || isHtmlResponse(raw)) {
-      throw new ApiError(BACKEND_DOWN_MESSAGE, {
+    if (!response.ok) {
+      const error = createApiError(
+        response.status,
+        data?.message || data?.error
+      )
+
+      // Logs développeur
+      console.error("[API]", {
+        url: normalizedPath,
         status: response.status,
-        backendDown: true,
+        response: data,
       })
+
+      throw new Error(error.message)
     }
 
-    const apiMessage = data && (data.message || data.error)
-    const message =
-      (typeof apiMessage === 'string' && apiMessage) ||
-      (raw
-        ? `Erreur ${response.status}: ${raw.replace(/\s+/g, ' ').slice(0, 120)}`
-        : `Erreur ${response.status}`)
+    return data
+  } catch (error) {
+    // erreur réseau
+    if (
+      error instanceof TypeError ||
+      error.message.includes("fetch") ||
+      error.message.includes("Network")
+    ) {
+      console.error("NETWORK ERROR :", error)
 
-    throw new ApiError(message, { status: response.status })
+      throw new Error(
+        "Impossible de communiquer avec le service. Veuillez réessayer plus tard."
+      )
+    }
+
+    // erreur déjà normalisée
+    throw error
   }
-
-  return data
 }
 
 function authHeaders(token, extra = {}) {
