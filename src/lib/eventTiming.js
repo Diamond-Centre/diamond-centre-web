@@ -1,5 +1,5 @@
 /**
- * Event timing labels: Encore until the end date, Terminé/Passé only after it.
+ * Event timing: À venir (before start) → En cours (start today or passed, end not passed) → Passé (after end).
  */
 
 export function todayKey() {
@@ -22,22 +22,67 @@ export function eventDateKey(value) {
   return `${y}-${m}-${day}`
 }
 
-/** True only when the calendar end date is strictly before today. */
-export function isEventEnded(event) {
-  const end = eventDateKey(
-    event?.end_date ||
-      event?.event_end_date ||
-      event?.start_date ||
+export function eventTimingPhase(event) {
+  const today = todayKey()
+  const start = eventDateKey(
+    event?.start_date ||
       event?.event_start_date ||
-      event?.date
+      event?.date ||
+      event?.end_date ||
+      event?.event_end_date
   )
-  if (!end) return false
-  return end < todayKey()
+  const end = eventDateKey(
+    event?.end_date || event?.event_end_date || start
+  )
+  if (end && end < today) return 'ended'
+  if (start && start > today) return 'upcoming'
+  return 'ongoing'
+}
+
+export function isEventEnded(event) {
+  return eventTimingPhase(event) === 'ended'
+}
+
+export function isEventUpcoming(event) {
+  return eventTimingPhase(event) === 'upcoming'
+}
+
+export function isEventOngoing(event) {
+  return eventTimingPhase(event) === 'ongoing'
+}
+
+export const TIMING_LABELS = {
+  upcoming: 'À venir',
+  ongoing: 'En cours',
+  ended: 'Passé',
 }
 
 export function eventTimingLabel(event) {
   const status = String(event?.status || '').toLowerCase()
   if (status === 'cancelled') return 'Annulé'
-  if (isEventEnded(event)) return 'Terminé'
-  return 'Encore'
+  return TIMING_LABELS[eventTimingPhase(event)]
+}
+
+export function eventTimingMeta(event) {
+  const status = String(event?.status || '').toLowerCase()
+  if (status === 'cancelled') {
+    return { phase: 'cancelled', label: 'Annulé', className: 'bg-red-50 text-red-600' }
+  }
+  if (status === 'draft') {
+    return { phase: 'draft', label: 'Brouillon', className: 'bg-[#FFF4DE] text-[#B78103]' }
+  }
+  const phase = eventTimingPhase(event)
+  if (phase === 'ended') {
+    return { phase, label: 'Passé', className: 'bg-slate-100 text-slate-600' }
+  }
+  if (phase === 'upcoming') {
+    return { phase, label: 'À venir', className: 'bg-[#E8F3FE] text-[#0A89F2]' }
+  }
+  return { phase, label: 'En cours', className: 'bg-emerald-50 text-[#0B9B6B]' }
+}
+
+export function timingOverlayClass(phase) {
+  if (phase === 'ended') return 'bg-slate-800/80'
+  if (phase === 'upcoming') return 'bg-[#0A89F2]/90'
+  return 'bg-emerald-500/90'
 }

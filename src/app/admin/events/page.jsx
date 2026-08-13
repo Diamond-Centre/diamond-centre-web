@@ -15,7 +15,7 @@ import {
 } from 'react-icons/fa'
 import { api } from '@/lib/api'
 import { auth } from '@/lib/auth'
-import { isEventEnded } from '@/lib/eventTiming'
+import { eventTimingMeta, eventTimingPhase } from '@/lib/eventTiming'
 import EventLightbox from '@/components/events/EventLightbox'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import toast from 'react-hot-toast'
@@ -24,10 +24,11 @@ const PAGE_SIZE = 12
 
 const STATUS_FILTERS = [
   { id: 'all', label: 'Tous' },
-  { id: 'published', label: 'Encore' },
+  { id: 'upcoming', label: 'À venir' },
+  { id: 'ongoing', label: 'En cours' },
+  { id: 'ended', label: 'Passés' },
   { id: 'draft', label: 'Brouillons' },
   { id: 'cancelled', label: 'Annulés' },
-  { id: 'completed', label: 'Terminés' },
 ]
 
 const CATEGORY_FILTERS = [
@@ -94,17 +95,7 @@ function getImageUrl(event) {
 }
 
 function statusMeta(event) {
-  const status = String(event?.status || '').toLowerCase()
-  if (status === 'cancelled') {
-    return { label: 'Annulé', className: 'bg-red-50 text-red-600' }
-  }
-  if (status === 'draft') {
-    return { label: 'Brouillon', className: 'bg-[#FFF4DE] text-[#B78103]' }
-  }
-  if (status === 'completed' || isEventEnded(event)) {
-    return { label: 'Terminé', className: 'bg-slate-100 text-slate-600' }
-  }
-  return { label: 'Encore', className: 'bg-emerald-50 text-[#0B9B6B]' }
+  return eventTimingMeta(event)
 }
 
 function formatDate(value) {
@@ -383,7 +374,7 @@ export default function AdminEvents() {
     loadEvents()
   }, [router, loadEvents])
 
-  // Terminé uniquement après la date de fin — pas dès le début de l'événement
+  // Passé uniquement après la date de fin
   const processedEvents = useMemo(() => {
     const today = todayISO()
     return events.map((event) => {
@@ -400,14 +391,22 @@ export default function AdminEvents() {
   const counts = useMemo(() => {
     const byStatus = {
       all: processedEvents.length,
-      published: 0,
+      upcoming: 0,
+      ongoing: 0,
+      ended: 0,
       draft: 0,
       cancelled: 0,
-      completed: 0,
     }
     for (const e of processedEvents) {
       const s = String(e.status || '').toLowerCase()
-      if (byStatus[s] != null) byStatus[s] += 1
+      if (s === 'draft') byStatus.draft += 1
+      else if (s === 'cancelled') byStatus.cancelled += 1
+      else {
+        const phase = eventTimingPhase(e)
+        if (phase === 'upcoming') byStatus.upcoming += 1
+        else if (phase === 'ongoing') byStatus.ongoing += 1
+        else byStatus.ended += 1
+      }
     }
     return byStatus
   }, [processedEvents])
@@ -418,7 +417,15 @@ export default function AdminEvents() {
 
     return processedEvents
       .filter((event) => {
-        if (statusFilter !== 'all' && String(event.status).toLowerCase() !== statusFilter) {
+        const s = String(event.status || '').toLowerCase()
+        if (statusFilter === 'draft') {
+          if (s !== 'draft') return false
+        } else if (statusFilter === 'cancelled') {
+          if (s !== 'cancelled') return false
+        } else if (statusFilter === 'upcoming' || statusFilter === 'ongoing' || statusFilter === 'ended') {
+          if (s === 'draft' || s === 'cancelled') return false
+          if (eventTimingPhase(event) !== statusFilter) return false
+        } else if (statusFilter !== 'all') {
           return false
         }
         if (

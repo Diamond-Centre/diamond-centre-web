@@ -17,7 +17,7 @@ import {
 } from 'react-icons/fa'
 import { api } from '@/lib/api'
 import { auth } from '@/lib/auth'
-import { isEventEnded } from '@/lib/eventTiming'
+import { eventTimingLabel, eventTimingPhase } from '@/lib/eventTiming'
 
 const WEEKDAYS = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
 
@@ -137,11 +137,15 @@ function buildMonthGrid(focusedMonth) {
   return cells
 }
 
-function isBookingEnded(booking) {
-  return isEventEnded({
+function bookingEvent(booking) {
+  return {
     end_date: booking?.endDate,
     start_date: booking?.date,
-  })
+  }
+}
+
+function bookingPhase(booking) {
+  return eventTimingPhase(bookingEvent(booking))
 }
 
 function StatusChip({ status }) {
@@ -163,7 +167,8 @@ function BookingCard({ booking, onOpen }) {
   const day = parseKey(booking.date)
   const dayNum = day.getDate()
   const mon = MONTHS_SHORT[day.getMonth()]
-  const past = isBookingEnded(booking)
+  const phase = bookingPhase(booking)
+  const past = phase === 'ended'
 
   return (
     <motion.button
@@ -203,7 +208,14 @@ function BookingCard({ booking, onOpen }) {
 
       <div className="flex-1 p-4 min-w-0 flex flex-col justify-center gap-1.5">
         <div className="flex items-center justify-between gap-2">
-          <StatusChip status={booking.status} />
+          <div className="flex items-center gap-2 flex-wrap">
+            <StatusChip status={booking.status} />
+            <span className={`text-[11px] font-semibold ${
+              phase === 'ended' ? 'text-[#98A2B3]' : phase === 'upcoming' ? 'text-[#0A89F2]' : 'text-[#0B9B6B]'
+            }`}>
+              {eventTimingLabel(bookingEvent(booking))}
+            </span>
+          </div>
           <span className="text-xs text-[#98A2B3] font-medium">
             {durationLabel(booking.start, booking.end)}
           </span>
@@ -226,7 +238,7 @@ function BookingCard({ booking, onOpen }) {
 
 function DetailModal({ booking, onClose }) {
   if (!booking) return null
-  const past = isBookingEnded(booking)
+  const phase = bookingPhase(booking)
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm">
@@ -292,8 +304,10 @@ function DetailModal({ booking, onClose }) {
             </p>
             <div>
               <StatusChip status={booking.status} />
-              <span className={`ml-2 text-xs font-medium ${past ? 'text-[#98A2B3]' : 'text-[#0B9B6B]'}`}>
-                {past ? 'Passé' : 'Encore'}
+              <span className={`ml-2 text-xs font-medium ${
+                phase === 'ended' ? 'text-[#98A2B3]' : phase === 'upcoming' ? 'text-[#0A89F2]' : 'text-[#0B9B6B]'
+              }`}>
+                {eventTimingLabel(bookingEvent(booking))}
               </span>
             </div>
           </div>

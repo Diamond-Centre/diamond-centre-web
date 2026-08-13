@@ -20,7 +20,7 @@ import {
 } from 'react-icons/fa'
 import { auth } from '@/lib/auth'
 import { api } from '@/lib/api'
-import { isEventEnded } from '@/lib/eventTiming'
+import { eventTimingMeta } from '@/lib/eventTiming'
 import toast from 'react-hot-toast'
 
 const WEEKDAYS = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
@@ -122,17 +122,7 @@ function buildMonthGrid(focusedMonth) {
 }
 
 function statusMeta(event) {
-  const status = String(event?.status || '').toLowerCase()
-  if (status === 'cancelled') {
-    return { label: 'Annulé', className: 'bg-red-50 text-red-600' }
-  }
-  if (status === 'draft') {
-    return { label: 'Brouillon', className: 'bg-[#FFF4DE] text-[#B78103]' }
-  }
-  if (status === 'completed' || isEventEnded(event)) {
-    return { label: 'Terminé', className: 'bg-slate-100 text-slate-600' }
-  }
-  return { label: 'Encore', className: 'bg-emerald-50 text-[#0B9B6B]' }
+  return eventTimingMeta(event)
 }
 
 function EventCard({ event, index }) {

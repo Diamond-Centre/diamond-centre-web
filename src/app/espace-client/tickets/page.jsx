@@ -20,11 +20,12 @@ import QRCode from 'qrcode'
 import { api } from '@/lib/api'
 import { auth } from '@/lib/auth'
 import { ticketStore } from '@/lib/ticketStore'
-import { isEventEnded } from '@/lib/eventTiming'
+import { eventTimingLabel, eventTimingPhase } from '@/lib/eventTiming'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 const FILTERS = [
-  { id: 'upcoming', label: 'Encore' },
+  { id: 'upcoming', label: 'À venir' },
+  { id: 'ongoing', label: 'En cours' },
   { id: 'past', label: 'Passés' },
   { id: 'all', label: 'Tous' },
 ]
@@ -111,21 +112,18 @@ function ticketIdOf(ticket) {
   return ticket?.id || ticket?.ticket_id
 }
 
-function isPastTicket(t) {
-  return isEventEnded({
+function ticketEvent(t) {
+  return {
     end_date: t.event_end_date || t.end_date,
     start_date: t.event_start_date || t.date || t.event_date || t.start_date,
-  })
+  }
 }
 
-function StatusChip({ status, past }) {
-  if (past) {
-    return (
-      <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-500">
-        Passé
-      </span>
-    )
-  }
+function ticketPhase(t) {
+  return eventTimingPhase(ticketEvent(t))
+}
+
+function StatusChip({ status, ticket }) {
   if (isPending(status)) {
     return (
       <span className="inline-flex items-center rounded-full bg-[#FFF4DE] px-2.5 py-0.5 text-[11px] font-semibold text-[#B78103]">
@@ -133,14 +131,22 @@ function StatusChip({ status, past }) {
       </span>
     )
   }
+  const phase = ticketPhase(ticket || {})
+  const label = eventTimingLabel(ticketEvent(ticket || {}))
+  const className =
+    phase === 'ended'
+      ? 'bg-slate-100 text-slate-500'
+      : phase === 'upcoming'
+        ? 'bg-[#E8F3FE] text-[#0A89F2]'
+        : 'bg-emerald-50 text-[#0B9B6B]'
   return (
-    <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-[#0B9B6B]">
-      Encore
+    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${className}`}>
+      {label}
     </span>
   )
 }
 
-function TicketStub({ ticket, past, featured, onOpen, onDelete }) {
+function TicketStub({ ticket, featured, onOpen, onDelete }) {
   const title = ticket.title || ticket.event_title || `Ticket #${ticket.id}`
   const day = new Date(ticketDate(ticket) || 0)
   const dayNum = Number.isNaN(day.getTime()) ? '—' : day.getDate()
@@ -148,6 +154,7 @@ function TicketStub({ ticket, past, featured, onOpen, onDelete }) {
     ? ''
     : day.toLocaleDateString('fr-FR', { month: 'short' })
   const showDelete = canDeleteTicket(ticket)
+  const past = ticketPhase(ticket) === 'ended'
 
   return (
     <motion.div
@@ -181,7 +188,7 @@ function TicketStub({ ticket, past, featured, onOpen, onDelete }) {
                     <span className="h-1.5 w-1.5 rounded-full bg-[#FFB020]" />
                     Prochain billet
                   </span>
-                  <StatusChip status={ticket.status} past={past} />
+                  <StatusChip status={ticket.status} ticket={ticket} />
                 </div>
                 <h3 className="text-xl font-bold leading-snug sm:text-2xl">
                   {title}
@@ -277,7 +284,7 @@ function TicketStub({ ticket, past, featured, onOpen, onDelete }) {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="mb-1.5">
-                  <StatusChip status={ticket.status} past={past} />
+                  <StatusChip status={ticket.status} ticket={ticket} />
                 </div>
                 <h3 className="truncate text-[15px] font-semibold text-[#0B1220] group-hover:text-[#0A89F2]">
                   {title}
@@ -339,7 +346,7 @@ function TicketStub({ ticket, past, featured, onOpen, onDelete }) {
 
 function TicketDetail({ ticket, onClose, onDelete }) {
   const [qrSrc, setQrSrc] = useState(null)
-  const past = isPastTicket(ticket)
+  const past = ticketPhase(ticket) === 'ended'
   const code = qrPayload(ticket)
 
   useEffect(() => {
@@ -390,7 +397,7 @@ function TicketDetail({ ticket, onClose, onDelete }) {
               <FaTimes />
             </button>
           </div>
-          <StatusChip status={ticket.status} past={past} />
+          <StatusChip status={ticket.status} ticket={ticket} />
         </div>
 
         <div className="relative -mt-5 px-6">
@@ -534,8 +541,9 @@ export default function EspaceClientTicketsPage() {
 
   const filtered = useMemo(() => {
     if (filter === 'all') return sorted
-    if (filter === 'past') return sorted.filter(isPastTicket).reverse()
-    return sorted.filter((t) => !isPastTicket(t))
+    if (filter === 'past') return sorted.filter((t) => ticketPhase(t) === 'ended').reverse()
+    if (filter === 'ongoing') return sorted.filter((t) => ticketPhase(t) === 'ongoing')
+    return sorted.filter((t) => ticketPhase(t) === 'upcoming')
   }, [sorted, filter])
 
   const featured =
@@ -544,8 +552,9 @@ export default function EspaceClientTicketsPage() {
 
   const counts = useMemo(
     () => ({
-      upcoming: sorted.filter((t) => !isPastTicket(t)).length,
-      past: sorted.filter(isPastTicket).length,
+      upcoming: sorted.filter((t) => ticketPhase(t) === 'upcoming').length,
+      ongoing: sorted.filter((t) => ticketPhase(t) === 'ongoing').length,
+      past: sorted.filter((t) => ticketPhase(t) === 'ended').length,
       all: sorted.length,
     }),
     [sorted]
@@ -613,7 +622,8 @@ export default function EspaceClientTicketsPage() {
                     {tickets.length}
                   </p>
                   <p className="mt-1 text-[11px] font-medium text-[#667085]">
-                    {counts.upcoming} encore
+                    {counts.upcoming} à venir
+                    {counts.ongoing > 0 ? ` · ${counts.ongoing} en cours` : ''}
                     {counts.past > 0 ? ` · ${counts.past} passé${counts.past > 1 ? 's' : ''}` : ''}
                   </p>
                 </div>
@@ -673,16 +683,18 @@ export default function EspaceClientTicketsPage() {
             <h2 className="text-xl font-extrabold text-[#0B1220]">
               {filter === 'past'
                 ? 'Aucun billet passé'
-                : filter === 'upcoming'
-                  ? 'Aucun billet à venir'
-                  : 'Aucun billet'}
+                : filter === 'ongoing'
+                  ? 'Aucun billet en cours'
+                  : filter === 'upcoming'
+                    ? 'Aucun billet à venir'
+                    : 'Aucun billet'}
             </h2>
             <p className="mx-auto mt-2 max-w-sm text-sm text-[#667085]">
-              {filter === 'all' || filter === 'upcoming'
-                ? 'Réservez un événement DiCe pour recevoir votre billet ici.'
-                : 'Vos événements terminés apparaîtront dans cet onglet.'}
+              {filter === 'past'
+                ? 'Vos événements terminés apparaîtront dans cet onglet.'
+                : 'Réservez un événement DiCe pour recevoir votre billet ici.'}
             </p>
-            {(filter === 'all' || filter === 'upcoming') && (
+            {filter !== 'past' && (
               <Link
                 href="/events"
                 className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-[#0A89F2] px-5 py-3 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(10,137,242,0.28)] transition hover:bg-[#0770cc]"
@@ -698,7 +710,6 @@ export default function EspaceClientTicketsPage() {
           {featured ? (
             <TicketStub
               ticket={featured}
-              past={false}
               featured
               onOpen={setSelected}
               onDelete={requestDelete}
@@ -716,7 +727,6 @@ export default function EspaceClientTicketsPage() {
                   >
                     <TicketStub
                       ticket={t}
-                      past={isPastTicket(t)}
                       onOpen={setSelected}
                       onDelete={requestDelete}
                     />

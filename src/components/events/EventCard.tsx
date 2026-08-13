@@ -30,7 +30,7 @@ import {
 import { format, differenceInCalendarDays, isValid, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
-import { isEventEnded } from '@/lib/eventTiming'
+import { eventTimingLabel, eventTimingPhase, isEventEnded, timingOverlayClass } from '@/lib/eventTiming'
 import { useAuth } from '@/hooks/useAuth'
 import toast from 'react-hot-toast'
 
@@ -340,7 +340,10 @@ export default function EventCard({
     promotion,
   } = event
 
-  const isPast = isEventEnded({ end_date, start_date })
+  const timingEvent = { end_date, start_date }
+  const isPast = isEventEnded(timingEvent)
+  const timingPhase = eventTimingPhase(timingEvent)
+  const timingLabel = eventTimingLabel(timingEvent)
 
   const placesRestantes =
     available_tickets != null
@@ -453,15 +456,9 @@ export default function EventCard({
                 <FaTag className="text-[8px]" />−{promoPct}%
               </span>
             ) : null}
-            {isPast ? (
-              <span className="rounded-full bg-slate-800/80 px-2 py-0.5 text-[10px] font-semibold text-white">
-                Terminé
-              </span>
-            ) : (
-              <span className="rounded-full bg-emerald-500/90 px-2 py-0.5 text-[10px] font-semibold text-white">
-                Encore
-              </span>
-            )}
+            <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold text-white ${timingOverlayClass(timingPhase)}`}>
+              {timingLabel}
+            </span>
             {!isPast && isFull ? (
               <span className="rounded-full bg-red-500/90 px-2 py-0.5 text-[10px] font-semibold text-white">
                 Complet
@@ -550,7 +547,7 @@ export default function EventCard({
                     : 'cursor-not-allowed bg-[#F3F6FA] text-[#98A2B3]'
                 )}
               >
-                {isPast ? 'Terminé' : isFull ? 'Complet' : 'Réserver'}
+                {isPast ? 'Passé' : isFull ? 'Complet' : 'Réserver'}
                 {canReserve ? <FaTicketAlt className="text-xs" /> : null}
               </button>
             ) : (

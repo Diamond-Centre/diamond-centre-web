@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { FaTimes, FaCalendar, FaMapMarker, FaClock,
   FaEuroSign, FaUsers, FaTicketAlt, FaTag, FaLayerGroup, FaCoins, FaInfoCircle
 } from 'react-icons/fa'
-import { isEventEnded } from '@/lib/eventTiming'
+import { eventTimingLabel, eventTimingPhase, isEventEnded, timingOverlayClass } from '@/lib/eventTiming'
 
 export default function EventLightbox({
   isOpen,
@@ -14,6 +14,8 @@ export default function EventLightbox({
   if (!isOpen || !event) return null
 
   const isPast = isEventEnded(event)
+  const timingPhase = eventTimingPhase(event)
+  const timingLabel = eventTimingLabel(event)
   const placesRestantes = (event.available_tickets || event.capacity) - (event.nb_inscrits || 0)
   const isFull = placesRestantes <= 0
 
@@ -101,15 +103,9 @@ export default function EventLightbox({
               <span className="px-3 py-1 bg-dice-blue/90 backdrop-blur-md rounded-full text-white text-xs font-bold uppercase tracking-wider shadow-sm border border-white/20">
                 {event.category || 'Événement'}
               </span>
-              {isPast ? (
-                <span className="px-3 py-1 bg-amber-500/90 backdrop-blur-md rounded-full text-white text-xs font-bold uppercase tracking-wider shadow-sm border border-white/20">
-                  Terminé
-                </span>
-              ) : (
-                <span className="px-3 py-1 bg-emerald-500/90 backdrop-blur-md rounded-full text-white text-xs font-bold uppercase tracking-wider shadow-sm border border-white/20">
-                  Encore
-                </span>
-              )}
+              <span className={`px-3 py-1 backdrop-blur-md rounded-full text-white text-xs font-bold uppercase tracking-wider shadow-sm border border-white/20 ${timingOverlayClass(timingPhase)}`}>
+                {timingLabel}
+              </span>
               {!isPast && isFull ? (
                 <span className="px-3 py-1 bg-rose-500/90 backdrop-blur-md rounded-full text-white text-xs font-bold uppercase tracking-wider shadow-sm border border-white/20">
                   Complet

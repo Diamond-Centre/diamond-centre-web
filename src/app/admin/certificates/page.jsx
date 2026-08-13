@@ -1,6 +1,6 @@
 /**
  * Certificats admin — délivrance pour toute formation avec des inscrits
- * Encore = date de fin non passée · Terminé = date de fin passée
+ * À venir / En cours / Passé selon les dates de début et de fin
  */
 'use client'
 
@@ -9,17 +9,13 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import { api } from '@/lib/api'
-import { isEventEnded } from '@/lib/eventTiming'
+import { eventTimingLabel, eventTimingPhase } from '@/lib/eventTiming'
 import {
   FaCertificate, FaSync, FaCheck, FaEye, FaSearch,
   FaGraduationCap, FaMapMarkerAlt,
 } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
-
-function isFormationEnded(event) {
-  return isEventEnded(event)
-}
 
 function formatFrDate(value) {
   if (!value) return '—'
@@ -50,7 +46,7 @@ export default function AdminCertificatesPage() {
   const [eventMeta, setEventMeta] = useState(null)
   const [selectedTickets, setSelectedTickets] = useState(new Set())
   const [tab, setTab] = useState('pending') // pending | issued
-  const [scope, setScope] = useState('all') // encore | ended | all
+  const [scope, setScope] = useState('all') // upcoming | ongoing | ended | all
   const [formationQuery, setFormationQuery] = useState('')
   const [participantQuery, setParticipantQuery] = useState('')
   const [error, setError] = useState(null)
@@ -64,22 +60,10 @@ export default function AdminCertificatesPage() {
     [formations, selectedId]
   )
 
-  const formationEnded = useMemo(() => {
-    if (eventMeta) {
-      return isFormationEnded({
-        start_date: eventMeta.start_date,
-        end_date: eventMeta.end_date,
-      })
-    }
-    return selectedFormation ? isFormationEnded(selectedFormation) : false
-  }, [eventMeta, selectedFormation])
-
   const scopedFormations = useMemo(() => {
     let list = formations
-    if (scope === 'encore') {
-      list = list.filter((f) => !isFormationEnded(f))
-    } else if (scope === 'ended') {
-      list = list.filter(isFormationEnded)
+    if (scope === 'upcoming' || scope === 'ongoing' || scope === 'ended') {
+      list = list.filter((f) => eventTimingPhase(f) === scope)
     }
     const q = formationQuery.trim().toLowerCase()
     if (q) {
@@ -243,11 +227,9 @@ export default function AdminCertificatesPage() {
   useEffect(() => {
     if (!formations.length) return
     const visible =
-      scope === 'encore'
-        ? formations.filter((f) => !isFormationEnded(f))
-        : scope === 'ended'
-          ? formations.filter(isFormationEnded)
-          : formations
+      scope === 'upcoming' || scope === 'ongoing' || scope === 'ended'
+        ? formations.filter((f) => eventTimingPhase(f) === scope)
+        : formations
     if (!visible.length) {
       setSelectedId(null)
       setEligible([])
@@ -341,8 +323,9 @@ export default function AdminCertificatesPage() {
     }
   }
 
-  const encoreCount = formations.filter((f) => !isFormationEnded(f)).length
-  const endedCount = formations.filter(isFormationEnded).length
+  const upcomingCount = formations.filter((f) => eventTimingPhase(f) === 'upcoming').length
+  const ongoingCount = formations.filter((f) => eventTimingPhase(f) === 'ongoing').length
+  const endedCount = formations.filter((f) => eventTimingPhase(f) === 'ended').length
 
   if (loading) {
     return (
@@ -400,11 +383,19 @@ export default function AdminCertificatesPage() {
             <div className="inline-flex rounded-lg border border-gray-200 bg-white p-1 self-start flex-wrap">
               <button
                 type="button"
-                onClick={() => setScope('encore')}
-                className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${scope === 'encore' ? 'bg-dice-blue text-white' : 'text-gray-600 hover:bg-gray-50'
+                onClick={() => setScope('upcoming')}
+                className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${scope === 'upcoming' ? 'bg-dice-blue text-white' : 'text-gray-600 hover:bg-gray-50'
                   }`}
               >
-                Encore ({encoreCount})
+                À venir ({upcomingCount})
+              </button>
+              <button
+                type="button"
+                onClick={() => setScope('ongoing')}
+                className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${scope === 'ongoing' ? 'bg-dice-blue text-white' : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+              >
+                En cours ({ongoingCount})
               </button>
               <button
                 type="button"
@@ -412,7 +403,7 @@ export default function AdminCertificatesPage() {
                 className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${scope === 'ended' ? 'bg-dice-blue text-white' : 'text-gray-600 hover:bg-gray-50'
                   }`}
               >
-                Terminées ({endedCount})
+                Passées ({endedCount})
               </button>
               <button
                 type="button"
@@ -437,18 +428,19 @@ export default function AdminCertificatesPage() {
 
           {scopedFormations.length === 0 ? (
             <div className="bg-amber-50 border border-amber-100 text-amber-800 rounded-xl px-4 py-6 text-sm mb-6">
-              {scope === 'encore'
-                ? 'Aucune formation encore en cours. Passez sur « Toutes » ou « Terminées ».'
-                : scope === 'ended'
-                  ? 'Aucune formation terminée pour le moment.'
-                  : `Aucune formation pour « ${formationQuery} ».`}
+              {scope === 'upcoming'
+                ? 'Aucune formation à venir.'
+                : scope === 'ongoing'
+                  ? 'Aucune formation en cours.'
+                  : scope === 'ended'
+                    ? 'Aucune formation passée pour le moment.'
+                    : `Aucune formation pour « ${formationQuery} ».`}
             </div>
           ) : (
             <div className="flex gap-3 overflow-x-auto pb-2 mb-6 -mx-1 px-1">
               {scopedFormations.map((f) => {
                 const selected = f.id === selectedId
                 const pending = pendingByEvent[f.id] ?? 0
-                const ended = isFormationEnded(f)
                 return (
                   <button
                     key={f.id}
@@ -465,7 +457,7 @@ export default function AdminCertificatesPage() {
                     <p className={`text-xs mt-1 ${selected ? 'text-white/80' : 'text-gray-500'}`}>
                       {formatFrDate(f.end_date || f.start_date)}
                       {' · '}
-                      {ended ? 'Terminé' : 'Encore'}
+                      {eventTimingLabel(f)}
                     </p>
                     <span
                       className={`inline-block mt-2 text-[11px] font-bold px-2 py-0.5 rounded-full ${selected
@@ -533,12 +525,21 @@ export default function AdminCertificatesPage() {
                 ))}
               </div>
 
-              {!formationEnded && (
+              {eventTimingPhase(eventMeta || selectedFormation || {}) === 'ongoing' && (
                 <div className="mb-4 flex gap-2 items-start bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-xl px-3 py-2.5 text-sm">
                   <FaCertificate className="mt-0.5 shrink-0 text-emerald-600" />
                   <p>
-                    Cette formation est encore en cours. Vous pouvez déjà délivrer un
-                    certificat à tout client inscrit.
+                    Cette formation est en cours. Vous pouvez délivrer un certificat
+                    à tout client inscrit.
+                  </p>
+                </div>
+              )}
+              {eventTimingPhase(eventMeta || selectedFormation || {}) === 'upcoming' && (
+                <div className="mb-4 flex gap-2 items-start bg-[#E8F3FE] border border-[#cfe6fb] text-[#0A4A86] rounded-xl px-3 py-2.5 text-sm">
+                  <FaCertificate className="mt-0.5 shrink-0 text-[#0A89F2]" />
+                  <p>
+                    Cette formation est à venir. Vous pouvez déjà délivrer un certificat
+                    à tout client inscrit.
                   </p>
                 </div>
               )}
