@@ -20,7 +20,7 @@ const menuItems = [
   { href: '/admin/tickets', icon: FaTicketAlt, label: 'Tickets' },
   { href: '/admin/users', icon: FaUsers, label: 'Utilisateurs' },
   { href: '/admin/certificates', icon: FaCertificate, label: 'Certificats' },
-  { href: '/admin/profil', icon: FaUserShield, label: 'Mon profil' },
+  { href: '/admin/profile', icon: FaUserShield, label: 'Mon profil' },
 ]
 
 export default function AdminLayout({ children }) {
@@ -100,7 +100,7 @@ export default function AdminLayout({ children }) {
         <div className="shrink-0 p-4 border-t border-gray-200 space-y-2 bg-white">
           {user && (
             <Link
-              href="/admin/profil"
+              href="/admin/profile"
               className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg transition-colors ${
                 pathname?.startsWith('/admin/profil')
                   ? 'bg-dice-blue/10 text-dice-blue'

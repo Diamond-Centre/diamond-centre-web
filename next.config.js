@@ -49,6 +49,16 @@ const nextConfig = {
       },
     ]
   },
+  async redirects() {
+    return [
+      // Keep French URL working; canonical path is /admin/profile
+      {
+        source: '/admin/profil',
+        destination: '/admin/profile',
+        permanent: false,
+      },
+    ]
+  },
 }
 
 module.exports = nextConfig
