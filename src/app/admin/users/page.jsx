@@ -1023,12 +1023,6 @@ export default function AdminUsersPage() {
                 <span className="text-gray-800 capitalize">{viewUser.sexe || '—'}</span>
               </p>
               <p className="flex justify-between">
-                <span className="font-medium text-gray-500">Mot de passe :</span>
-                <span className="text-gray-800 font-mono bg-gray-100 px-2 py-0.5 rounded text-xs">
-                  {viewUser.password_hash || viewUser.password || 'Non disponible'}
-                </span>
-              </p>
-              <p className="flex justify-between">
                 <span className="font-medium text-gray-500">Date d'inscription :</span>
                 <span className="text-gray-800">
                   {viewUser.created_at ? new Date(viewUser.created_at).toLocaleDateString('fr-FR') : '—'}
