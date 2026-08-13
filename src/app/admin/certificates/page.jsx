@@ -1,6 +1,6 @@
 /**
  * Certificats admin — aligné sur l’app mobile DiCe
- * Formations passées → participants → délivrance
+ * Formations commencées (date de début passée) → participants → délivrance
  */
 'use client'
 
@@ -16,18 +16,32 @@ import {
 import toast from 'react-hot-toast'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
-function parseDay(value) {
-  if (!value) return null
+function dateKey(value) {
+  if (!value) return ''
+  if (typeof value === 'string') return value.slice(0, 10)
   const d = new Date(value)
-  if (Number.isNaN(d.getTime())) return null
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  if (Number.isNaN(d.getTime())) return ''
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+function todayKey() {
+  return dateKey(new Date())
+}
+
+/** Formation whose start date is today or already passed. */
+function isFormationStarted(event) {
+  const start = dateKey(event?.start_date || event?.end_date)
+  if (!start) return false
+  return start <= todayKey()
 }
 
 function isFormationEnded(event) {
-  const end = parseDay(event?.end_date || event?.start_date)
+  const end = dateKey(event?.end_date || event?.start_date)
   if (!end) return false
-  const today = parseDay(new Date())
-  return end.getTime() < today.getTime()
+  return end < todayKey()
 }
 
 function formatFrDate(value) {
@@ -86,7 +100,7 @@ export default function AdminCertificatesPage() {
   const scopedFormations = useMemo(() => {
     let list = formations
     if (scope === 'past') {
-      list = list.filter(isFormationEnded)
+      list = list.filter(isFormationStarted)
     }
     const q = formationQuery.trim().toLowerCase()
     if (q) {
@@ -175,9 +189,10 @@ export default function AdminCertificatesPage() {
       setLoading(true)
       setError(null)
       const token = auth.getToken()
-      const events = await api.getEvents(token)
+      const events = await api.getAdminEvents(token)
       const list = (Array.isArray(events) ? events : events?.data || [])
         .filter((e) => String(e.category || '').toLowerCase() === 'formation')
+        .filter((e) => String(e.status || '').toLowerCase() !== 'cancelled')
         .sort((a, b) => new Date(b.end_date || b.start_date || 0) - new Date(a.end_date || a.start_date || 0))
 
       const pendingMap = {}
@@ -205,8 +220,8 @@ export default function AdminCertificatesPage() {
       setFormations(list)
       setPendingByEvent(pendingMap)
 
-      const past = list.filter(isFormationEnded)
-      const preferredPool = scope === 'past' && past.length ? past : list
+      const started = list.filter(isFormationStarted)
+      const preferredPool = scope === 'past' && started.length ? started : list
       const stillValid =
         selectedId != null && preferredPool.some((f) => f.id === selectedId)
       const nextId = stillValid
@@ -242,7 +257,7 @@ export default function AdminCertificatesPage() {
   // When scope changes, pick first visible formation if current is out of scope
   useEffect(() => {
     if (!formations.length) return
-    const visible = scope === 'past' ? formations.filter(isFormationEnded) : formations
+    const visible = scope === 'past' ? formations.filter(isFormationStarted) : formations
     if (!visible.length) {
       setSelectedId(null)
       setEligible([])
@@ -339,7 +354,7 @@ export default function AdminCertificatesPage() {
     }
   }
 
-  const pastCount = formations.filter(isFormationEnded).length
+  const startedCount = formations.filter(isFormationStarted).length
 
   if (loading) {
     return (
@@ -401,7 +416,7 @@ export default function AdminCertificatesPage() {
                 className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${scope === 'past' ? 'bg-dice-blue text-white' : 'text-gray-600 hover:bg-gray-50'
                   }`}
               >
-                Passées ({pastCount})
+                Passées ({startedCount})
               </button>
               <button
                 type="button"
@@ -427,7 +442,7 @@ export default function AdminCertificatesPage() {
           {scopedFormations.length === 0 ? (
             <div className="bg-amber-50 border border-amber-100 text-amber-800 rounded-xl px-4 py-6 text-sm mb-6">
               {scope === 'past'
-                ? 'Aucune formation terminée pour le moment. Passez sur « Toutes » ou attendez la fin d’une session.'
+                ? 'Aucune formation commencée pour le moment. Passez sur « Toutes » pour voir les sessions à venir.'
                 : `Aucune formation pour « ${formationQuery} ».`}
             </div>
           ) : (
@@ -435,6 +450,7 @@ export default function AdminCertificatesPage() {
               {scopedFormations.map((f) => {
                 const selected = f.id === selectedId
                 const pending = pendingByEvent[f.id] ?? 0
+                const started = isFormationStarted(f)
                 const ended = isFormationEnded(f)
                 return (
                   <button
@@ -451,7 +467,7 @@ export default function AdminCertificatesPage() {
                     </p>
                     <p className={`text-xs mt-1 ${selected ? 'text-white/80' : 'text-gray-500'}`}>
                       {formatFrDate(f.end_date || f.start_date)}
-                      {!ended ? ' · à venir' : ''}
+                      {!started ? ' · à venir' : ended ? '' : ' · en cours'}
                     </p>
                     <span
                       className={`inline-block mt-2 text-[11px] font-bold px-2 py-0.5 rounded-full ${selected
@@ -593,12 +609,18 @@ export default function AdminCertificatesPage() {
                   {filteredEligible.length === 0 ? (
                     <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
                       <p className="font-semibold text-gray-700">
-                        {eligible.length === 0 ? 'Plus personne en attente' : 'Aucun résultat'}
+                        {eligible.length === 0 && alreadyIssued.length === 0
+                          ? 'Aucun inscrit'
+                          : eligible.length === 0
+                            ? 'Plus personne en attente'
+                            : 'Aucun résultat'}
                       </p>
                       <p className="text-sm text-gray-500 mt-1">
-                        {eligible.length === 0
-                          ? 'Tous les certificats de cette formation sont délivrés.'
-                          : 'Modifiez votre recherche.'}
+                        {eligible.length === 0 && alreadyIssued.length === 0
+                          ? 'Aucun client n’est inscrit à cette formation.'
+                          : eligible.length === 0
+                            ? 'Tous les certificats de cette formation sont délivrés.'
+                            : 'Modifiez votre recherche.'}
                       </p>
                     </div>
                   ) : (

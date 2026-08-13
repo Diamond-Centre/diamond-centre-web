@@ -12,9 +12,26 @@ const API_MESSAGE_FR = {
   'Invalid category (conference, formation, seminaire, atelier)':
     'Catégorie invalide (conférence, formation, séminaire, atelier)',
   'Invalid credentials': 'Email ou mot de passe incorrect.',
+  'Current password is incorrect': 'Le mot de passe actuel est incorrect.',
+  'Password must be at least 6 characters':
+    'Le mot de passe doit contenir au moins 6 caractères.',
+  'current_password and new_password are required':
+    'Le mot de passe actuel et le nouveau mot de passe sont requis.',
+  'This account has no local password':
+    'Ce compte n’a pas de mot de passe local. Connectez-vous avec Google ou Facebook.',
+  'Password updated': 'Mot de passe mis à jour.',
   'Unauthorized': 'Votre session a expiré. Veuillez vous reconnecter.',
   'Missing or invalid token': 'Votre session a expiré. Veuillez vous reconnecter.',
   'Invalid or expired token': 'Votre session a expiré. Veuillez vous reconnecter.',
+  'Certificates can only be issued for formations':
+    'Les certificats ne peuvent être délivrés que pour les formations.',
+  'Cannot issue certificates for a cancelled formation':
+    'Impossible de délivrer un certificat pour une formation annulée.',
+  'No participants for this formation':
+    'Aucun inscrit pour cette formation.',
+  'None of the provided ticket_ids are valid for this formation':
+    'Aucun des participants sélectionnés n’est valide pour cette formation.',
+  'event_id is required': 'L’identifiant de la formation est requis.',
 }
 
 function translateApiMessage(message) {
@@ -247,6 +264,10 @@ export const api = {
 
   getEvents: async (token) =>
     request('/events', { headers: authHeaders(token) }),
+
+  /** Admin: all events including completed/draft (cancelled still returned; filter client-side). */
+  getAdminEvents: async (token) =>
+    request('/events/admin/all', { headers: authHeaders(token) }),
 
   getEventById: async (id, token) =>
     request(`/events/${id}`, {

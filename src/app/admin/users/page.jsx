@@ -386,10 +386,12 @@ export default function AdminUsersPage() {
     setCertificatsList([])
     try {
       const token = auth.getToken()
-      const eventsRes = await api.getEvents(token)
+      const eventsRes = await api.getAdminEvents(token)
       const allEvents = Array.isArray(eventsRes) ? eventsRes : eventsRes?.data || []
       const formationEvents = allEvents.filter(
-        (e) => String(e.category || '').toLowerCase() === 'formation'
+        (e) =>
+          String(e.category || '').toLowerCase() === 'formation' &&
+          String(e.status || '').toLowerCase() !== 'cancelled'
       )
 
       const targetEmail = normalizeEmail(user.email)
