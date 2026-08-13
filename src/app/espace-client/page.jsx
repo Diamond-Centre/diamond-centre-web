@@ -14,9 +14,23 @@ import {
 import { useAuth } from '@/hooks/useAuth'
 import { api } from '@/lib/api'
 import { auth } from '@/lib/auth'
+import { eventTimingLabel, eventTimingPhase } from '@/lib/eventTiming'
 
 function bookingDate(b) {
   return b.date || b.event_start_date || b.event_date || b.created_at
+}
+
+function bookingEvent(b) {
+  return {
+    start_date: b.event_start_date || b.date || b.event_date || b.start_date,
+    end_date: b.event_end_date || b.end_date,
+  }
+}
+
+function timingClass(phase) {
+  if (phase === 'ended') return 'text-[#98A2B3]'
+  if (phase === 'upcoming') return 'text-[#0A89F2]'
+  return 'text-[#0B9B6B]'
 }
 
 function formatDay(value) {
@@ -92,22 +106,22 @@ export default function EspaceClientHomePage() {
     }
   }, [])
 
-  const sortedUpcoming = useMemo(() => {
-    const now = Date.now() - 86400000
-    return [...bookings]
-      .filter((b) => {
-        const t = new Date(bookingDate(b) || 0).getTime()
-        return Number.isNaN(t) || t >= now
-      })
-      .sort((a, b) => {
-        const ta = new Date(bookingDate(a) || 0).getTime()
-        const tb = new Date(bookingDate(b) || 0).getTime()
-        return ta - tb
-      })
-  }, [bookings])
+  const { next, rest, activeCount } = useMemo(() => {
+    const startTime = (b) => new Date(bookingDate(b) || 0).getTime() || 0
+    const upcoming = bookings
+      .filter((b) => eventTimingPhase(bookingEvent(b)) === 'upcoming')
+      .sort((a, b) => startTime(a) - startTime(b))
+    const ongoing = bookings
+      .filter((b) => eventTimingPhase(bookingEvent(b)) === 'ongoing')
+      .sort((a, b) => startTime(a) - startTime(b))
 
-  const next = sortedUpcoming[0] || null
-  const rest = sortedUpcoming.slice(1, 4)
+    const list = [...ongoing.slice(0, 3), ...upcoming]
+    return {
+      next: list[0] || null,
+      rest: list.slice(1),
+      activeCount: upcoming.length + ongoing.length,
+    }
+  }, [bookings])
 
   const firstName =
     user?.prenom ||
@@ -136,7 +150,7 @@ export default function EspaceClientHomePage() {
           Bonjour, {firstName}
         </h1>
         <p className="max-w-lg text-[#667085]">
-          Votre prochain rendez-vous DiCe, en un coup d’œil.
+          Votre prochain rendez-vous DiCe, et ceux en cours, en un coup d’œil.
         </p>
       </motion.header>
 
@@ -165,7 +179,9 @@ export default function EspaceClientHomePage() {
             <div className="max-w-xl space-y-5">
               <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/90">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#FFB020]" />
-                Prochain événement
+                {eventTimingPhase(bookingEvent(next)) === 'ongoing'
+                  ? 'En cours'
+                  : 'À venir'}
               </div>
 
               <h2 className="text-2xl font-bold leading-snug sm:text-3xl">
@@ -226,6 +242,9 @@ export default function EspaceClientHomePage() {
               >
                 {statusLabel(next.status)}
               </span>
+              <span className="inline-flex rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white">
+                {eventTimingLabel(bookingEvent(next))}
+              </span>
             </div>
           </div>
         </motion.section>
@@ -242,7 +261,7 @@ export default function EspaceClientHomePage() {
               Commencer
             </p>
             <h2 className="mt-3 text-2xl font-extrabold text-[#0B1220] sm:text-3xl">
-              Aucune réservation à venir
+              Aucune réservation à venir ou en cours
             </h2>
             <p className="mx-auto mt-3 max-w-md text-[#667085]">
               Explorez les formations et conférences DiCe, puis réservez votre
@@ -269,11 +288,11 @@ export default function EspaceClientHomePage() {
         >
           <div className="flex items-end justify-between gap-3">
             <div>
-              <h3 className="text-lg font-bold text-[#0B1220]">À venir</h3>
+              <h3 className="text-lg font-bold text-[#0B1220]">À venir et en cours</h3>
               <p className="text-sm text-[#98A2B3]">
-                {sortedUpcoming.length} réservation
-                {sortedUpcoming.length !== 1 ? 's' : ''} active
-                {sortedUpcoming.length !== 1 ? 's' : ''}
+                {activeCount} réservation
+                {activeCount !== 1 ? 's' : ''} active
+                {activeCount !== 1 ? 's' : ''}
               </p>
             </div>
             <Link
@@ -318,6 +337,9 @@ export default function EspaceClientHomePage() {
                       <div className="min-w-0">
                         <p className="truncate font-semibold text-[#0B1220] group-hover:text-[#0A89F2]">
                           {b.title || b.event_title || 'Événement'}
+                        </p>
+                        <p className={`mt-0.5 text-[11px] font-semibold ${timingClass(eventTimingPhase(bookingEvent(b)))}`}>
+                          {eventTimingLabel(bookingEvent(b))}
                         </p>
                         <p className="mt-0.5 truncate text-sm text-[#667085]">
                           {timeRange(b) || formatDay(bookingDate(b))}
