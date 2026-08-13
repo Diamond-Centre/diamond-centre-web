@@ -21,7 +21,6 @@ const CATEGORIES = [
   { id: 'formation', label: 'Formation' },
   { id: 'seminaire', label: 'Séminaire' },
   { id: 'atelier', label: 'Atelier' },
-  { id: 'webinaire', label: 'Webinaire' },
 ]
 
 const inputClass =

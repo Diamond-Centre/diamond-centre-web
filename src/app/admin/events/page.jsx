@@ -34,7 +34,6 @@ const CATEGORY_FILTERS = [
   { id: 'formation', label: 'Formation' },
   { id: 'seminaire', label: 'Séminaire' },
   { id: 'atelier', label: 'Atelier' },
-  { id: 'webinaire', label: 'Webinaire' },
 ]
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'

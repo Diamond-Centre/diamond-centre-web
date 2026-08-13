@@ -21,7 +21,6 @@ const CATEGORIES = [
   { id: 'formation', label: 'Formation' },
   { id: 'seminaire', label: 'Séminaire' },
   { id: 'atelier', label: 'Atelier' },
-  { id: 'webinaire', label: 'Webinaire' },
 ]
 
 const inputClass =
@@ -39,6 +38,14 @@ function formatPreviewDate(value) {
     month: 'short',
     year: 'numeric',
   })
+}
+
+function todayISO() {
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }
 
 function Section({ icon: Icon, title, subtitle, children, accent = false }) {
@@ -147,6 +154,10 @@ export default function CreateEvent() {
     if (!form.start_date || !form.end_date) return 'Les dates sont requises'
     if (new Date(form.end_date) < new Date(form.start_date)) {
       return 'La date de fin doit être après la date de début'
+    }
+    const today = todayISO()
+    if (form.end_date < today) {
+      return 'Impossible de créer un événement dont la date de fin est déjà passée'
     }
     if (!form.location.trim()) return 'Le lieu est requis'
     if (!(Number(form.capacity) >= 1)) return 'La capacité minimale est 1'
@@ -346,9 +357,11 @@ export default function CreateEvent() {
                     type="date"
                     value={form.start_date}
                     onChange={(e) => {
-                      setField('start_date', e.target.value)
-                      if (!form.end_date || form.end_date < e.target.value) {
-                        setField('end_date', e.target.value)
+                      const start = e.target.value
+                      setField('start_date', start)
+                      const today = todayISO()
+                      if (!form.end_date || form.end_date < start) {
+                        setField('end_date', start < today ? today : start)
                       }
                     }}
                     className={inputClass}
@@ -361,7 +374,11 @@ export default function CreateEvent() {
                     type="date"
                     value={form.end_date}
                     onChange={(e) => setField('end_date', e.target.value)}
-                    min={form.start_date || undefined}
+                    min={
+                      form.start_date && form.start_date > todayISO()
+                        ? form.start_date
+                        : todayISO()
+                    }
                     className={inputClass}
                 required
               />

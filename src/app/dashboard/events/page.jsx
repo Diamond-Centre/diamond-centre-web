@@ -7,7 +7,17 @@ import { FaArrowLeft, FaSave, FaCalendar, FaMapMarker, FaDollarSign, FaUsers } f
 import { api } from '@/lib/api'
 import toast from 'react-hot-toast'
 
-const categories = ['conférence', 'séminaire', 'formation', 'atelier', 'webinaire', 'autre']
+const categories = [
+  { id: 'conference', label: 'Conférence' },
+  { id: 'seminaire', label: 'Séminaire' },
+  { id: 'formation', label: 'Formation' },
+  { id: 'atelier', label: 'Atelier' },
+]
+
+function todayISO() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 
 export default function NewEventPage() {
   const router = useRouter()
@@ -96,7 +106,7 @@ export default function NewEventPage() {
               >
                 <option value="">Sélectionner</option>
                 {categories.map((cat) => (
-                  <option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
+                  <option key={cat.id} value={cat.id}>{cat.label}</option>
                 ))}
               </select>
               {errors.category && <p className="mt-1 text-sm text-red-600">{errors.category.message}</p>}
@@ -164,7 +174,17 @@ export default function NewEventPage() {
                 <FaCalendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="date"
-                  {...register('endDate', { required: 'La date de fin est requise' })}
+                  {...register('endDate', {
+                    required: 'La date de fin est requise',
+                    validate: (value) => {
+                      const today = todayISO()
+                      if (value && value < today) {
+                        return 'Impossible de créer un événement dont la date de fin est déjà passée'
+                      }
+                      return true
+                    },
+                  })}
+                  min={todayISO()}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-dice-blue"
                 />
               </div>

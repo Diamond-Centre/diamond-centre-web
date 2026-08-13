@@ -4,7 +4,23 @@
  */
 const API_URL = (process.env.NEXT_PUBLIC_API_URL || '/api').replace(/\/+$/, '')
 
+const API_MESSAGE_FR = {
+  'end_date must be on or after start_date':
+    'La date de fin doit être égale ou postérieure à la date de début',
+  'Cannot create an event whose end date has already passed':
+    'Impossible de créer un événement dont la date de fin est déjà passée',
+  'Invalid category (conference, formation, seminaire, atelier)':
+    'Catégorie invalide (conférence, formation, séminaire, atelier)',
+}
+
+function translateApiMessage(message) {
+  if (!message || typeof message !== 'string') return message
+  const trimmed = message.trim()
+  return API_MESSAGE_FR[trimmed] || trimmed
+}
+
 function createApiError(status, message) {
+  const translated = translateApiMessage(message)
   const messages = {
     400: "La requête est invalide.",
     401: "Votre session a expiré. Veuillez vous reconnecter.",
@@ -16,13 +32,16 @@ function createApiError(status, message) {
   }
 
   // Prefer the API message when present (incl. 5xx) so deploy issues are visible
-  if (message && typeof message === 'string' && message.trim()) {
+  if (translated && typeof translated === 'string' && translated.trim()) {
     if (status >= 500) {
-      return { status, message: message.trim() }
+      return { status, message: translated.trim() }
+    }
+    if (status === 400) {
+      return { status, message: translated.trim() }
     }
     return {
       status,
-      message: messages[status] || message.trim() || "Une erreur est survenue.",
+      message: messages[status] || translated.trim() || "Une erreur est survenue.",
     }
   }
 
