@@ -121,8 +121,9 @@ export default function CreateEvent() {
       toast.error('Veuillez sélectionner une image')
       return
     }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("L'image ne doit pas dépasser 5MB")
+    // Keep under ~1.5MB: Vercel request body limit (~4.5MB) and data-URL storage
+    if (file.size > 1.5 * 1024 * 1024) {
+      toast.error("L'image ne doit pas dépasser 1,5 Mo (limite hébergement)")
       return
     }
     setImageFile(file)

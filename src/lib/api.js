@@ -15,12 +15,23 @@ function createApiError(status, message) {
     429: "Trop de tentatives. Veuillez réessayer plus tard.",
   }
 
+  // Prefer the API message when present (incl. 5xx) so deploy issues are visible
+  if (message && typeof message === 'string' && message.trim()) {
+    if (status >= 500) {
+      return { status, message: message.trim() }
+    }
+    return {
+      status,
+      message: messages[status] || message.trim() || "Une erreur est survenue.",
+    }
+  }
+
   return {
     status,
     message:
       status >= 500
         ? "Le service est momentanément indisponible. Veuillez réessayer plus tard."
-        : messages[status] || message || "Une erreur est survenue.",
+        : messages[status] || "Une erreur est survenue.",
   }
 }
 
@@ -170,26 +181,41 @@ export const api = {
   },
 
   // ===== UPLOAD (DICE: POST /uploads/image with base64 JSON) =====
+  // On Vercel the API cannot persist local files; fall back to a data URL
+  // so event create still works when /uploads/image returns 5xx/HTML.
   uploadImage: async (file, token) => {
-    const base64 = await new Promise((resolve, reject) => {
+    const dataUrl = await new Promise((resolve, reject) => {
       const reader = new FileReader()
-      reader.onload = () => {
-        const result = String(reader.result || '')
-        const comma = result.indexOf(',')
-        resolve(comma >= 0 ? result.slice(comma + 1) : result)
-      }
+      reader.onload = () => resolve(String(reader.result || ''))
       reader.onerror = reject
       reader.readAsDataURL(file)
     })
 
-    return request('/uploads/image', {
-      method: 'POST',
-      headers: authHeaders(token),
-      body: JSON.stringify({
-        image_base64: base64,
-        mime_type: file.type || 'image/jpeg',
-      }),
-    })
+    const comma = dataUrl.indexOf(',')
+    const base64 = comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl
+
+    try {
+      const uploaded = await request('/uploads/image', {
+        method: 'POST',
+        headers: authHeaders(token),
+        body: JSON.stringify({
+          image_base64: base64,
+          mime_type: file.type || 'image/jpeg',
+        }),
+      })
+      const url = uploaded?.url || uploaded?.image_url
+      if (url) return { ...uploaded, url }
+    } catch (err) {
+      console.warn('[API] upload failed, using inline data URL', err?.message || err)
+    }
+
+    return {
+      url: dataUrl,
+      image_url: dataUrl,
+      filename: file.name || 'image',
+      size: file.size,
+      mime_type: file.type || 'image/jpeg',
+    }
   },
 
   // ===== EVENTS =====
