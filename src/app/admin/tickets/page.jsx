@@ -11,7 +11,7 @@ import {
   FaCheckCircle, FaTimesCircle, FaClock,
   FaUser, FaEnvelope, FaPhone, FaCalendar,
   FaDownload, FaQrcode, FaTimes, FaUndo,
-  FaChevronLeft, FaChevronRight,
+  FaChevronLeft, FaChevronRight, FaKeyboard,
 } from 'react-icons/fa'
 import { auth } from '@/lib/auth'
 import { api } from '@/lib/api'
@@ -23,16 +23,25 @@ const PAGE_SIZE = 9
 const STATUS_FILTERS = [
   { id: 'all', label: 'Tous' },
   { id: 'confirmed', label: 'Confirmés' },
+  { id: 'scanne', label: 'Validés' },
   { id: 'pending', label: 'En attente' },
-  { id: 'cancelled', label: 'Annulés' },
   { id: 'refunded', label: 'Remboursés' },
 ]
 
+function statusKey(status) {
+  const s = String(status || '').toLowerCase()
+  if (['confirme', 'confirmed', 'paid', 'payé'].includes(s)) return 'confirmed'
+  if (s === 'scanne' || s === 'scanned' || s === 'validated') return 'scanne'
+  if (s === 'pending' || s === 'en_attente') return 'pending'
+  if (s === 'cancelled' || s === 'annulé') return 'cancelled'
+  if (s === 'refunded' || s === 'rembourse') return 'refunded'
+  if (s === 'expire') return 'expire'
+  return s
+}
+
 function statusMeta(status) {
-  switch (String(status || '').toLowerCase()) {
+  switch (statusKey(status)) {
     case 'confirmed':
-    case 'paid':
-    case 'payé':
       return {
         label: 'Confirmé',
         className: 'bg-emerald-50 text-[#0B9B6B]',
@@ -40,8 +49,15 @@ function statusMeta(status) {
         tone: 'text-[#0B9B6B]',
         rail: 'bg-emerald-50',
       }
+    case 'scanne':
+      return {
+        label: 'Validé',
+        className: 'bg-[#E8F3FE] text-[#0A89F2]',
+        icon: FaCheckCircle,
+        tone: 'text-[#0A89F2]',
+        rail: 'bg-[#E8F3FE]',
+      }
     case 'pending':
-    case 'en_attente':
       return {
         label: 'En attente',
         className: 'bg-[#FFF4DE] text-[#B78103]',
@@ -50,7 +66,6 @@ function statusMeta(status) {
         rail: 'bg-[#FFF8E8]',
       }
     case 'cancelled':
-    case 'annulé':
       return {
         label: 'Annulé',
         className: 'bg-red-50 text-red-600',
@@ -63,6 +78,14 @@ function statusMeta(status) {
         label: 'Remboursé',
         className: 'bg-slate-100 text-slate-600',
         icon: FaUndo,
+        tone: 'text-slate-600',
+        rail: 'bg-slate-50',
+      }
+    case 'expire':
+      return {
+        label: 'Expiré',
+        className: 'bg-slate-100 text-slate-600',
+        icon: FaClock,
         tone: 'text-slate-600',
         rail: 'bg-slate-50',
       }
@@ -158,7 +181,7 @@ function Pagination({ page, totalPages, onChange, totalItems, pageSize }) {
   )
 }
 
-function TicketCard({ ticket, index, onShowQr }) {
+function TicketCard({ ticket, index, onShowQr, onValidate, validating }) {
   const meta = statusMeta(ticket.status)
   const StatusIcon = meta.icon
   const qr = ticket.qr_codes?.[0]
@@ -170,6 +193,7 @@ function TicketCard({ ticket, index, onShowQr }) {
         : null
   const qrCode = entryCode
   const validated = typeof qr === 'object' && qr?.validated
+  const alreadyScanned = statusKey(ticket.status) === 'scanne' || validated
 
   return (
     <motion.article
@@ -259,6 +283,17 @@ function TicketCard({ ticket, index, onShowQr }) {
             <FaQrcode className="text-xs" />
             Voir QR
           </button>
+          {entryCode && !alreadyScanned ? (
+            <button
+              type="button"
+              onClick={() => onValidate(entryCode)}
+              disabled={validating}
+              className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-[#0B9B6B] bg-emerald-50 hover:bg-emerald-100 transition-colors inline-flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              <FaCheckCircle className="text-xs" />
+              Valider
+            </button>
+          ) : null}
         </div>
       </div>
     </motion.article>
@@ -276,6 +311,8 @@ export default function AdminTickets() {
   const [selectedTicket, setSelectedTicket] = useState(null)
   const [qrCodeImage, setQrCodeImage] = useState(null)
   const [qrLoading, setQrLoading] = useState(false)
+  const [entryCodeInput, setEntryCodeInput] = useState('')
+  const [validating, setValidating] = useState(false)
 
   const loadTickets = useCallback(async () => {
     try {
@@ -305,14 +342,14 @@ export default function AdminTickets() {
     const map = {
       all: tickets.length,
       confirmed: 0,
+      scanne: 0,
       pending: 0,
       cancelled: 0,
       refunded: 0,
     }
     for (const t of tickets) {
-      const s = String(t.status || '').toLowerCase()
-      if (s === 'paid' || s === 'payé') map.confirmed += 1
-      else if (map[s] != null) map[s] += 1
+      const key = statusKey(t.status)
+      if (map[key] != null) map[key] += 1
     }
     return map
   }, [tickets])
@@ -320,12 +357,8 @@ export default function AdminTickets() {
   const filteredTickets = useMemo(() => {
     const q = searchTerm.trim().toLowerCase()
     const list = tickets.filter((ticket) => {
-      const status = String(ticket.status || '').toLowerCase()
-      if (statusFilter === 'confirmed') {
-        if (!['confirmed', 'paid', 'payé'].includes(status)) return false
-      } else if (statusFilter !== 'all' && status !== statusFilter) {
-        return false
-      }
+      const key = statusKey(ticket.status)
+      if (statusFilter !== 'all' && key !== statusFilter) return false
       if (!q) return true
       return (
         ticket.customer_name?.toLowerCase().includes(q) ||
@@ -364,9 +397,33 @@ export default function AdminTickets() {
 
   const revenue = useMemo(() => {
     return tickets
-      .filter((t) => ['confirmed', 'paid', 'payé'].includes(String(t.status || '').toLowerCase()))
+      .filter((t) => ['confirmed', 'scanne'].includes(statusKey(t.status)))
       .reduce((sum, t) => sum + (Number(t.total_price) || 0), 0)
   }, [tickets])
+
+  async function validateEntryCode(rawCode) {
+    const digits = String(rawCode || '').replace(/\D/g, '')
+    if (!/^\d{8}$/.test(digits)) {
+      toast.error('Le code d’entrée doit contenir 8 chiffres.')
+      return
+    }
+    try {
+      setValidating(true)
+      const result = await api.validateByEntryCode(digits, auth.getToken())
+      toast.success(
+        result.customer_name
+          ? `Ticket validé — ${result.customer_name}`
+          : 'Ticket validé comme scanné.'
+      )
+      setEntryCodeInput('')
+      closeQr()
+      await loadTickets()
+    } catch (err) {
+      toast.error(err.message || 'Impossible de valider ce ticket')
+    } finally {
+      setValidating(false)
+    }
+  }
 
   const generateQRCode = async (ticket) => {
     try {
@@ -424,7 +481,7 @@ export default function AdminTickets() {
               Tickets
             </h1>
             <p className="text-[#667085] text-sm mt-1">
-              Réservations, statuts et QR codes des participants
+              Réservations, contrôle d’entrée et QR codes des participants
             </p>
           </div>
           <button
@@ -438,12 +495,63 @@ export default function AdminTickets() {
           </button>
         </div>
 
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            validateEntryCode(entryCodeInput)
+          }}
+          className="rounded-[24px] border border-[#E8EEF5] bg-white p-4 sm:p-5 shadow-[0_8px_24px_rgba(11,18,32,0.04)]"
+        >
+          <div className="flex flex-col lg:flex-row lg:items-end gap-4">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#0A89F2] mb-1">
+                Contrôle d’entrée
+              </p>
+              <h2 className="text-lg font-extrabold text-[#0B1220]">
+                Valider un ticket
+              </h2>
+              <p className="text-sm text-[#667085] mt-1">
+                Saisissez le code à 8 chiffres du billet. Le ticket sera marqué comme scanné.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+              <label className="sr-only" htmlFor="admin-entry-code">
+                Code d’entrée
+              </label>
+              <div className="relative">
+                <FaKeyboard className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#98A2B3] text-sm" />
+                <input
+                  id="admin-entry-code"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  maxLength={8}
+                  placeholder="48291573"
+                  value={entryCodeInput}
+                  onChange={(e) =>
+                    setEntryCodeInput(e.target.value.replace(/\D/g, '').slice(0, 8))
+                  }
+                  className="w-full sm:w-[220px] pl-10 pr-4 py-3 rounded-2xl border border-[#E8EEF5] bg-[#F8FAFC] font-mono text-lg tracking-[0.28em] font-bold text-[#0B1220] focus:ring-2 focus:ring-[#0A89F2]/30 focus:border-[#0A89F2] focus:bg-white outline-none"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={validating || entryCodeInput.length !== 8}
+                className="px-5 py-3 rounded-2xl bg-[#0B9B6B] text-white text-sm font-bold hover:bg-[#09865c] transition-colors inline-flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                <FaCheckCircle />
+                {validating ? 'Validation…' : 'Valider'}
+              </button>
+            </div>
+          </div>
+        </form>
+
         {/* KPIs */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[
             { label: 'Total', value: counts.all, tone: 'text-[#0A89F2]' },
             { label: 'Confirmés', value: counts.confirmed, tone: 'text-[#0B9B6B]' },
-            { label: 'En attente', value: counts.pending, tone: 'text-[#B78103]' },
+            { label: 'Validés', value: counts.scanne, tone: 'text-[#0A89F2]' },
             {
               label: 'Revenus confirmés',
               value: formatPrice(revenue),
@@ -529,6 +637,8 @@ export default function AdminTickets() {
                     ticket={ticket}
                     index={index}
                     onShowQr={generateQRCode}
+                    onValidate={validateEntryCode}
+                    validating={validating}
                   />
                 ))}
               </div>
@@ -623,7 +733,30 @@ export default function AdminTickets() {
                   </p>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      validateEntryCode(
+                        selectedTicket.entry_code ||
+                          selectedTicket.qr_codes?.[0]?.entry_code
+                      )
+                    }
+                    disabled={
+                      validating ||
+                      statusKey(selectedTicket.status) === 'scanne' ||
+                      selectedTicket.qr_codes?.[0]?.validated
+                    }
+                    className="flex-1 py-3 rounded-2xl bg-[#0B9B6B] text-white text-sm font-bold hover:bg-[#09865c] transition-colors inline-flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    <FaCheckCircle />
+                    {statusKey(selectedTicket.status) === 'scanne' ||
+                    selectedTicket.qr_codes?.[0]?.validated
+                      ? 'Déjà validé'
+                      : validating
+                        ? 'Validation…'
+                        : 'Valider ce ticket'}
+                  </button>
                   <button
                     type="button"
                     onClick={downloadQR}

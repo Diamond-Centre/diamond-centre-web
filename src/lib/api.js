@@ -43,6 +43,15 @@ const API_MESSAGE_FR = {
     'Impossible de supprimer un ticket déjà scanné.',
   'Impossible de supprimer un ticket associé à un certificat.':
     'Impossible de supprimer un ticket associé à un certificat.',
+  'entry_code must be an 8-digit number':
+    'Le code d’entrée doit contenir 8 chiffres.',
+  'Invalid code': 'Code d’entrée invalide.',
+  'Ticket already scanned': 'Ce ticket a déjà été scanné.',
+  'Ticket already validated': 'Ce ticket a déjà été validé.',
+  'Ticket expired': 'Ce ticket a expiré.',
+  'Ticket refunded': 'Ce ticket a été remboursé.',
+  'Ticket not confirmed': 'Ce ticket n’est pas confirmé.',
+  'Ticket not paid': 'Ce ticket n’est pas payé.',
 }
 
 function translateApiMessage(message) {
@@ -783,6 +792,29 @@ export const api = {
       headers: authHeaders(token),
       body: JSON.stringify({ qr_code: qrCode }),
     }),
+
+  /** Admin: same as a QR scan, using the 8-digit code printed on the ticket. */
+  validateByEntryCode: async (entryCode, token) => {
+    const digits = String(entryCode || '').replace(/\D/g, '')
+    if (!/^\d{8}$/.test(digits)) {
+      const err = new Error('Le code d’entrée doit contenir 8 chiffres.')
+      err.status = 400
+      throw err
+    }
+    const data = await request('/validation/entry-code', {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify({ entry_code: digits }),
+    })
+    if (!data?.valid) {
+      const err = new Error(
+        translateApiMessage(data?.error || 'Invalid code')
+      )
+      err.status = 400
+      throw err
+    }
+    return data
+  },
 
   // ===== USERS =====
   getUsers: async (token) => {
