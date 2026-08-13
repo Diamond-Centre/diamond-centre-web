@@ -1,6 +1,5 @@
 'use client'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { auth } from '@/lib/auth'
@@ -10,7 +9,7 @@ import {
   FaEnvelope, FaPhone, FaUser, FaTimes, FaChevronLeft, FaChevronRight,
   FaEye, FaEdit, FaTrash, FaSpinner, FaLock, FaExclamationTriangle,
   FaEllipsisV, FaTicketAlt, FaCertificate, FaCheckCircle, FaClock,
-  FaTimesCircle, FaUndo, FaCalendar, FaQrcode, FaDownload, FaCheck
+  FaTimesCircle, FaUndo, FaCalendar, FaQrcode, FaDownload
 } from 'react-icons/fa'
 import Badge from '@/components/ui/Badge'
 import toast from 'react-hot-toast'
@@ -25,10 +24,6 @@ const EMPTY_FORM = {
   password: '',
   confirmPassword: '',
 }
-
-// Largeur du menu d'actions (doit matcher la classe w-48 utilisée plus bas)
-const DROPDOWN_WIDTH = 192
-const DROPDOWN_MARGIN = 8
 
 function normalizeEmail(email) {
   return (email || '').trim().toLowerCase()
@@ -108,9 +103,9 @@ function Pagination({ page, totalPages, onChange, totalItems, pageSize }) {
   const from = (page - 1) * pageSize + 1
   const to = Math.min(page * pageSize, totalItems)
   const pages = []
-  const window_ = 2
+  const window = 2
   for (let i = 1; i <= totalPages; i++) {
-    if (i === 1 || i === totalPages || (i >= page - window_ && i <= page + window_)) {
+    if (i === 1 || i === totalPages || (i >= page - window && i <= page + window)) {
       pages.push(i)
     } else if (pages[pages.length - 1] !== '…') {
       pages.push('…')
@@ -143,11 +138,10 @@ function Pagination({ page, totalPages, onChange, totalItems, pageSize }) {
               key={p}
               type="button"
               onClick={() => onChange(p)}
-              className={`min-w-9 h-9 px-2 rounded-lg text-sm font-semibold transition-colors ${
-                p === page
+              className={`min-w-9 h-9 px-2 rounded-lg text-sm font-semibold transition-colors ${p === page
                   ? 'bg-dice-blue text-white'
                   : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
-              }`}
+                }`}
             >
               {p}
             </button>
@@ -274,68 +268,6 @@ function ClientTicketCard({ ticket, index, onShowQr }) {
   )
 }
 
-/**
- * Portail SSR-safe : ne rend rien côté serveur, monte dans document.body côté client.
- */
-function BodyPortal({ children }) {
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-  if (!mounted) return null
-  return createPortal(children, document.body)
-}
-
-/**
- * Menu d'actions (Tickets / Certificats) rendu en Portal, positionné en `fixed`
- * par rapport au bouton qui l'a ouvert. S'ouvre vers le HAUT si le bouton est
- * trop proche du bas de l'écran (ex: dernières lignes du tableau), sinon vers le bas.
- */
-function ClientActionsDropdown({ menu, onClose, onTickets, onCertificates }) {
-  if (!menu) return null
-
-  const style = {
-    position: 'fixed',
-    top: menu.top,
-    left: menu.left,
-    width: DROPDOWN_WIDTH,
-    transform: menu.openUp ? 'translateY(-100%)' : 'none',
-  }
-
-  return (
-    <BodyPortal>
-      <div
-        style={style}
-        className="bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 z-[70] text-left animate-fadeIn"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          type="button"
-          onClick={() => {
-            onClose()
-            onTickets()
-          }}
-          className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 font-medium"
-        >
-          <FaTicketAlt className="text-dice-blue text-xs" />
-          Tous les tickets
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            onClose()
-            onCertificates()
-          }}
-          className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 font-medium"
-        >
-          <FaCertificate className="text-dice-blue text-xs" />
-          Tous les certificats
-        </button>
-      </div>
-    </BodyPortal>
-  )
-}
-
 export default function AdminUsersPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
@@ -356,8 +288,8 @@ export default function AdminUsersPage() {
   const [deletingUser, setDeletingUser] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
 
-  // État du menu d'actions client (position calculée dynamiquement, cf ClientActionsDropdown)
-  const [dropdownMenu, setDropdownMenu] = useState(null) // { userId, top, left, openUp, user }
+  // État pour la liste déroulante des actions client
+  const [activeDropdownId, setActiveDropdownId] = useState(null)
 
   // États pour les Modaux de Tickets et Certificats Client
   const [modalTicketsUser, setModalTicketsUser] = useState(null)
@@ -367,8 +299,6 @@ export default function AdminUsersPage() {
   const [modalCertificatsUser, setModalCertificatsUser] = useState(null)
   const [certificatsList, setCertificatsList] = useState([])
   const [loadingCertificats, setLoadingCertificats] = useState(false)
-  const [previewHtml, setPreviewHtml] = useState(null)
-  const [previewCode, setPreviewCode] = useState(null)
 
   // États pour le QR code affiché depuis le modal des tickets d'un client
   const [qrTicket, setQrTicket] = useState(null)
@@ -387,26 +317,10 @@ export default function AdminUsersPage() {
 
   // Fermer le menu déroulant si on clique à l'extérieur
   useEffect(() => {
-    const handleClickOutside = () => setDropdownMenu(null)
+    const handleClickOutside = () => setActiveDropdownId(null)
     window.addEventListener('click', handleClickOutside)
     return () => window.removeEventListener('click', handleClickOutside)
   }, [])
-
-  // Fermer le menu au scroll / resize pour éviter un mauvais positionnement
-  // (le menu est en `fixed`, donc sa position stockée devient obsolète si la page bouge)
-  const didInit = useRef(false)
-
-  useEffect(() => {
-    const token = auth.getToken()
-    const storedUser = auth.getUser()
-    if (!token || !storedUser || (storedUser.role !== 'admin' && storedUser.role !== 'super_admin')) {
-      router.push('/auth/login')
-      return
-    }
-    if (didInit.current) return
-    didInit.current = true
-    loadUsers()
-  }, [router])
 
   const loadUsers = async () => {
     try {
@@ -417,45 +331,10 @@ export default function AdminUsersPage() {
       setUsers(Array.isArray(data) ? data : [])
     } catch (err) {
       setError(err.message || 'Erreur lors du chargement des utilisateurs')
-      toast.error(err.message || 'Erreur lors du chargement des utilisateurs', { id: 'users-load-error' })
+      toast.error(err.message || 'Erreur lors du chargement des utilisateurs')
     } finally {
       setLoading(false)
     }
-  }
-
-  // Ouvre/ferme le menu d'actions d'un client, en calculant sa position
-  // (vers le haut si pas assez de place en dessous du bouton dans le viewport)
-  const toggleDropdown = (e, user) => {
-    e.stopPropagation()
-
-    // IMPORTANT : on lit currentTarget.getBoundingClientRect() ICI, de façon
-    // synchrone dans le handler, car React nettoie/réutilise le SyntheticEvent
-    // juste après l'exécution du handler. Le lire plus tard (ex: dans un
-    // callback passé à setState) renvoie e.currentTarget === null en production.
-    const button = e.currentTarget
-    const rect = button.getBoundingClientRect()
-
-    setDropdownMenu((prev) => {
-      if (prev && prev.userId === user.id) return null
-
-      const estimatedMenuHeight = 96 // ~2 items du menu
-      const spaceBelow = window.innerHeight - rect.bottom
-      const openUp = spaceBelow < estimatedMenuHeight + DROPDOWN_MARGIN
-
-      let left = rect.right - DROPDOWN_WIDTH
-      // Empêche le menu de sortir à gauche de l'écran
-      left = Math.max(8, left)
-      // Empêche le menu de sortir à droite de l'écran
-      left = Math.min(left, window.innerWidth - DROPDOWN_WIDTH - 8)
-
-      return {
-        userId: user.id,
-        user,
-        left,
-        top: openUp ? rect.top - DROPDOWN_MARGIN : rect.bottom + DROPDOWN_MARGIN,
-        openUp,
-      }
-    })
   }
 
   // Chargement des tickets du client sélectionné : on récupère tous les tickets
@@ -484,7 +363,7 @@ export default function AdminUsersPage() {
 
       setTicketsList(filtered)
     } catch (err) {
-      toast.error(err.message || 'Impossible de récupérer les tickets', { id: 'client-tickets-error' })
+      toast.error(err.message || 'Impossible de récupérer les tickets')
     } finally {
       setLoadingTickets(false)
     }
@@ -546,24 +425,9 @@ export default function AdminUsersPage() {
 
       setCertificatsList(merged)
     } catch (err) {
-      toast.error(err.message || 'Impossible de récupérer les certificats', { id: 'client-certs-error' })
+      toast.error(err.message || 'Impossible de récupérer les certificats')
     } finally {
       setLoadingCertificats(false)
-    }
-  }
-
-  // Aperçu HTML d'un certificat — identique à /admin/certificates
-  const openPreview = async (code) => {
-    try {
-      const token = auth.getToken()
-      const response = await fetch(api.getCertificateHtmlUrl(code, false), {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      })
-      if (!response.ok) throw new Error('Aperçu indisponible')
-      setPreviewCode(code)
-      setPreviewHtml(await response.text())
-    } catch (err) {
-      toast.error(err.message || 'Impossible d’ouvrir le certificat')
     }
   }
 
@@ -576,8 +440,8 @@ export default function AdminUsersPage() {
       const code = entry
         ? String(entry).replace(/\D/g, '').padStart(8, '0').slice(-8)
         : ticket.qr_codes?.[0]?.code ||
-          (typeof ticket.qr_codes?.[0] === 'string' ? ticket.qr_codes[0] : null) ||
-          `DC-${ticket.id}`
+        (typeof ticket.qr_codes?.[0] === 'string' ? ticket.qr_codes[0] : null) ||
+        `DC-${ticket.id}`
 
       const image = await QRCode.toDataURL(String(code), {
         width: 360,
@@ -600,7 +464,7 @@ export default function AdminUsersPage() {
     link.download = `ticket-${qrTicket.id}-qr.png`
     link.href = qrImage
     link.click()
-    toast.success('QR code téléchargé', { id: `client-qr-download-${qrTicket.id}` })
+    toast.success('QR code téléchargé')
   }
 
   const closeClientQR = () => {
@@ -1019,15 +883,47 @@ export default function AdminUsersPage() {
                             </button>
                           </div>
                         ) : (
-                          /* Bouton d'actions pour les clients — le menu est rendu via Portal (cf. ClientActionsDropdown) */
-                          <button
-                            type="button"
-                            onClick={(e) => toggleDropdown(e, user)}
-                            className="w-8 h-8 rounded-lg hover:bg-gray-100 transition-colors inline-flex items-center justify-center text-gray-500 hover:text-gray-700 mr-12"
-                            title="Actions"
-                          >
-                            <FaEllipsisV className="text-sm" />
-                          </button>
+                          /* Menu déroulant des actions pour les clients */
+                          <div className="relative inline-block text-left">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setActiveDropdownId(activeDropdownId === user.id ? null : user.id)
+                              }}
+                              className="w-8 h-8 rounded-lg hover:bg-gray-100 transition-colors inline-flex items-center justify-center text-gray-500 hover:text-gray-700"
+                              title="Actions"
+                            >
+                              <FaEllipsisV className="text-sm -translate-x-12" />
+                            </button>
+
+                            {activeDropdownId === user.id && (
+                              <div className="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 z-20 animate-fadeIn text-left">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveDropdownId(null)
+                                    handleOpenTicketsModal(user)
+                                  }}
+                                  className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 font-medium"
+                                >
+                                  <FaTicketAlt className="text-dice-blue text-xs" />
+                                  Tous les tickets
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveDropdownId(null)
+                                    handleOpenCertificatsModal(user)
+                                  }}
+                                  className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 font-medium"
+                                >
+                                  <FaCertificate className="text-dice-blue text-xs" />
+                                  Tous les certificats
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         )}
                       </td>
                     </tr>
@@ -1045,14 +941,6 @@ export default function AdminUsersPage() {
           />
         </div>
       )}
-
-      {/* Menu d'actions client (Tickets / Certificats) — Portal positionné dynamiquement */}
-      <ClientActionsDropdown
-        menu={dropdownMenu}
-        onClose={() => setDropdownMenu(null)}
-        onTickets={() => dropdownMenu && handleOpenTicketsModal(dropdownMenu.user)}
-        onCertificates={() => dropdownMenu && handleOpenCertificatsModal(dropdownMenu.user)}
-      />
 
       {/* Modal de visualisation des informations */}
       {viewUser && (
@@ -1446,32 +1334,30 @@ export default function AdminUsersPage() {
                   <p>Aucun certificat trouvé pour ce client.</p>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {certificatsList.map((cert) => (
-                    <button
+                    <div
                       key={cert.id || cert.code}
-                      type="button"
-                      onClick={() => openPreview(cert.code)}
-                      className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 bg-white hover:border-dice-blue/40 text-left transition-colors"
+                      className="p-4 border border-gray-200 rounded-xl hover:border-dice-blue/40 transition-colors bg-gray-50/50"
                     >
-                      <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                        <FaCheck />
+                      <div className="flex justify-between items-start gap-2 mb-1">
+                        <h4 className="font-semibold text-gray-800 text-sm">
+                          {cert.event_title || cert.title || cert.nom || `Certificat`}
+                        </h4>
+                        <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 font-medium capitalize">
+                          Délivré
+                        </span>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-800 truncate">
-                          {cert.event_title || 'Formation'}
-                        </p>
-                        <p className="text-xs text-gray-500 font-mono truncate">
-                          N° {cert.code || '—'}
-                        </p>
-                        {cert.issued_at && (
-                          <p className="text-[11px] text-gray-400 mt-0.5">
-                            Délivré le {formatDateFr(cert.issued_at)}
-                          </p>
-                        )}
+                      <p className="text-xs text-gray-600 mb-2 font-mono">
+                        N° {cert.code || '—'}
+                      </p>
+                      <div className="flex justify-between items-center text-xs text-gray-400 border-t border-gray-100 pt-2">
+                        <span>{cert.recipient_name || '—'}</span>
+                        <span>
+                          Délivré le : {cert.issued_at ? formatDateFr(cert.issued_at) : '—'}
+                        </span>
                       </div>
-                      <FaEye className="text-dice-blue shrink-0" />
-                    </button>
+                    </div>
                   ))}
                 </div>
               )}
@@ -1486,45 +1372,6 @@ export default function AdminUsersPage() {
                 Fermer
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal d'aperçu HTML du certificat — identique à /admin/certificates */}
-      {previewHtml && (
-        <div
-          className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4"
-          onClick={() => {
-            setPreviewHtml(null)
-            setPreviewCode(null)
-          }}
-          role="dialog"
-          aria-label="Aperçu du certificat"
-        >
-          <div
-            className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-              <p className="text-sm font-medium text-gray-800 truncate">
-                Certificat {previewCode}
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  setPreviewHtml(null)
-                  setPreviewCode(null)
-                }}
-                className="text-sm text-gray-500 hover:text-gray-800"
-              >
-                Fermer
-              </button>
-            </div>
-            <iframe
-              title="Aperçu certificat"
-              srcDoc={previewHtml}
-              className="w-full flex-1 min-h-[70vh] border-0"
-            />
           </div>
         </div>
       )}

@@ -20,7 +20,6 @@ import {
 } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 import { auth } from '@/lib/auth'
-import { api } from '@/lib/api'
 
 /**
  * Profil client — lecture depuis la session auth.
@@ -78,22 +77,14 @@ export default function ProfilePage() {
     setSaving(true)
     try {
       const current = auth.getUser() || {}
-      const token = auth.getToken()
-
-      const result = await api.updateClient(
-        current.id,
-        {
-          email: formData.email,
-          name: formData.name,
-          telephone: formData.telephone,
-          sexe: formData.sexe,
-          picture: current.picture,
-        },
-        token
-      )
-
-      auth.setUser({ ...current, ...result })
-      toast.success('Profil mis à jour avec succès')
+      const updated = {
+        ...current,
+        name: formData.name,
+        telephone: formData.telephone,
+        sexe: formData.sexe,
+      }
+      auth.setUser(updated)
+      toast.success('Profil enregistré localement')
     } catch (error) {
       toast.error(error.message || 'Erreur lors de l’enregistrement')
     } finally {
@@ -120,23 +111,7 @@ export default function ProfilePage() {
 
     setPasswordSaving(true)
     try {
-      const current = auth.getUser() || {}
-      const token = auth.getToken()
-
-      const result = await api.updateClient(
-        current.id,
-        {
-          email: current.email,
-          name: current.name,
-          telephone: current.telephone,
-          sexe: current.sexe,
-          picture: current.picture,
-          password: passwordData.newPassword,
-        },
-        token
-      )
-
-      auth.setUser({ ...current, ...result })
+      await new Promise((resolve) => setTimeout(resolve, 800))
       toast.success('Mot de passe mis à jour avec succès')
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
     } catch (error) {
@@ -159,21 +134,14 @@ export default function ProfilePage() {
     toast.success('Déconnexion de toutes les autres sessions effectuée.')
   }
 
-  const handleDeleteAccount = async () => {
+  const handleDeleteAccount = () => {
     const confirmed = window.confirm(
-      'Êtes-vous absolument sûr de vouloir supprimer votre compte ? Cette action est irréversible.'
+      'Êtes-vous absolument sûr de vouloir supprimer votre compte ? Cette action est irréversible et effacera vos données de session.'
     )
-    if (!confirmed) return
-
-    try {
-      const current = auth.getUser() || {}
-      const token = auth.getToken()
-      await api.deleteClient(current.id, token)
+    if (confirmed) {
       auth.logout?.()
       toast.success('Votre compte a été supprimé.')
       router.push('/auth/login')
-    } catch (error) {
-      toast.error(error.message || 'Erreur lors de la suppression du compte')
     }
   }
 

@@ -4,7 +4,7 @@
  */
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { auth } from '@/lib/auth'
@@ -161,7 +161,7 @@ export default function AdminCertificatesPage() {
       setAlreadyIssued([])
       setEventMeta(null)
       setSelectedTickets(new Set())
-      toast.error(err.message || 'Impossible de charger les participants', { id: 'eligible-load-error' })
+      toast.error(err.message || 'Impossible de charger les participants')
     } finally {
       setLoadingEligible(false)
     }
@@ -219,14 +219,12 @@ export default function AdminCertificatesPage() {
       }
     } catch (err) {
       setError(err.message || 'Impossible de charger les formations')
-      toast.error(err.message || 'Erreur de chargement', { id: 'certificates-load-error' })
+      toast.error(err.message || 'Erreur de chargement')
     } finally {
       setLoading(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- initial/refresh load; avoid loop on selectedTickets
   }, [])
-
-  const didInit = useRef(false)
 
   useEffect(() => {
     const token = auth.getToken()
@@ -235,8 +233,6 @@ export default function AdminCertificatesPage() {
       router.push('/auth/login')
       return
     }
-    if (didInit.current) return
-    didInit.current = true
     loadFormations()
   }, [router, loadFormations])
 
@@ -314,7 +310,7 @@ export default function AdminCertificatesPage() {
       await loadEligible(selectedId, { preserveSelection: false })
       if (issuedCount > 0) setTab('issued')
     } catch (err) {
-      toast.error(err.message || 'Échec de la délivrance', { id: 'issue-certificates-error' })
+      toast.error(err.message || 'Échec de la délivrance')
     } finally {
       setIssuing(false)
     }
@@ -330,7 +326,7 @@ export default function AdminCertificatesPage() {
       setPreviewCode(code)
       setPreviewHtml(await response.text())
     } catch (err) {
-      toast.error(err.message || 'Impossible d’ouvrir le certificat', { id: 'certificate-preview-error' })
+      toast.error(err.message || 'Impossible d’ouvrir le certificat')
     }
   }
 

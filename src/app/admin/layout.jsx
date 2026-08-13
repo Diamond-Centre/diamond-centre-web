@@ -55,10 +55,10 @@ export default function AdminLayout({ children }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex overflow-x-hidden">
-      {/* Sidebar fixée avec z-40 pour rester au-dessus du contenu */}
-      <aside className="w-64 bg-white border-r border-gray-200 fixed top-0 bottom-0 left-0 z-40 flex flex-col justify-between">
-        <div className="p-4 overflow-y-auto flex-1">
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar */}
+      <aside className="w-64 bg-white border-r border-gray-200 fixed h-full overflow-y-auto">
+        <div className="p-4">
           {/* Logo */}
           <div className="flex items-center gap-3 mb-8">
             <div className="w-30 h-30 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm overflow-hidden">
@@ -72,7 +72,7 @@ export default function AdminLayout({ children }) {
             </div>
           </div>
 
-          {/* Menu */}
+          {/* Menu - Uniquement Dashboard, Événements, Tickets */}
           <nav className="space-y-3">
             {menuItems.map((item) => {
               const isActive = pathname === item.href ||
@@ -95,7 +95,7 @@ export default function AdminLayout({ children }) {
         </div>
 
         {/* Footer avec déconnexion */}
-        <div className="p-4 border-t border-gray-200 bg-white">
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 w-full px-4 py-2.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -106,8 +106,8 @@ export default function AdminLayout({ children }) {
         </div>
       </aside>
 
-      {/* Contenu principal avec min-w-0 pour contenir le défilement horizontal */}
-      <main className="ml-64 flex-1 p-6 min-w-0">
+      {/* Contenu principal */}
+      <main className="ml-64 flex-1 p-6">
         {children}
       </main>
     </div>

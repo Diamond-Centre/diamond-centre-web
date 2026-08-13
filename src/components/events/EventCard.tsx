@@ -12,7 +12,7 @@
  */
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -102,7 +102,7 @@ function useBodyScrollLock(locked: boolean) {
 /**
  * Portail SSR-safe : ne rend rien côté serveur, monte dans document.body côté client.
  */
-function ModalPortal({ children }: { children: React.ReactNode }) {
+function ModalPortal({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {

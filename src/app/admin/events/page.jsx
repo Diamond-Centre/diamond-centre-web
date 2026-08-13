@@ -2,7 +2,8 @@
  * Gestion des événements — design DiCe + pagination
  */
 'use client'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -315,7 +316,7 @@ export default function AdminEvents() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [categoryFilter, setCategoryFilter] = useState('all')
-  const [sortBy, setSortBy] = useState('created_desc')
+  const [sortBy, setSortBy] = useState('closest_to_now')
   const [page, setPage] = useState(1)
   const [error, setError] = useState(null)
   const [selectedEvent, setSelectedEvent] = useState(null)
@@ -331,13 +332,11 @@ export default function AdminEvents() {
       setEvents(list)
     } catch (err) {
       setError(err.message)
-      toast.error('Erreur lors du chargement des événements', { id: 'events-load-error' })
+      toast.error('Erreur lors du chargement des événements')
     } finally {
       setLoading(false)
     }
   }, [])
-
-  const didInit = useRef(false)
 
   useEffect(() => {
     const token = auth.getToken()
@@ -345,8 +344,6 @@ export default function AdminEvents() {
       router.push('/auth/login')
       return
     }
-    if (didInit.current) return
-    didInit.current = true
     loadEvents()
   }, [router, loadEvents])
 
@@ -483,10 +480,10 @@ export default function AdminEvents() {
       setDeletingId(event.id)
       const token = auth.getToken()
       await api.deleteEvent(event.id, token)
-      toast.success('Événement supprimé', { id: `event-delete-${event.id}` })
+      toast.success('Événement supprimé')
       await loadEvents()
     } catch (err) {
-      toast.error(err.message || 'Erreur lors de la suppression', { id: `event-delete-${event.id}` })
+      toast.error(err.message || 'Erreur lors de la suppression')
     } finally {
       setDeletingId(null)
     }
@@ -583,9 +580,9 @@ export default function AdminEvents() {
                   onChange={(e) => setSortBy(e.target.value)}
                   className="w-full sm:w-auto pl-3.5 pr-8 py-3 rounded-2xl border border-[#E8EEF5] bg-[#F8FAFC] text-sm font-medium text-[#0B1220] focus:ring-2 focus:ring-[#0A89F2]/30 focus:border-[#0A89F2] focus:bg-white outline-none transition-colors cursor-pointer appearance-none"
                 >
+                  <option value="closest_to_now">Evenement le plus proche</option>
                   <option value="created_desc">Date de création : Récent → Ancien</option>
                   <option value="created_asc">Date de création : Ancien → Récent</option>
-                  <option value="closest_to_now">Evenement le plus proche</option>
                 </select>
                 <FaSortAmountDown className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#98A2B3] text-xs pointer-events-none" />
               </div>

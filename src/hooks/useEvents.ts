@@ -169,6 +169,7 @@ export function useEvents() {
     fetchPublicEvents,
     fetchEvents,
     getEvent,
+    getEventById: getEvent,
     createEvent,
     updateEvent,
     deleteEvent

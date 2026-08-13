@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { FaArrowLeft, FaSave, FaCalendar, FaMapMarker, FaDollarSign, FaUsers } from 'react-icons/fa'
-import api from '@/lib/api'
+import { api } from '@/lib/api'
 import toast from 'react-hot-toast'
 
 const categories = ['conférence', 'séminaire', 'formation', 'atelier', 'webinaire', 'autre']

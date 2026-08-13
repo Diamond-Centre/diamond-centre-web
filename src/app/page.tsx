@@ -17,8 +17,8 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   useEffect(() => {
-  fetchPublicEvents?.()?.catch(() => {})
-}, [fetchPublicEvents])
+    fetchPublicEvents?.()
+  }, [fetchPublicEvents])
 
   const upcomingEvents = (events || [])
     .filter((e: any) => {

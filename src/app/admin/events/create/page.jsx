@@ -44,17 +44,15 @@ function formatPreviewDate(value) {
 function Section({ icon: Icon, title, subtitle, children, accent = false }) {
   return (
     <section
-      className={`rounded-[24px] border p-5 sm:p-6 shadow-[0_8px_24px_rgba(11,18,32,0.04)] ${
-        accent
+      className={`rounded-[24px] border p-5 sm:p-6 shadow-[0_8px_24px_rgba(11,18,32,0.04)] ${accent
           ? 'border-[#F5D48A] bg-gradient-to-br from-[#FFF8E8] to-white'
           : 'border-[#E8EEF5] bg-white'
-      }`}
+        }`}
     >
       <div className="flex items-start gap-3 mb-5">
         <div
-          className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
-            accent ? 'bg-[#FFF4DE] text-[#B78103]' : 'bg-[#E8F3FE] text-[#0A89F2]'
-          }`}
+          className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${accent ? 'bg-[#FFF4DE] text-[#B78103]' : 'bg-[#E8F3FE] text-[#0A89F2]'
+            }`}
         >
           <Icon />
         </div>
@@ -68,84 +66,9 @@ function Section({ icon: Icon, title, subtitle, children, accent = false }) {
   )
 }
 
-/**
- * Hook qui fait "suivre" un élément (l'aperçu live) pendant le scroll :
- * - il reste collé à `topGap` px du haut de l'écran tant qu'il y a de la place
- * - quand sa colonne (containerRef) touche à sa fin, il s'arrête pour ne pas déborder
- * - il ne passe jamais sous la barre d'actions fixe en bas (actionBarRef)
- * - désactivé en dessous du breakpoint xl (1280px), où l'aperçu reste dans le flux normal
- */
-function useFollowAside(containerRef, asideRef, actionBarRef, { topGap = 24, bottomGap = 16 } = {}) {
-  const [offset, setOffset] = useState(0)
-
-  useEffect(() => {
-    let ticking = false
-
-    function update() {
-      const isDesktop = window.matchMedia('(min-width: 1280px)').matches
-      const container = containerRef.current
-      const aside = asideRef.current
-
-      if (!isDesktop || !container || !aside) {
-        setOffset(0)
-        return
-      }
-
-      const containerRect = container.getBoundingClientRect()
-      const asideHeight = aside.offsetHeight
-      const containerHeight = container.offsetHeight
-      const viewportHeight = window.innerHeight
-      const barHeight = actionBarRef.current?.offsetHeight || 0
-
-      // Position idéale : collé à `topGap` du haut de l'écran
-      let top = topGap - containerRect.top
-      if (top < 0) top = 0
-
-      // Ne jamais dépasser le bas de la colonne de gauche
-      const maxTop = Math.max(containerHeight - asideHeight, 0)
-      if (top > maxTop) top = maxTop
-
-      // Ne jamais passer sous la barre d'actions fixe en bas
-      const asideBottomInViewport = containerRect.top + top + asideHeight
-      const limit = viewportHeight - barHeight - bottomGap
-      if (asideBottomInViewport > limit) {
-        top -= asideBottomInViewport - limit
-      }
-      if (top < 0) top = 0
-      if (top > maxTop) top = maxTop
-
-      setOffset(top)
-    }
-
-    function onScrollOrResize() {
-      if (!ticking) {
-        ticking = true
-        requestAnimationFrame(() => {
-          update()
-          ticking = false
-        })
-      }
-    }
-
-    update()
-    window.addEventListener('scroll', onScrollOrResize, { passive: true })
-    window.addEventListener('resize', onScrollOrResize)
-    return () => {
-      window.removeEventListener('scroll', onScrollOrResize)
-      window.removeEventListener('resize', onScrollOrResize)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  return offset
-}
-
 export default function CreateEvent() {
   const router = useRouter()
   const fileInputRef = useRef(null)
-  const previewContainerRef = useRef(null)
-  const previewRef = useRef(null)
-  const actionBarRef = useRef(null)
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState(null)
@@ -174,8 +97,6 @@ export default function CreateEvent() {
     category: 'conference',
     capacity: '50',
   })
-
-  const previewOffset = useFollowAside(previewContainerRef, previewRef, actionBarRef)
 
   useEffect(() => {
     const token = auth.getToken()
@@ -230,9 +151,11 @@ export default function CreateEvent() {
     if (!(Number(form.capacity) >= 1)) return 'La capacité minimale est 1'
     if (Number(form.price) < 0 || form.price === '') return 'Le prix est requis'
     if (hasPromotion) {
+      const nombre = Number(promotion.nombre)
       const pourcentage = Number(promotion.pourcentage)
-      if (!(pourcentage > 0 && pourcentage <= 100)) {
-        return 'Promotion incomplète : la réduction (%) est requise (1–100)'
+      const duree = Number(promotion.duree)
+      if (!(nombre > 0 && pourcentage > 0 && pourcentage <= 100 && duree > 0)) {
+        return 'Promotion incomplete : places, % (1–100) et durée sont requis'
       }
     }
     return null
@@ -246,7 +169,7 @@ export default function CreateEvent() {
       setError(validationError)
       return
     }
-
+    
     try {
       setLoading(true)
       setError(null)
@@ -293,18 +216,18 @@ export default function CreateEvent() {
         hasPromotion,
         promotion: hasPromotion
           ? {
-              nombre: promotion.nombre !== '' ? Number(promotion.nombre) : null,
-              sexe: promotion.sexe || 'tous',
-              pourcentage: Number(promotion.pourcentage),
-              duree: promotion.duree !== '' ? Number(promotion.duree) : null,
-              description: promotion.description || '',
-            }
+            nombre: Number(promotion.nombre),
+            sexe: promotion.sexe || 'tous',
+            pourcentage: Number(promotion.pourcentage),
+            duree: Number(promotion.duree),
+            description: promotion.description || '',
+          }
           : undefined,
       }
 
       await api.createEvent(formattedData, token)
       toast.success('Événement publié avec succès')
-      router.push('/admin/events')
+        router.push('/admin/events')
     } catch (err) {
       setError(err.message)
       toast.error(err.message || 'Erreur lors de la création')
@@ -327,15 +250,15 @@ export default function CreateEvent() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div className="flex items-start gap-3">
-            <button
+        <button
               type="button"
-              onClick={() => router.back()}
+          onClick={() => router.back()}
               className="mt-1 p-2.5 rounded-2xl border border-[#E8EEF5] bg-white text-[#667085] hover:bg-[#F3F6FA] transition-colors"
               aria-label="Retour"
-            >
+        >
               <FaArrowLeft />
-            </button>
-            <div>
+        </button>
+        <div>
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#0A89F2] mb-1">
                 Diamond Centre
               </p>
@@ -353,15 +276,15 @@ export default function CreateEvent() {
           >
             Voir la liste
           </Link>
-        </div>
+      </div>
 
-        {error && (
+      {error && (
           <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
-          </div>
-        )}
+          {error}
+        </div>
+      )}
 
-        <form onSubmit={handleFormSubmit} className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-6 items-start xl:items-stretch">
+        <form onSubmit={handleFormSubmit} className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-6 items-start">
           <div className="space-y-5">
             {/* General */}
             <Section
@@ -370,18 +293,18 @@ export default function CreateEvent() {
               subtitle="Titre, catégorie et description visibles par le public"
             >
               <div className="space-y-4">
-                <div>
+            <div>
                   <label className={labelClass}>Titre *</label>
-                  <input
+              <input
                     value={form.title}
                     onChange={(e) => setField('title', e.target.value)}
                     placeholder="Ex. Formation Full-Stack JavaScript"
                     className={inputClass}
-                    required
-                  />
-                </div>
+                required
+              />
+            </div>
 
-                <div>
+            <div>
                   <label className={labelClass}>Catégorie *</label>
                   <div className="flex flex-wrap gap-2">
                     {CATEGORIES.map((c) => (
@@ -389,29 +312,28 @@ export default function CreateEvent() {
                         key={c.id}
                         type="button"
                         onClick={() => setField('category', c.id)}
-                        className={`px-3.5 py-2 rounded-full text-xs font-bold transition-all ${
-                          form.category === c.id
+                        className={`px-3.5 py-2 rounded-full text-xs font-bold transition-all ${form.category === c.id
                             ? 'bg-[#0A89F2] text-white shadow-[0_6px_16px_rgba(10,137,242,0.3)]'
                             : 'bg-[#F3F6FA] text-[#667085] hover:bg-[#E8F3FE] hover:text-[#0A89F2]'
-                        }`}
+                          }`}
                       >
                         {c.label}
                       </button>
                     ))}
-                  </div>
-                </div>
+            </div>
+          </div>
 
                 <div>
                   <label className={labelClass}>Description *</label>
-                  <textarea
+            <textarea
                     value={form.description}
                     onChange={(e) => setField('description', e.target.value)}
                     rows={5}
                     placeholder="Décrivez le programme, le public cible et ce que les participants apprendront…"
                     className={`${inputClass} resize-y min-h-[120px]`}
-                    required
-                  />
-                </div>
+              required
+            />
+          </div>
               </div>
             </Section>
 
@@ -422,9 +344,9 @@ export default function CreateEvent() {
               subtitle="Dates, horaires et lieu de l’événement"
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
+            <div>
                   <label className={labelClass}>Date de début *</label>
-                  <input
+              <input
                     type="date"
                     value={form.start_date}
                     onChange={(e) => {
@@ -434,40 +356,40 @@ export default function CreateEvent() {
                       }
                     }}
                     className={inputClass}
-                    required
-                  />
-                </div>
-                <div>
+                required
+              />
+            </div>
+            <div>
                   <label className={labelClass}>Date de fin *</label>
-                  <input
+              <input
                     type="date"
                     value={form.end_date}
                     onChange={(e) => setField('end_date', e.target.value)}
                     min={form.start_date || undefined}
                     className={inputClass}
-                    required
-                  />
-                </div>
-                <div>
+                required
+              />
+            </div>
+            <div>
                   <label className={labelClass}>Heure de début *</label>
-                  <input
+              <input
                     type="time"
                     value={form.start_time}
                     onChange={(e) => setField('start_time', e.target.value)}
                     className={inputClass}
-                    required
-                  />
-                </div>
-                <div>
+                required
+              />
+            </div>
+            <div>
                   <label className={labelClass}>Heure de fin *</label>
-                  <input
+              <input
                     type="time"
                     value={form.end_time}
                     onChange={(e) => setField('end_time', e.target.value)}
                     className={inputClass}
-                    required
-                  />
-                </div>
+                required
+              />
+            </div>
                 <div className="sm:col-span-2">
                   <label className={labelClass}>Lieu *</label>
                   <LocationPicker
@@ -486,7 +408,7 @@ export default function CreateEvent() {
                     }}
                   />
                 </div>
-              </div>
+          </div>
             </Section>
 
             {/* Pricing */}
@@ -496,34 +418,34 @@ export default function CreateEvent() {
               subtitle="Capacité et prix affichés à la réservation"
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
+            <div>
                   <label className={labelClass}>Prix (FCFA) *</label>
-                  <input
+              <input
                     type="number"
                     min="0"
                     value={form.price}
                     onChange={(e) => setField('price', e.target.value)}
                     placeholder="25000"
                     className={inputClass}
-                    required
-                  />
-                </div>
-                <div>
+                required
+              />
+            </div>
+            <div>
                   <label className={labelClass}>Capacité *</label>
-                  <input
+              <input
                     type="number"
                     min="1"
                     value={form.capacity}
                     onChange={(e) => setField('capacity', e.target.value)}
                     placeholder="50"
                     className={inputClass}
-                    required
-                  />
-                </div>
-              </div>
+                required
+              />
+            </div>
+          </div>
             </Section>
 
-            {/* Image */}
+          {/* Image */}
             <Section
               icon={FaImage}
               title="Visuel"
@@ -533,10 +455,10 @@ export default function CreateEvent() {
                 <div className="relative overflow-hidden rounded-[20px] border border-[#E8EEF5]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={imagePreview}
-                    alt="Aperçu"
+                      src={imagePreview}
+                      alt="Aperçu"
                     className="w-full h-56 object-cover"
-                  />
+                    />
                   <button
                     type="button"
                     onClick={removeImage}
@@ -580,27 +502,24 @@ export default function CreateEvent() {
               <button
                 type="button"
                 onClick={() => setHasPromotion((v) => !v)}
-                className={`w-full flex items-center justify-between gap-3 rounded-2xl border px-4 py-3.5 transition-colors ${
-                  hasPromotion
+                className={`w-full flex items-center justify-between gap-3 rounded-2xl border px-4 py-3.5 transition-colors ${hasPromotion
                     ? 'border-[#F5D48A] bg-white'
                     : 'border-[#E8EEF5] bg-[#F8FAFC] hover:bg-white'
-                }`}
+                  }`}
               >
                 <div className="text-left">
                   <p className="text-sm font-bold text-[#0B1220]">Activer une promotion</p>
                   <p className="text-xs text-[#667085] mt-0.5">
-                    Seule la réduction (%) est obligatoire
+                    Places promo, pourcentage et durée
                   </p>
-                </div>
+            </div>
                 <span
-                  className={`relative w-12 h-7 rounded-full transition-colors ${
-                    hasPromotion ? 'bg-[#0A89F2]' : 'bg-[#D0D5DD]'
-                  }`}
+                  className={`relative w-12 h-7 rounded-full transition-colors ${hasPromotion ? 'bg-[#0A89F2]' : 'bg-[#D0D5DD]'
+                    }`}
                 >
                   <span
-                    className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow transition-transform ${
-                      hasPromotion ? 'left-5' : 'left-0.5'
-                    }`}
+                    className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow transition-transform ${hasPromotion ? 'left-5' : 'left-0.5'
+                      }`}
                   />
                 </span>
               </button>
@@ -614,10 +533,10 @@ export default function CreateEvent() {
                     className="overflow-hidden"
                   >
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
-                      <div>
-                        <label className={labelClass}>Places promo</label>
-                        <input
-                          type="number"
+              <div>
+                        <label className={labelClass}>Places promo *</label>
+                <input
+                  type="number"
                           min="1"
                           value={promotion.nombre}
                           onChange={(e) =>
@@ -625,48 +544,50 @@ export default function CreateEvent() {
                           }
                           placeholder="15"
                           className={inputClass}
-                        />
-                      </div>
-                      <div>
+                          required={hasPromotion}
+                />
+              </div>
+              <div>
                         <label className={labelClass}>Public ciblé</label>
-                        <select
+                <select
                           value={promotion.sexe}
                           onChange={(e) =>
                             setPromotion((p) => ({ ...p, sexe: e.target.value }))
                           }
                           className={inputClass}
-                        >
-                          <option value="tous">Tous</option>
-                          <option value="homme">Homme</option>
-                          <option value="femme">Femme</option>
-                        </select>
-                      </div>
-                      <div>
+                >
+                  <option value="tous">Tous</option>
+                  <option value="homme">Homme</option>
+                  <option value="femme">Femme</option>
+                </select>
+              </div>
+              <div>
                         <label className={labelClass}>Réduction (%) *</label>
-                        <input
-                          type="number"
+                <input
+                  type="number"
                           min="1"
                           max="100"
                           value={promotion.pourcentage}
                           onChange={(e) =>
                             setPromotion((p) => ({ ...p, pourcentage: e.target.value }))
                           }
-                          placeholder="20"
+                  placeholder="20"
                           className={inputClass}
                           required={hasPromotion}
-                        />
-                      </div>
-                      <div>
-                        <label className={labelClass}>Durée (jours)</label>
-                        <input
-                          type="number"
+                />
+              </div>
+              <div>
+                        <label className={labelClass}>Durée (jours) *</label>
+                <input
+                  type="number"
                           min="1"
                           value={promotion.duree}
                           onChange={(e) =>
                             setPromotion((p) => ({ ...p, duree: e.target.value }))
                           }
-                          placeholder="7"
+                  placeholder="7"
                           className={inputClass}
+                          required={hasPromotion}
                         />
                       </div>
                       <div className="sm:col-span-2">
@@ -676,7 +597,7 @@ export default function CreateEvent() {
                           onChange={(e) =>
                             setPromotion((p) => ({ ...p, description: e.target.value }))
                           }
-                          placeholder="Ex: Promotion spéciale pour les 10 premiers jours"
+                          placeholder="Early bird -20%"
                           className={inputClass}
                         />
                       </div>
@@ -698,110 +619,101 @@ export default function CreateEvent() {
             </Section>
           </div>
 
-          {/* Live preview — suit le scroll entre le haut et le bas de sa colonne */}
-          <div ref={previewContainerRef} className="xl:relative">
-            <aside
-              ref={previewRef}
-              className="space-y-4 xl:absolute xl:left-0 xl:right-0 xl:top-0 transition-transform duration-150 ease-out will-change-transform"
-              style={{ transform: `translateY(${previewOffset}px)` }}
-            >
-              <div className="rounded-[24px] border border-[#E8EEF5] bg-white overflow-hidden shadow-[0_12px_32px_rgba(11,18,32,0.06)]">
-                <div className="px-4 py-3 border-b border-[#E8EEF5] flex items-center justify-between">
-                  <p className="text-xs font-bold uppercase tracking-wide text-[#667085]">
-                    Aperçu live
-                  </p>
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#0B9B6B] bg-emerald-50 px-2 py-0.5 rounded-full">
-                    <FaCheck className="text-[9px]" />
-                    Publié
-                  </span>
-                </div>
-                <div className="relative h-40 bg-[#E8F3FE]">
-                  {imagePreview ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={imagePreview} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-[#0A89F2]/50">
-                      <FaImage className="text-3xl" />
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                  <div className="absolute bottom-3 left-3 right-3">
-                    <p className="text-[11px] font-semibold text-white/85 uppercase tracking-wide">
-                      {categoryLabel}
-                    </p>
-                    <p className="text-white font-extrabold text-lg leading-snug line-clamp-2">
-                      {form.title.trim() || 'Titre de l’événement'}
-                    </p>
+          {/* Live preview */}
+          <aside className="xl:sticky xl:top-6 space-y-4">
+            <div className="rounded-[24px] border border-[#E8EEF5] bg-white overflow-hidden shadow-[0_12px_32px_rgba(11,18,32,0.06)]">
+              <div className="px-4 py-3 border-b border-[#E8EEF5] flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-wide text-[#667085]">
+                  Aperçu live
+                </p>
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#0B9B6B] bg-emerald-50 px-2 py-0.5 rounded-full">
+                  <FaCheck className="text-[9px]" />
+                  Publié
+                </span>
+              </div>
+              <div className="relative h-40 bg-[#E8F3FE]">
+                {imagePreview ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={imagePreview} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-[#0A89F2]/50">
+                    <FaImage className="text-3xl" />
                   </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                <div className="absolute bottom-3 left-3 right-3">
+                  <p className="text-[11px] font-semibold text-white/85 uppercase tracking-wide">
+                    {categoryLabel}
+                  </p>
+                  <p className="text-white font-extrabold text-lg leading-snug line-clamp-2">
+                    {form.title.trim() || 'Titre de l’événement'}
+                  </p>
                 </div>
-                <div className="p-4 space-y-2.5 text-sm">
-                  <p className="flex items-center gap-2 text-[#667085]">
-                    <FaCalendarAlt className="text-[#0A89F2] text-xs" />
-                    {formatPreviewDate(form.start_date)}
-                    {form.start_time ? ` · ${form.start_time}` : ''}
-                  </p>
-                  <p className="flex items-center gap-2 text-[#667085]">
-                    <FaMapMarkerAlt className="text-[#0A89F2] text-xs" />
-                    {form.location.trim() || 'Lieu à préciser'}
-                  </p>
-                  <p className="flex items-center gap-2 text-[#667085]">
-                    <FaUsers className="text-[#0A89F2] text-xs" />
-                    {form.capacity || '—'} places
-                  </p>
-                  <div className="pt-2 border-t border-[#E8EEF5] flex items-end justify-between">
-                    <div>
-                      {promoPrice != null ? (
-                        <>
-                          <p className="text-lg font-extrabold text-[#0A89F2]">
-                            {promoPrice.toLocaleString('fr-FR')} FCFA
-                          </p>
-                          <p className="text-xs text-[#98A2B3] line-through">
-                            {Number(form.price || 0).toLocaleString('fr-FR')} FCFA
-                          </p>
-                        </>
-                      ) : (
+              </div>
+              <div className="p-4 space-y-2.5 text-sm">
+                <p className="flex items-center gap-2 text-[#667085]">
+                  <FaCalendarAlt className="text-[#0A89F2] text-xs" />
+                  {formatPreviewDate(form.start_date)}
+                  {form.start_time ? ` · ${form.start_time}` : ''}
+                </p>
+                <p className="flex items-center gap-2 text-[#667085]">
+                  <FaMapMarkerAlt className="text-[#0A89F2] text-xs" />
+                  {form.location.trim() || 'Lieu à préciser'}
+                </p>
+                <p className="flex items-center gap-2 text-[#667085]">
+                  <FaUsers className="text-[#0A89F2] text-xs" />
+                  {form.capacity || '—'} places
+                </p>
+                <div className="pt-2 border-t border-[#E8EEF5] flex items-end justify-between">
+                  <div>
+                    {promoPrice != null ? (
+                      <>
                         <p className="text-lg font-extrabold text-[#0A89F2]">
-                          {form.price !== ''
-                            ? `${Number(form.price).toLocaleString('fr-FR')} FCFA`
-                            : '— FCFA'}
+                          {promoPrice.toLocaleString('fr-FR')} FCFA
                         </p>
-                      )}
-                    </div>
-                    {hasPromotion && Number(promotion.pourcentage) > 0 && (
-                      <span className="text-[11px] font-bold bg-[#FFF4DE] text-[#B78103] px-2.5 py-1 rounded-full">
-                        -{promotion.pourcentage}%
-                      </span>
+                        <p className="text-xs text-[#98A2B3] line-through">
+                          {Number(form.price || 0).toLocaleString('fr-FR')} FCFA
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-lg font-extrabold text-[#0A89F2]">
+                        {form.price !== ''
+                          ? `${Number(form.price).toLocaleString('fr-FR')} FCFA`
+                          : '— FCFA'}
+                      </p>
                     )}
                   </div>
-                </div>
-              </div>
-
-              <div className="rounded-[20px] border border-[#E8EEF5] bg-[#E8F3FE]/60 px-4 py-3 text-xs text-[#136db8] leading-relaxed">
-                L’événement sera publié immédiatement et visible sur la page publique DiCe.
-              </div>
-            </aside>
+                  {hasPromotion && Number(promotion.pourcentage) > 0 && (
+                    <span className="text-[11px] font-bold bg-[#FFF4DE] text-[#B78103] px-2.5 py-1 rounded-full">
+                      -{promotion.pourcentage}%
+                    </span>
+                  )}
+            </div>
           </div>
+        </div>
+
+            <div className="rounded-[20px] border border-[#E8EEF5] bg-[#E8F3FE]/60 px-4 py-3 text-xs text-[#136db8] leading-relaxed">
+              L’événement sera publié immédiatement et visible sur la page publique DiCe.
+            </div>
+          </aside>
 
           {/* Sticky actions */}
-          <div
-            ref={actionBarRef}
-            className="xl:col-span-2 fixed bottom-0 right-0 left-0 md:left-64 z-40 border-t border-[#E8EEF5] bg-white/95 backdrop-blur-md px-6 py-4 shadow-[0_-8px_24px_rgba(11,18,32,0.06)]"
-          >
+          <div className="xl:col-span-2 fixed bottom-0 right-0 left-0 md:left-64 z-40 border-t border-[#E8EEF5] bg-white/95 backdrop-blur-md px-6 py-4 shadow-[0_-8px_24px_rgba(11,18,32,0.06)]">
             <div className="w-full flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
               <p className="text-sm text-[#667085] hidden sm:block">
                 Vérifiez l’aperçu avant de publier.
               </p>
               <div className="flex gap-2 w-full sm:w-auto">
                 <button
-                  type="button"
-                  onClick={() => router.back()}
+            type="button"
+            onClick={() => router.back()}
                   className="flex-1 sm:flex-none px-5 py-3 rounded-2xl border border-[#E8EEF5] text-sm font-semibold text-[#667085] hover:bg-[#F3F6FA] transition-colors"
-                >
-                  Annuler
+          >
+            Annuler
                 </button>
                 <button
-                  type="submit"
-                  disabled={loading || uploading}
+            type="submit"
+            disabled={loading || uploading}
                   className="flex-1 sm:flex-none px-6 py-3 rounded-2xl bg-[#0A89F2] text-white text-sm font-bold hover:bg-[#0770cc] transition-colors disabled:opacity-50 inline-flex items-center justify-center gap-2 shadow-[0_8px_20px_rgba(10,137,242,0.3)]"
                 >
                   <FaSave />
@@ -813,8 +725,8 @@ export default function CreateEvent() {
                 </button>
               </div>
             </div>
-          </div>
-        </form>
+        </div>
+      </form>
       </div>
     </div>
   )
