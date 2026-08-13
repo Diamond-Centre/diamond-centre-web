@@ -305,6 +305,9 @@ export default function AdminUsersPage() {
   const [qrImage, setQrImage] = useState(null)
   const [qrLoading, setQrLoading] = useState(false)
 
+  const currentUser = auth.getUser()
+  const isSuperAdmin = currentUser?.role === 'super_admin'
+
   useEffect(() => {
     const token = auth.getToken()
     const storedUser = auth.getUser()
@@ -524,6 +527,10 @@ export default function AdminUsersPage() {
 
   const handleCreateAdmin = async (e) => {
     e.preventDefault()
+    if (!isSuperAdmin) {
+      toast.error('Seul le super admin peut gérer les administrateurs')
+      return
+    }
     if (!form.name.trim() || !form.email.trim() || !form.telephone.trim() || !form.password) {
       toast.error('Veuillez remplir tous les champs obligatoires')
       return
@@ -563,6 +570,14 @@ export default function AdminUsersPage() {
 
   // Modification d'un admin
   const handleOpenEdit = (user) => {
+    if (!isSuperAdmin) {
+      toast.error('Seul le super admin peut gérer les administrateurs')
+      return
+    }
+    if (user.role === 'super_admin') {
+      toast.error('Le compte super admin ne peut pas être modifié ici')
+      return
+    }
     setEditUser(user)
     setEditForm({
       name: user.name || '',
@@ -576,6 +591,10 @@ export default function AdminUsersPage() {
   const handleUpdateAdmin = async (e) => {
     e.preventDefault()
     if (!editUser) return
+    if (!isSuperAdmin) {
+      toast.error('Seul le super admin peut gérer les administrateurs')
+      return
+    }
 
     if (editForm.password && editForm.password.length < 6) {
       toast.error('Le mot de passe doit contenir au moins 6 caractères')
@@ -596,7 +615,7 @@ export default function AdminUsersPage() {
         payload.password = editForm.password
       }
 
-      await api.updateUser(editUser.id, payload, token)
+      await api.updateUser(editUser.id, payload, token, 'admin')
       toast.success('Administrateur mis à jour avec succès')
       setEditUser(null)
       await loadUsers()
@@ -610,11 +629,19 @@ export default function AdminUsersPage() {
   // Confirmation et exécution de la suppression d'un admin
   const confirmDeleteAdmin = async () => {
     if (!deletingUser) return
+    if (!isSuperAdmin) {
+      toast.error('Seul le super admin peut gérer les administrateurs')
+      return
+    }
+    if (deletingUser.role === 'super_admin') {
+      toast.error('Le compte super admin ne peut pas être supprimé')
+      return
+    }
 
     try {
       setDeletingId(deletingUser.id)
       const token = auth.getToken()
-      await api.deleteUser(deletingUser.id, token)
+      await api.deleteUser(deletingUser.id, token, 'admin')
       toast.success('Administrateur supprimé avec succès')
       setDeletingUser(null)
       await loadUsers()
@@ -654,17 +681,19 @@ export default function AdminUsersPage() {
             <FaSync />
             Rafraîchir
           </button>
-          <button
-            onClick={() => setShowForm((v) => !v)}
-            className="px-4 py-2 bg-dice-blue text-white rounded-lg hover:bg-dice-blue-dark transition-colors text-sm flex items-center gap-2"
-          >
-            {showForm ? <FaTimes /> : <FaUserPlus />}
-            {showForm ? 'Fermer' : 'Nouvel admin'}
-          </button>
+          {isSuperAdmin && (
+            <button
+              onClick={() => setShowForm((v) => !v)}
+              className="px-4 py-2 bg-dice-blue text-white rounded-lg hover:bg-dice-blue-dark transition-colors text-sm flex items-center gap-2"
+            >
+              {showForm ? <FaTimes /> : <FaUserPlus />}
+              {showForm ? 'Fermer' : 'Nouvel admin'}
+            </button>
+          )}
         </div>
       </div>
 
-      {showForm && (
+      {isSuperAdmin && showForm && (
         <form
           onSubmit={handleCreateAdmin}
           className="bg-white rounded-xl border border-gray-200 p-6 mb-6 shadow-sm"
@@ -863,24 +892,28 @@ export default function AdminUsersPage() {
                             >
                               <FaEye className="text-xs" />
                             </button>
-                            {/* Bouton Éditer */}
-                            <button
-                              type="button"
-                              onClick={() => handleOpenEdit(user)}
-                              className="px-3 py-1.5 rounded-xl text-sm font-semibold text-white bg-dice-blue hover:bg-dice-blue-dark transition-colors inline-flex items-center gap-1"
-                              title="Éditer"
-                            >
-                              <FaEdit className="text-xs" />
-                            </button>
-                            {/* Bouton Supprimer */}
-                            <button
-                              type="button"
-                              onClick={() => setDeletingUser(user)}
-                              className="w-9 h-9 rounded-xl text-red-500 bg-red-50 hover:bg-red-100 transition-colors inline-flex items-center justify-center"
-                              title="Supprimer"
-                            >
-                              <FaTrash className="text-sm" />
-                            </button>
+                            {isSuperAdmin && user.role === 'admin' && (
+                              <>
+                                {/* Bouton Éditer */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenEdit(user)}
+                                  className="px-3 py-1.5 rounded-xl text-sm font-semibold text-white bg-dice-blue hover:bg-dice-blue-dark transition-colors inline-flex items-center gap-1"
+                                  title="Éditer"
+                                >
+                                  <FaEdit className="text-xs" />
+                                </button>
+                                {/* Bouton Supprimer */}
+                                <button
+                                  type="button"
+                                  onClick={() => setDeletingUser(user)}
+                                  className="w-9 h-9 rounded-xl text-red-500 bg-red-50 hover:bg-red-100 transition-colors inline-flex items-center justify-center"
+                                  title="Supprimer"
+                                >
+                                  <FaTrash className="text-sm" />
+                                </button>
+                              </>
+                            )}
                           </div>
                         ) : (
                           /* Menu déroulant des actions pour les clients */

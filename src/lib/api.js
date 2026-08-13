@@ -744,12 +744,25 @@ export const api = {
       }),
     }),
 
-  updateUser: async () => {
-    throw new Error('Fonctionnalité à venir')
+  updateUser: async (id, data, token, role = 'client') => {
+    const isAdminTarget = role === 'admin' || role === 'super_admin'
+    const path = isAdminTarget ? `/users/admins/${id}` : `/users/clients/${id}`
+    const payload = { ...data }
+    delete payload.role
+    return request(path, {
+      method: 'PUT',
+      headers: authHeaders(token),
+      body: JSON.stringify(payload),
+    })
   },
 
-  deleteUser: async () => {
-    throw new Error('Fonctionnalité à venir')
+  deleteUser: async (id, token, role = 'client') => {
+    const isAdminTarget = role === 'admin' || role === 'super_admin'
+    const path = isAdminTarget ? `/users/admins/${id}` : `/users/clients/${id}`
+    return request(path, {
+      method: 'DELETE',
+      headers: authHeaders(token),
+    })
   },
 
   getDashboardStats: async (token) =>
