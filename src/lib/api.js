@@ -11,6 +11,10 @@ const API_MESSAGE_FR = {
     'Impossible de créer un événement dont la date de fin est déjà passée',
   'Invalid category (conference, formation, seminaire, atelier)':
     'Catégorie invalide (conférence, formation, séminaire, atelier)',
+  'Invalid credentials': 'Email ou mot de passe incorrect.',
+  'Unauthorized': 'Votre session a expiré. Veuillez vous reconnecter.',
+  'Missing or invalid token': 'Votre session a expiré. Veuillez vous reconnecter.',
+  'Invalid or expired token': 'Votre session a expiré. Veuillez vous reconnecter.',
 }
 
 function translateApiMessage(message) {
@@ -36,7 +40,8 @@ function createApiError(status, message) {
     if (status >= 500) {
       return { status, message: translated.trim() }
     }
-    if (status === 400) {
+    // Keep API 401 text so login shows bad credentials, not "session expired"
+    if (status === 400 || status === 401) {
       return { status, message: translated.trim() }
     }
     return {
