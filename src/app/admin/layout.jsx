@@ -57,50 +57,55 @@ export default function AdminLayout({ children }) {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-200 fixed h-full overflow-y-auto">
-        <div className="p-4">
-          {/* Logo */}
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-30 h-30 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm overflow-hidden">
+      {/* Sidebar — flex column so footer never covers menu links */}
+      <aside className="w-64 bg-white border-r border-gray-200 fixed inset-y-0 left-0 flex flex-col z-20">
+        <div className="p-4 shrink-0">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-gray-100">
               <Image
                 src="/images/logo-dice.png"
                 alt="Logo Dice"
-                width={100}
-                height={100}
+                width={56}
+                height={56}
                 className="object-contain"
               />
             </div>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-gray-900 truncate">Diamond Centre</p>
+              <p className="text-[11px] text-gray-400">Administration</p>
+            </div>
           </div>
-
-          {/* Menu - Uniquement Dashboard, Événements, Tickets */}
-          <nav className="space-y-3">
-            {menuItems.map((item) => {
-              const isActive = pathname === item.href ||
-                (item.href !== '/admin' && pathname?.startsWith(item.href))
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors ${isActive
-                      ? 'bg-dice-blue text-white'
-                      : 'text-gray-600 hover:bg-gray-100'
-                    }`}
-                >
-                  <item.icon className={`text-lg ${isActive ? 'text-white' : 'text-gray-400'}`} />
-                  <span className="font-medium text-sm">{item.label}</span>
-                </Link>
-              )
-            })}
-          </nav>
         </div>
 
-        {/* Footer avec profil + déconnexion */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 space-y-2">
+        <nav className="flex-1 overflow-y-auto px-4 pb-4 space-y-1.5">
+          {menuItems.map((item) => {
+            const isActive = pathname === item.href ||
+              (item.href !== '/admin' && pathname?.startsWith(item.href))
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors ${isActive
+                    ? 'bg-dice-blue text-white'
+                    : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+              >
+                <item.icon className={`text-lg shrink-0 ${isActive ? 'text-white' : 'text-gray-400'}`} />
+                <span className="font-medium text-sm">{item.label}</span>
+              </Link>
+            )
+          })}
+        </nav>
+
+        <div className="shrink-0 p-4 border-t border-gray-200 space-y-2 bg-white">
           {user && (
             <Link
               href="/admin/profil"
-              className="flex items-center gap-3 w-full px-4 py-2.5 rounded-lg hover:bg-gray-100 transition-colors"
+              className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg transition-colors ${
+                pathname?.startsWith('/admin/profil')
+                  ? 'bg-dice-blue/10 text-dice-blue'
+                  : 'hover:bg-gray-100'
+              }`}
             >
               <div className="w-8 h-8 rounded-full bg-dice-blue/10 text-dice-blue text-xs font-bold flex items-center justify-center shrink-0">
                 {(user.name || 'A').charAt(0).toUpperCase()}
@@ -108,7 +113,7 @@ export default function AdminLayout({ children }) {
               <div className="min-w-0 text-left">
                 <p className="text-sm font-medium text-gray-800 truncate">{user.name || 'Admin'}</p>
                 <p className="text-[11px] text-gray-400 truncate">
-                  {user.role === 'super_admin' ? 'Super admin' : 'Admin'}
+                  {user.role === 'super_admin' ? 'Super admin' : 'Admin'} · Profil
                 </p>
               </div>
             </Link>
@@ -123,8 +128,7 @@ export default function AdminLayout({ children }) {
         </div>
       </aside>
 
-      {/* Contenu principal */}
-      <main className="ml-64 flex-1 p-6">
+      <main className="ml-64 flex-1 p-6 min-w-0">
         {children}
       </main>
     </div>
