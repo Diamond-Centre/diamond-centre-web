@@ -242,11 +242,6 @@ export default function CreateEvent() {
 
   return (
     <div className="relative -m-6 min-h-full pb-28">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-24 -right-16 w-80 h-80 rounded-full bg-[#0A89F2]/[0.07] blur-3xl" />
-        <div className="absolute top-1/3 -left-20 w-72 h-72 rounded-full bg-[#0A89F2]/[0.05] blur-3xl" />
-      </div>
-
       <div className="relative p-6 w-full space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
