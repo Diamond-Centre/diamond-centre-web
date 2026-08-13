@@ -52,6 +52,18 @@ const API_MESSAGE_FR = {
   'Ticket refunded': 'Ce ticket a été remboursé.',
   'Ticket not confirmed': 'Ce ticket n’est pas confirmé.',
   'Ticket not paid': 'Ce ticket n’est pas payé.',
+  'Admin not found': 'Administrateur introuvable.',
+  'Client not found': 'Client introuvable.',
+  'Email already exists': 'Cet email est déjà utilisé.',
+  'email cannot be empty': 'L’email ne peut pas être vide.',
+  'name cannot be empty': 'Le nom ne peut pas être vide.',
+  'Invalid sexe': 'Sexe invalide.',
+  'No fields to update': 'Aucun champ à mettre à jour.',
+  'Super admin access required':
+    'Seul le super administrateur peut effectuer cette action.',
+  'Admin access required': 'Accès administrateur requis.',
+  'Password must be at least 6 characters':
+    'Le mot de passe doit contenir au moins 6 caractères.',
 }
 
 function translateApiMessage(message) {
@@ -77,8 +89,8 @@ function createApiError(status, message) {
     if (status >= 500) {
       return { status, message: translated.trim() }
     }
-    // Keep API 401 text so login shows bad credentials, not "session expired"
-    if (status === 400 || status === 401) {
+    // Keep API text for validation / auth / permission / not-found
+    if ([400, 401, 403, 404, 409].includes(status)) {
       return { status, message: translated.trim() }
     }
     return {
@@ -886,12 +898,37 @@ export const api = {
       }),
     }),
 
+  /** Super-admin only: update another admin, including optional password. */
+  updateAdmin: async (id, data, token) => {
+    const payload = {
+      ...(data.name !== undefined ? { name: String(data.name).trim() } : {}),
+      ...(data.email !== undefined
+        ? { email: String(data.email).trim().toLowerCase() }
+        : {}),
+      ...(data.telephone !== undefined
+        ? { telephone: String(data.telephone).replace(/\s+/g, '') }
+        : {}),
+      ...(data.sexe !== undefined ? { sexe: data.sexe } : {}),
+    }
+    const password = data.password != null ? String(data.password) : ''
+    if (password.trim()) {
+      payload.password = password
+    }
+    return request(`/users/admins/${id}`, {
+      method: 'PUT',
+      headers: authHeaders(token),
+      body: JSON.stringify(payload),
+    })
+  },
+
   updateUser: async (id, data, token, role = 'client') => {
     const isAdminTarget = role === 'admin' || role === 'super_admin'
-    const path = isAdminTarget ? `/users/admins/${id}` : `/users/clients/${id}`
+    if (isAdminTarget) {
+      return api.updateAdmin(id, data, token)
+    }
     const payload = { ...data }
     delete payload.role
-    return request(path, {
+    return request(`/users/clients/${id}`, {
       method: 'PUT',
       headers: authHeaders(token),
       body: JSON.stringify(payload),

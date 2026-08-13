@@ -283,7 +283,14 @@ export default function AdminUsersPage() {
   // États pour les actions Admin (Voir, Éditer, Supprimer)
   const [viewUser, setViewUser] = useState(null)
   const [editUser, setEditUser] = useState(null)
-  const [editForm, setEditForm] = useState({ name: '', email: '', telephone: '', sexe: 'homme', password: '' })
+  const [editForm, setEditForm] = useState({
+    name: '',
+    email: '',
+    telephone: '',
+    sexe: 'homme',
+    password: '',
+    confirmPassword: '',
+  })
   const [updating, setUpdating] = useState(false)
   const [deletingUser, setDeletingUser] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
@@ -587,6 +594,7 @@ export default function AdminUsersPage() {
       telephone: user.telephone || '',
       sexe: user.sexe || 'homme',
       password: '',
+      confirmPassword: '',
     })
   }
 
@@ -598,28 +606,55 @@ export default function AdminUsersPage() {
       return
     }
 
-    if (editForm.password && editForm.password.length < 6) {
-      toast.error('Le mot de passe doit contenir au moins 6 caractères')
+    const name = editForm.name.trim()
+    const email = editForm.email.trim().toLowerCase()
+    const telephone = editForm.telephone.replace(/\s+/g, '')
+    const password = editForm.password
+    const confirmPassword = editForm.confirmPassword
+
+    if (!name || !email || !telephone || !editForm.sexe) {
+      toast.error('Veuillez remplir tous les champs obligatoires')
       return
+    }
+    if (password || confirmPassword) {
+      if (password.length < 6) {
+        toast.error('Le mot de passe doit contenir au moins 6 caractères')
+        return
+      }
+      if (password !== confirmPassword) {
+        toast.error('Les mots de passe ne correspondent pas')
+        return
+      }
     }
 
     try {
       setUpdating(true)
       const token = auth.getToken()
-
       const payload = {
-        name: editForm.name,
-        email: editForm.email,
-        telephone: editForm.telephone,
+        name,
+        email,
+        telephone,
         sexe: editForm.sexe,
       }
-      if (editForm.password.trim() !== '') {
-        payload.password = editForm.password
+      if (password) {
+        payload.password = password
       }
 
-      await api.updateUser(editUser.id, payload, token, 'admin')
-      toast.success('Administrateur mis à jour avec succès')
+      await api.updateAdmin(editUser.id, payload, token)
+      toast.success(
+        password
+          ? 'Administrateur mis à jour. Le nouveau mot de passe est actif.'
+          : 'Administrateur mis à jour avec succès'
+      )
       setEditUser(null)
+      setEditForm({
+        name: '',
+        email: '',
+        telephone: '',
+        sexe: 'homme',
+        password: '',
+        confirmPassword: '',
+      })
       await loadUsers()
     } catch (err) {
       toast.error(err.message || 'Erreur lors de la mise à jour')
@@ -1101,15 +1136,36 @@ export default function AdminUsersPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nouveau mot de passe <span className="text-xs text-gray-400 font-normal">(laisser vide pour ne pas modifier)</span>
+                  Nouveau mot de passe{' '}
+                  <span className="text-xs text-gray-400 font-normal">
+                    (laisser vide pour ne pas modifier)
+                  </span>
                 </label>
                 <input
                   type="password"
                   name="password"
+                  autoComplete="new-password"
                   value={editForm.password}
-                  onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
-                  minLength={6}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, password: e.target.value })
+                  }
                   placeholder="Min. 6 caractères"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Confirmer le mot de passe
+                </label>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  autoComplete="new-password"
+                  value={editForm.confirmPassword}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, confirmPassword: e.target.value })
+                  }
+                  placeholder="Retapez le nouveau mot de passe"
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-dice-blue focus:border-transparent"
                 />
               </div>
