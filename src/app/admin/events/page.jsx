@@ -50,7 +50,12 @@ function getImageUrl(event) {
 
   if (!rawUrl || typeof rawUrl !== 'string') return null
 
-  if (!rawUrl.startsWith('http://') && !rawUrl.startsWith('https://') && !rawUrl.startsWith('data:')) {
+  // data:/blob: URLs must stay untouched — appending ?v=… breaks them
+  if (rawUrl.startsWith('data:') || rawUrl.startsWith('blob:')) {
+    return rawUrl
+  }
+
+  if (!rawUrl.startsWith('http://') && !rawUrl.startsWith('https://')) {
     const cleanPath = rawUrl.startsWith('/') ? rawUrl : `/${rawUrl}`
     rawUrl = `${API_BASE_URL}${cleanPath}`
   }
