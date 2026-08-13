@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useEvents } from '@/hooks/useEvents'
 import { useAuth } from '@/hooks/useAuth'
+import { isEventEnded } from '@/lib/eventTiming'
 import HeroSection from '@/components/layout/HeroSection'
 import WhyDiceSection from '@/components/layout/WhyDiceSection'
 import FormationsSection from '@/components/layout/FormationsSection'
@@ -23,9 +24,7 @@ export default function Home() {
   const upcomingEvents = (events || [])
     .filter((e: any) => {
       if (e.status && e.status !== 'published') return false
-      const d = new Date(e.end_date || e.start_date || 0)
-      if (Number.isNaN(d.getTime())) return true
-      return d.getTime() >= Date.now() - 86400000
+      return !isEventEnded(e)
     })
     .sort(
       (a: any, b: any) =>

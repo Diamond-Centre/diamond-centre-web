@@ -1,6 +1,6 @@
 /**
- * Certificats admin — aligné sur l’app mobile DiCe
- * Formations commencées (date de début passée) → participants → délivrance
+ * Certificats admin — délivrance pour toute formation avec des inscrits
+ * Encore = date de fin non passée · Terminé = date de fin passée
  */
 'use client'
 
@@ -9,39 +9,16 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import { api } from '@/lib/api'
+import { isEventEnded } from '@/lib/eventTiming'
 import {
   FaCertificate, FaSync, FaCheck, FaEye, FaSearch,
-  FaGraduationCap, FaMapMarkerAlt, FaExclamationTriangle,
+  FaGraduationCap, FaMapMarkerAlt,
 } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
-function dateKey(value) {
-  if (!value) return ''
-  if (typeof value === 'string') return value.slice(0, 10)
-  const d = new Date(value)
-  if (Number.isNaN(d.getTime())) return ''
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
-
-function todayKey() {
-  return dateKey(new Date())
-}
-
-/** Formation whose start date is today or already passed. */
-function isFormationStarted(event) {
-  const start = dateKey(event?.start_date || event?.end_date)
-  if (!start) return false
-  return start <= todayKey()
-}
-
 function isFormationEnded(event) {
-  const end = dateKey(event?.end_date || event?.start_date)
-  if (!end) return false
-  return end < todayKey()
+  return isEventEnded(event)
 }
 
 function formatFrDate(value) {
@@ -73,7 +50,7 @@ export default function AdminCertificatesPage() {
   const [eventMeta, setEventMeta] = useState(null)
   const [selectedTickets, setSelectedTickets] = useState(new Set())
   const [tab, setTab] = useState('pending') // pending | issued
-  const [scope, setScope] = useState('past') // past | all
+  const [scope, setScope] = useState('all') // encore | ended | all
   const [formationQuery, setFormationQuery] = useState('')
   const [participantQuery, setParticipantQuery] = useState('')
   const [error, setError] = useState(null)
@@ -99,8 +76,10 @@ export default function AdminCertificatesPage() {
 
   const scopedFormations = useMemo(() => {
     let list = formations
-    if (scope === 'past') {
-      list = list.filter(isFormationStarted)
+    if (scope === 'encore') {
+      list = list.filter((f) => !isFormationEnded(f))
+    } else if (scope === 'ended') {
+      list = list.filter(isFormationEnded)
     }
     const q = formationQuery.trim().toLowerCase()
     if (q) {
@@ -220,13 +199,19 @@ export default function AdminCertificatesPage() {
       setFormations(list)
       setPendingByEvent(pendingMap)
 
-      const started = list.filter(isFormationStarted)
-      const preferredPool = scope === 'past' && started.length ? started : list
+      const wantedId = (() => {
+        if (typeof window === 'undefined') return null
+        const raw = new URLSearchParams(window.location.search).get('event')
+        if (!raw) return null
+        const n = Number(raw)
+        return Number.isFinite(n) ? n : null
+      })()
+
       const stillValid =
-        selectedId != null && preferredPool.some((f) => f.id === selectedId)
-      const nextId = stillValid
-        ? selectedId
-        : preferredPool[0]?.id ?? list[0]?.id ?? null
+        selectedId != null && list.some((f) => f.id === selectedId)
+      const fromQuery =
+        wantedId != null ? list.find((f) => Number(f.id) === wantedId) : null
+      const nextId = fromQuery?.id ?? (stillValid ? selectedId : list[0]?.id ?? null)
 
       setSelectedId(nextId)
       if (nextId) await loadEligible(nextId, { preserveSelection: false })
@@ -257,7 +242,12 @@ export default function AdminCertificatesPage() {
   // When scope changes, pick first visible formation if current is out of scope
   useEffect(() => {
     if (!formations.length) return
-    const visible = scope === 'past' ? formations.filter(isFormationStarted) : formations
+    const visible =
+      scope === 'encore'
+        ? formations.filter((f) => !isFormationEnded(f))
+        : scope === 'ended'
+          ? formations.filter(isFormationEnded)
+          : formations
     if (!visible.length) {
       setSelectedId(null)
       setEligible([])
@@ -304,9 +294,6 @@ export default function AdminCertificatesPage() {
     const count = selectedTickets.size
     const title = selectedFormation?.title || eventMeta?.title || 'cette formation'
     let message = `Délivrer ${count} certificat${count > 1 ? 's' : ''} pour « ${title} » ?\nLes participants seront notifiés.`
-    if (!formationEnded) {
-      message += '\n\nAttention : la formation n’est pas encore terminée.'
-    }
     setIssueConfirmMessage(message)
     setIssueConfirmOpen(true)
   }
@@ -354,7 +341,8 @@ export default function AdminCertificatesPage() {
     }
   }
 
-  const startedCount = formations.filter(isFormationStarted).length
+  const encoreCount = formations.filter((f) => !isFormationEnded(f)).length
+  const endedCount = formations.filter(isFormationEnded).length
 
   if (loading) {
     return (
@@ -409,14 +397,22 @@ export default function AdminCertificatesPage() {
       ) : (
         <>
           <div className="flex flex-col sm:flex-row gap-3 mb-4">
-            <div className="inline-flex rounded-lg border border-gray-200 bg-white p-1 self-start">
+            <div className="inline-flex rounded-lg border border-gray-200 bg-white p-1 self-start flex-wrap">
               <button
                 type="button"
-                onClick={() => setScope('past')}
-                className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${scope === 'past' ? 'bg-dice-blue text-white' : 'text-gray-600 hover:bg-gray-50'
+                onClick={() => setScope('encore')}
+                className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${scope === 'encore' ? 'bg-dice-blue text-white' : 'text-gray-600 hover:bg-gray-50'
                   }`}
               >
-                Passées ({startedCount})
+                Encore ({encoreCount})
+              </button>
+              <button
+                type="button"
+                onClick={() => setScope('ended')}
+                className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${scope === 'ended' ? 'bg-dice-blue text-white' : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+              >
+                Terminées ({endedCount})
               </button>
               <button
                 type="button"
@@ -441,16 +437,17 @@ export default function AdminCertificatesPage() {
 
           {scopedFormations.length === 0 ? (
             <div className="bg-amber-50 border border-amber-100 text-amber-800 rounded-xl px-4 py-6 text-sm mb-6">
-              {scope === 'past'
-                ? 'Aucune formation commencée pour le moment. Passez sur « Toutes » pour voir les sessions à venir.'
-                : `Aucune formation pour « ${formationQuery} ».`}
+              {scope === 'encore'
+                ? 'Aucune formation encore en cours. Passez sur « Toutes » ou « Terminées ».'
+                : scope === 'ended'
+                  ? 'Aucune formation terminée pour le moment.'
+                  : `Aucune formation pour « ${formationQuery} ».`}
             </div>
           ) : (
             <div className="flex gap-3 overflow-x-auto pb-2 mb-6 -mx-1 px-1">
               {scopedFormations.map((f) => {
                 const selected = f.id === selectedId
                 const pending = pendingByEvent[f.id] ?? 0
-                const started = isFormationStarted(f)
                 const ended = isFormationEnded(f)
                 return (
                   <button
@@ -467,7 +464,8 @@ export default function AdminCertificatesPage() {
                     </p>
                     <p className={`text-xs mt-1 ${selected ? 'text-white/80' : 'text-gray-500'}`}>
                       {formatFrDate(f.end_date || f.start_date)}
-                      {!started ? ' · à venir' : ended ? '' : ' · en cours'}
+                      {' · '}
+                      {ended ? 'Terminé' : 'Encore'}
                     </p>
                     <span
                       className={`inline-block mt-2 text-[11px] font-bold px-2 py-0.5 rounded-full ${selected
@@ -536,11 +534,11 @@ export default function AdminCertificatesPage() {
               </div>
 
               {!formationEnded && (
-                <div className="mb-4 flex gap-2 items-start bg-amber-50 border border-amber-200 text-amber-900 rounded-xl px-3 py-2.5 text-sm">
-                  <FaExclamationTriangle className="mt-0.5 shrink-0 text-orange-500" />
+                <div className="mb-4 flex gap-2 items-start bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-xl px-3 py-2.5 text-sm">
+                  <FaCertificate className="mt-0.5 shrink-0 text-emerald-600" />
                   <p>
-                    La formation n’est pas encore terminée. Vous pouvez délivrer, mais vérifiez
-                    d’abord la présence des participants.
+                    Cette formation est encore en cours. Vous pouvez déjà délivrer un
+                    certificat à tout client inscrit.
                   </p>
                 </div>
               )}

@@ -9,6 +9,7 @@ import { FaArrowLeft, FaCalendar, FaClock, FaMapMarker, FaUser } from 'react-ico
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { useEvents } from '@/hooks/useEvents'
+import { eventTimingLabel, isEventEnded } from '@/lib/eventTiming'
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
 import Spinner from '@/components/ui/Spinner'
@@ -105,7 +106,9 @@ export default function EventDetailPage() {
           <div className="p-6 md:p-8 space-y-6">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="default">{event.type || event.category || 'formation'}</Badge>
-              <Badge variant="success">{event.statut || event.status}</Badge>
+              <Badge variant={isEventEnded(event) ? 'default' : 'success'}>
+                {eventTimingLabel(event)}
+              </Badge>
             </div>
 
             <h1 className="text-3xl md:text-4xl font-bold text-gray-800">

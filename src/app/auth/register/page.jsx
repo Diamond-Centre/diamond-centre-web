@@ -17,7 +17,7 @@ import Button from '@/components/ui/Button'
 import Navbar from '@/components/layout/Navbar'
 import { auth } from '@/lib/auth'
 import { api } from '@/lib/api'
-import { fileToProfileDataUrl } from '@/lib/profileImage'
+import { fileToProfileDataUrl, isProfileImageTooLargeError, profileImageTooLargeMessage } from '@/lib/profileImage'
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -85,11 +85,6 @@ export default function RegisterPage() {
       return
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("L'image ne doit pas dépasser 5MB")
-      return
-    }
-
     setImageFile(file)
     setImagePreview(URL.createObjectURL(file))
 
@@ -100,7 +95,7 @@ export default function RegisterPage() {
       toast.success('Photo ajoutée')
     } catch (error) {
       console.error('Erreur photo:', error)
-      toast.error("Impossible d'ajouter cette photo. Réessayez avec une image plus petite.")
+      toast.error(profileImageTooLargeMessage())
       setImageFile(null)
       setImagePreview(null)
       setFormData((prev) => ({ ...prev, picture: '' }))
@@ -189,8 +184,11 @@ export default function RegisterPage() {
 
     } catch (error) {
       console.error('❌ Erreur inscription:', error)
-      setError(error.message)
-      toast.error(error.message || 'Erreur lors de l\'inscription')
+      const message = isProfileImageTooLargeError(error)
+        ? profileImageTooLargeMessage()
+        : error.message || "Erreur lors de l'inscription"
+      setError(message)
+      toast.error(message)
     } finally {
       setIsLoading(false)
     }
@@ -314,7 +312,7 @@ export default function RegisterPage() {
                       >
                         <FaImage className="text-xl sm:text-2xl text-gray-400 mx-auto mb-1" />
                         <p className="text-xs text-gray-500">Ajouter une photo</p>
-                        <p className="text-[10px] text-gray-400">PNG, JPG, JPEG • Max 5MB</p>
+                        <p className="text-[10px] text-gray-400">PNG, JPG, JPEG</p>
                       </div>
                     )}
                     <input

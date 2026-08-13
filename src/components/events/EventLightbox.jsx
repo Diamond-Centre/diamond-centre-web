@@ -1,12 +1,10 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import {
-  FaTimes, FaCalendar, FaMapMarker, FaClock,
+import { FaTimes, FaCalendar, FaMapMarker, FaClock,
   FaEuroSign, FaUsers, FaTicketAlt, FaTag, FaLayerGroup, FaCoins, FaInfoCircle
 } from 'react-icons/fa'
-import { format } from 'date-fns'
-import { fr } from 'date-fns/locale'
+import { isEventEnded } from '@/lib/eventTiming'
 
 export default function EventLightbox({
   isOpen,
@@ -15,12 +13,7 @@ export default function EventLightbox({
 }) {
   if (!isOpen || !event) return null
 
-  const endKey = String(event.end_date || event.start_date || '').slice(0, 10)
-  const today = (() => {
-    const d = new Date()
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-  })()
-  const isPast = Boolean(endKey && endKey < today)
+  const isPast = isEventEnded(event)
   const placesRestantes = (event.available_tickets || event.capacity) - (event.nb_inscrits || 0)
   const isFull = placesRestantes <= 0
 
@@ -112,19 +105,20 @@ export default function EventLightbox({
                 <span className="px-3 py-1 bg-amber-500/90 backdrop-blur-md rounded-full text-white text-xs font-bold uppercase tracking-wider shadow-sm border border-white/20">
                   Terminé
                 </span>
-              ) : isFull ? (
+              ) : (
+                <span className="px-3 py-1 bg-emerald-500/90 backdrop-blur-md rounded-full text-white text-xs font-bold uppercase tracking-wider shadow-sm border border-white/20">
+                  Encore
+                </span>
+              )}
+              {!isPast && isFull ? (
                 <span className="px-3 py-1 bg-rose-500/90 backdrop-blur-md rounded-full text-white text-xs font-bold uppercase tracking-wider shadow-sm border border-white/20">
                   Complet
                 </span>
-              ) : placesRestantes <= 3 ? (
+              ) : !isPast && placesRestantes <= 3 ? (
                 <span className="px-3 py-1 bg-orange-500/90 backdrop-blur-md rounded-full text-white text-xs font-bold uppercase tracking-wider shadow-sm border border-white/20">
                   Dernières places
                 </span>
-              ) : (
-                <span className="px-3 py-1 bg-emerald-500/90 backdrop-blur-md rounded-full text-white text-xs font-bold uppercase tracking-wider shadow-sm border border-white/20">
-                  Disponible
-                </span>
-              )}
+              ) : null}
             </div>
           </div>
 

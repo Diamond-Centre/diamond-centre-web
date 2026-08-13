@@ -11,9 +11,11 @@ import {
   FaPlus, FaEye, FaEdit, FaTrash, FaCalendar,
   FaMapMarkerAlt, FaUsers, FaTicketAlt, FaSearch,
   FaSync, FaSpinner, FaTag, FaChevronLeft, FaChevronRight, FaSortAmountDown,
+  FaCertificate,
 } from 'react-icons/fa'
 import { api } from '@/lib/api'
 import { auth } from '@/lib/auth'
+import { isEventEnded } from '@/lib/eventTiming'
 import EventLightbox from '@/components/events/EventLightbox'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import toast from 'react-hot-toast'
@@ -22,7 +24,7 @@ const PAGE_SIZE = 12
 
 const STATUS_FILTERS = [
   { id: 'all', label: 'Tous' },
-  { id: 'published', label: 'Publiés' },
+  { id: 'published', label: 'Encore' },
   { id: 'draft', label: 'Brouillons' },
   { id: 'cancelled', label: 'Annulés' },
   { id: 'completed', label: 'Terminés' },
@@ -91,19 +93,18 @@ function getImageUrl(event) {
   return rawUrl
 }
 
-function statusMeta(status) {
-  switch (String(status || '').toLowerCase()) {
-    case 'published':
-      return { label: 'Publié', className: 'bg-emerald-50 text-[#0B9B6B]' }
-    case 'draft':
-      return { label: 'Brouillon', className: 'bg-[#FFF4DE] text-[#B78103]' }
-    case 'cancelled':
-      return { label: 'Annulé', className: 'bg-red-50 text-red-600' }
-    case 'completed':
-      return { label: 'Terminé', className: 'bg-slate-100 text-slate-600' }
-    default:
-      return { label: status || '—', className: 'bg-[#E8F3FE] text-[#0A89F2]' }
+function statusMeta(event) {
+  const status = String(event?.status || '').toLowerCase()
+  if (status === 'cancelled') {
+    return { label: 'Annulé', className: 'bg-red-50 text-red-600' }
   }
+  if (status === 'draft') {
+    return { label: 'Brouillon', className: 'bg-[#FFF4DE] text-[#B78103]' }
+  }
+  if (status === 'completed' || isEventEnded(event)) {
+    return { label: 'Terminé', className: 'bg-slate-100 text-slate-600' }
+  }
+  return { label: 'Encore', className: 'bg-emerald-50 text-[#0B9B6B]' }
 }
 
 function formatDate(value) {
@@ -135,7 +136,8 @@ function hasPromo(event) {
 }
 
 function EventCard({ event, index, onView, onDelete, deleting }) {
-  const badge = statusMeta(event.status)
+  const badge = statusMeta(event)
+  const isFormation = String(event.category || '').toLowerCase() === 'formation'
   const sold = soldCount(event)
   const capacity = Number(event.capacity) || 0
   const fill = capacity > 0 ? Math.min(100, Math.round((sold / capacity) * 100)) : 0
@@ -248,6 +250,15 @@ function EventCard({ event, index, onView, onDelete, deleting }) {
             <FaEdit className="text-xs" />
             Éditer
           </Link>
+          {isFormation ? (
+            <Link
+              href={`/admin/certificates?event=${event.id}`}
+              className="w-11 rounded-xl text-amber-700 bg-amber-50 hover:bg-amber-100 transition-colors inline-flex items-center justify-center"
+              title="Délivrer un certificat"
+            >
+              <FaCertificate className="text-sm" />
+            </Link>
+          ) : null}
           <button
             type="button"
             onClick={() => onDelete(event)}

@@ -30,6 +30,7 @@ import {
 import { format, differenceInCalendarDays, isValid, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
+import { isEventEnded } from '@/lib/eventTiming'
 import { useAuth } from '@/hooks/useAuth'
 import toast from 'react-hot-toast'
 
@@ -339,13 +340,7 @@ export default function EventCard({
     promotion,
   } = event
 
-  const isPast = (() => {
-    const d = parseDate(end_date || start_date)
-    if (!d) return false
-    const end = new Date(d)
-    end.setHours(23, 59, 59, 999)
-    return end.getTime() < Date.now()
-  })()
+  const isPast = isEventEnded({ end_date, start_date })
 
   const placesRestantes =
     available_tickets != null
@@ -462,7 +457,12 @@ export default function EventCard({
               <span className="rounded-full bg-slate-800/80 px-2 py-0.5 text-[10px] font-semibold text-white">
                 Terminé
               </span>
-            ) : isFull ? (
+            ) : (
+              <span className="rounded-full bg-emerald-500/90 px-2 py-0.5 text-[10px] font-semibold text-white">
+                Encore
+              </span>
+            )}
+            {!isPast && isFull ? (
               <span className="rounded-full bg-red-500/90 px-2 py-0.5 text-[10px] font-semibold text-white">
                 Complet
               </span>

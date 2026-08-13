@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { auth } from '@/lib/auth'
 import { api } from '@/lib/api'
+import { isEventEnded } from '@/lib/eventTiming'
 import {
   FaCalendar, FaUsers, FaTicketAlt, FaChartLine,
   FaPlus, FaEye, FaEdit, FaTrash, FaDollarSign,
@@ -156,8 +157,7 @@ export default function AdminPage() {
       ?? eventsList.filter((e) => e.status === 'cancelled').length
     const totalTickets = dashboard?.tickets?.total ?? soldTickets
 
-    const now = new Date()
-    const upcomingEvents = eventsList.filter((e) => e.start_date && new Date(e.start_date) > now).length
+    const upcomingEvents = eventsList.filter((e) => !isEventEnded(e) && String(e.status || '').toLowerCase() !== 'cancelled').length
 
     const averagePrice = eventsList.length > 0
       ? Math.round(eventsList.reduce((sum, e) => sum + (Number(e.price) || 0), 0) / eventsList.length)

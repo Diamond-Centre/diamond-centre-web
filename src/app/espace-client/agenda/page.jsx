@@ -17,6 +17,7 @@ import {
 } from 'react-icons/fa'
 import { api } from '@/lib/api'
 import { auth } from '@/lib/auth'
+import { isEventEnded } from '@/lib/eventTiming'
 
 const WEEKDAYS = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
 
@@ -85,10 +86,17 @@ function normalizeBooking(raw) {
     statusRaw === 'pending' || statusRaw === 'awaiting_payment'
       ? 'pending'
       : 'confirmed'
+  const endDateRaw = raw.event_end_date || raw.end_date || dateRaw
+  let endDate = String(endDateRaw || '').slice(0, 10)
+  if (endDate && !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
+    const d = new Date(endDateRaw)
+    endDate = Number.isNaN(d.getTime()) ? date : toDateKey(d)
+  }
   return {
     id: raw.id || raw.ticket_id,
     title: raw.title || raw.event_title || 'Événement',
     date,
+    endDate: endDate || date,
     start: raw.start || raw.event_start_time || '09:00',
     end: raw.end || raw.event_end_time || '17:00',
     location: raw.location || raw.event_location || 'Lieu à confirmer',
@@ -129,6 +137,13 @@ function buildMonthGrid(focusedMonth) {
   return cells
 }
 
+function isBookingEnded(booking) {
+  return isEventEnded({
+    end_date: booking?.endDate,
+    start_date: booking?.date,
+  })
+}
+
 function StatusChip({ status }) {
   const confirmed = status === 'confirmed'
   return (
@@ -144,10 +159,11 @@ function StatusChip({ status }) {
   )
 }
 
-function BookingCard({ booking, past, onOpen }) {
+function BookingCard({ booking, onOpen }) {
   const day = parseKey(booking.date)
   const dayNum = day.getDate()
   const mon = MONTHS_SHORT[day.getMonth()]
+  const past = isBookingEnded(booking)
 
   return (
     <motion.button
@@ -210,8 +226,7 @@ function BookingCard({ booking, past, onOpen }) {
 
 function DetailModal({ booking, onClose }) {
   if (!booking) return null
-  const day = parseKey(booking.date)
-  const past = startOfDay(day) < startOfDay(new Date())
+  const past = isBookingEnded(booking)
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm">
@@ -277,9 +292,9 @@ function DetailModal({ booking, onClose }) {
             </p>
             <div>
               <StatusChip status={booking.status} />
-              {past && (
-                <span className="ml-2 text-xs text-[#98A2B3] font-medium">Passé</span>
-              )}
+              <span className={`ml-2 text-xs font-medium ${past ? 'text-[#98A2B3]' : 'text-[#0B9B6B]'}`}>
+                {past ? 'Passé' : 'Encore'}
+              </span>
             </div>
           </div>
 
@@ -592,7 +607,6 @@ export default function AgendaPage() {
               <BookingCard
                 key={b.id}
                 booking={b}
-                past={startOfDay(parseKey(b.date)) < today}
                 onOpen={setDetail}
               />
             ))

@@ -628,9 +628,6 @@ export default function ProfilePage() {
               <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-gray-100">
                   <h3 className="text-lg font-semibold text-gray-900">Sessions & Appareils connectés</h3>
-                  <p className="text-sm text-gray-500 mt-0.5">
-                    Appareils actuellement connectés à votre compte. Reconnectez-vous après un déploiement pour que chaque appareil apparaisse.
-                  </p>
                 </div>
 
                 <div className="p-6 space-y-4">
