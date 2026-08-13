@@ -13,7 +13,6 @@ function readUser(request) {
     return parsed
   } catch {
     try {
-      // Some browsers already decode the cookie value
       const parsed = JSON.parse(raw)
       if (!parsed || typeof parsed !== 'object') return null
       return parsed
@@ -21,6 +20,17 @@ function readUser(request) {
       return null
     }
   }
+}
+
+/** Public / client-facing pages admins must not browse while logged in. */
+function isPublicOrClientSurface(pathname) {
+  if (pathname === '/') return true
+  if (pathname.startsWith('/events')) return true
+  if (pathname.startsWith('/about')) return true
+  if (pathname.startsWith('/tickets')) return true
+  if (pathname.startsWith('/profile')) return true
+  if (pathname.startsWith('/espace-client')) return true
+  return false
 }
 
 export function middleware(request) {
@@ -31,7 +41,7 @@ export function middleware(request) {
   const isAdminRoute = pathname.startsWith('/admin')
   const isDashboardRoute = pathname.startsWith('/dashboard')
   const isClientSpace = pathname.startsWith('/espace-client')
-  const isAuthRoute = pathname.startsWith('/auth/')
+  const isAuthRoute = pathname.startsWith('/auth')
   const isProtected = isAdminRoute || isDashboardRoute || isClientSpace
 
   // Logged-in users on /auth → their own space
@@ -62,19 +72,23 @@ export function middleware(request) {
     return NextResponse.redirect(new URL('/espace-client', request.url))
   }
 
-  // Admins cannot open /espace-client (including by URL)
-  if (isClientSpace && token && user && isAdminRole(user.role)) {
-    return NextResponse.redirect(new URL('/admin', request.url))
-  }
-
-  // Legacy /dashboard → role-aware redirects
-  if (isDashboardRoute && token && user) {
-    if (isAdminRole(user.role)) {
+  // Admins stay in the admin panel — no public site, no client space
+  if (token && user && isAdminRole(user.role)) {
+    if (isPublicOrClientSurface(pathname) || isDashboardRoute) {
       let target = '/admin'
-      if (pathname.startsWith('/dashboard/events')) target = '/admin/events'
+      if (pathname.startsWith('/dashboard/events') || pathname.startsWith('/events')) {
+        target = '/admin/events'
+      } else if (pathname.startsWith('/tickets')) {
+        target = '/admin/tickets'
+      } else if (pathname.startsWith('/profile')) {
+        target = '/admin/profile'
+      }
       return NextResponse.redirect(new URL(target, request.url))
     }
+  }
 
+  // Legacy /dashboard for clients → espace-client
+  if (isDashboardRoute && token && user && !isAdminRole(user.role)) {
     let target = '/espace-client'
     if (pathname.startsWith('/dashboard/tickets')) target = '/espace-client/tickets'
     else if (
@@ -97,5 +111,15 @@ export function middleware(request) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/dashboard/:path*', '/espace-client/:path*', '/auth/:path*'],
+  matcher: [
+    '/',
+    '/events/:path*',
+    '/about/:path*',
+    '/tickets/:path*',
+    '/profile/:path*',
+    '/admin/:path*',
+    '/dashboard/:path*',
+    '/espace-client/:path*',
+    '/auth/:path*',
+  ],
 }
