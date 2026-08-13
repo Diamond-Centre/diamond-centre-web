@@ -99,6 +99,11 @@ function isScanned(ticket) {
   return String(ticket?.status || '').toLowerCase() === 'scanne'
 }
 
+function isRefunded(status) {
+  const s = String(status || '').toLowerCase()
+  return s === 'rembourse' || s === 'refunded'
+}
+
 function canDeleteTicket(ticket) {
   if (!ticket) return false
   if (isScanned(ticket)) return false
@@ -124,6 +129,33 @@ function ticketPhase(t) {
 }
 
 function StatusChip({ status, ticket }) {
+  const phase = ticketPhase(ticket || {})
+
+  // Date wins over payment state so past tickets never stay "En attente"
+  if (phase === 'ended') {
+    return (
+      <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-500">
+        Passé
+      </span>
+    )
+  }
+
+  if (isScanned(ticket)) {
+    return (
+      <span className="inline-flex items-center rounded-full bg-[#E8F3FE] px-2.5 py-0.5 text-[11px] font-semibold text-[#0A89F2]">
+        Validé
+      </span>
+    )
+  }
+
+  if (isRefunded(status)) {
+    return (
+      <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600">
+        Remboursé
+      </span>
+    )
+  }
+
   if (isPending(status)) {
     return (
       <span className="inline-flex items-center rounded-full bg-[#FFF4DE] px-2.5 py-0.5 text-[11px] font-semibold text-[#B78103]">
@@ -131,14 +163,12 @@ function StatusChip({ status, ticket }) {
       </span>
     )
   }
-  const phase = ticketPhase(ticket || {})
+
   const label = eventTimingLabel(ticketEvent(ticket || {}))
   const className =
-    phase === 'ended'
-      ? 'bg-slate-100 text-slate-500'
-      : phase === 'upcoming'
-        ? 'bg-[#E8F3FE] text-[#0A89F2]'
-        : 'bg-emerald-50 text-[#0B9B6B]'
+    phase === 'upcoming'
+      ? 'bg-[#E8F3FE] text-[#0A89F2]'
+      : 'bg-emerald-50 text-[#0B9B6B]'
   return (
     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${className}`}>
       {label}
