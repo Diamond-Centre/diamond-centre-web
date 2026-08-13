@@ -730,6 +730,31 @@ export const api = {
     return Array.isArray(data) ? data : data?.data || []
   },
 
+  getMe: async (token) =>
+    request('/users/me', { headers: authHeaders(token) }),
+
+  updateMe: async (data, token) =>
+    request('/users/me', {
+      method: 'PUT',
+      headers: authHeaders(token),
+      body: JSON.stringify({
+        ...(data.name !== undefined ? { name: data.name } : {}),
+        ...(data.telephone !== undefined ? { telephone: data.telephone } : {}),
+        ...(data.sexe !== undefined ? { sexe: data.sexe } : {}),
+        ...(data.picture !== undefined ? { picture: data.picture } : {}),
+      }),
+    }),
+
+  changeMyPassword: async (data, token) =>
+    request('/users/me/password', {
+      method: 'PUT',
+      headers: authHeaders(token),
+      body: JSON.stringify({
+        current_password: data.current_password || data.currentPassword,
+        new_password: data.new_password || data.newPassword,
+      }),
+    }),
+
   createAdmin: async (data, token) =>
     request('/users/admins', {
       method: 'POST',

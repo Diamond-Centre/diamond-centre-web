@@ -10,7 +10,7 @@ import Image from 'next/image'
 import { auth } from '@/lib/auth'
 import {
   FaHome, FaCalendar, FaTicketAlt, FaUsers, FaCertificate, FaCalendarAlt,
-  FaSignOutAlt,
+  FaSignOutAlt, FaUserShield,
 } from 'react-icons/fa'
 
 const menuItems = [
@@ -20,6 +20,7 @@ const menuItems = [
   { href: '/admin/tickets', icon: FaTicketAlt, label: 'Tickets' },
   { href: '/admin/users', icon: FaUsers, label: 'Utilisateurs' },
   { href: '/admin/certificates', icon: FaCertificate, label: 'Certificats' },
+  { href: '/admin/profil', icon: FaUserShield, label: 'Mon profil' },
 ]
 
 export default function AdminLayout({ children }) {
@@ -94,8 +95,24 @@ export default function AdminLayout({ children }) {
           </nav>
         </div>
 
-        {/* Footer avec déconnexion */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
+        {/* Footer avec profil + déconnexion */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 space-y-2">
+          {user && (
+            <Link
+              href="/admin/profil"
+              className="flex items-center gap-3 w-full px-4 py-2.5 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <div className="w-8 h-8 rounded-full bg-dice-blue/10 text-dice-blue text-xs font-bold flex items-center justify-center shrink-0">
+                {(user.name || 'A').charAt(0).toUpperCase()}
+              </div>
+              <div className="min-w-0 text-left">
+                <p className="text-sm font-medium text-gray-800 truncate">{user.name || 'Admin'}</p>
+                <p className="text-[11px] text-gray-400 truncate">
+                  {user.role === 'super_admin' ? 'Super admin' : 'Admin'}
+                </p>
+              </div>
+            </Link>
+          )}
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 w-full px-4 py-2.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
