@@ -20,6 +20,9 @@ const API_MESSAGE_FR = {
   'This account has no local password':
     'Ce compte n’a pas de mot de passe local. Connectez-vous avec Google ou Facebook.',
   'Password updated': 'Mot de passe mis à jour.',
+  'Other sessions revoked': 'Les autres appareils ont été déconnectés.',
+  'Current session is required':
+    'Reconnectez-vous pour gérer les appareils connectés.',
   'Unauthorized': 'Votre session a expiré. Veuillez vous reconnecter.',
   'Missing or invalid token': 'Votre session a expiré. Veuillez vous reconnecter.',
   'Invalid or expired token': 'Votre session a expiré. Veuillez vous reconnecter.',
@@ -802,6 +805,20 @@ export const api = {
 
   deleteMe: async (token) =>
     request('/users/me', {
+      method: 'DELETE',
+      headers: authHeaders(token),
+    }),
+
+  getMySessions: async (token) => {
+    const data = await request('/users/me/sessions', {
+      headers: authHeaders(token),
+    })
+    if (Array.isArray(data)) return data
+    return data?.sessions || []
+  },
+
+  revokeOtherSessions: async (token) =>
+    request('/users/me/sessions/others', {
       method: 'DELETE',
       headers: authHeaders(token),
     }),

@@ -24,6 +24,22 @@ import { api } from '@/lib/api'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { fileToProfileDataUrl, profileImageTooLargeMessage } from '@/lib/profileImage'
 
+function formatLastSeen(iso) {
+  if (!iso) return 'Actif récemment'
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return 'Actif récemment'
+  const diff = Date.now() - d.getTime()
+  if (diff < 60 * 1000) return 'Actif maintenant'
+  if (diff < 60 * 60 * 1000) return `Il y a ${Math.max(1, Math.floor(diff / 60000))} min`
+  if (diff < 24 * 60 * 60 * 1000) return `Il y a ${Math.max(1, Math.floor(diff / 3600000))} h`
+  return d.toLocaleString('fr-FR', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 /**
  * Profil client — lecture depuis la session auth.
  * Backend DICE : Mise à jour locale du profil et gestion de la sécurité.
@@ -53,7 +69,10 @@ export default function ProfilePage() {
     confirmPassword: '',
   })
   const [passwordSaving, setPasswordSaving] = useState(false)
-  const [mfaEnabled, setMfaEnabled] = useState(false)
+  const [hasLocalPassword, setHasLocalPassword] = useState(true)
+  const [sessions, setSessions] = useState([])
+  const [sessionsLoading, setSessionsLoading] = useState(false)
+  const [revokingSessions, setRevokingSessions] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [deletingAccount, setDeletingAccount] = useState(false)
 
@@ -73,6 +92,11 @@ export default function ProfilePage() {
         sexe: profile.sexe || '',
         picture: profile.picture || '',
       })
+      setHasLocalPassword(
+        profile.has_password != null
+          ? Boolean(profile.has_password)
+          : profile.auth_provider === 'local' || profile.auth_provider == null
+      )
       setPhotoBroken(false)
     }
 
@@ -93,6 +117,26 @@ export default function ProfilePage() {
     load()
   }, [router])
 
+  const loadSessions = async () => {
+    const token = auth.getToken()
+    if (!token) return
+    setSessionsLoading(true)
+    try {
+      const list = await api.getMySessions(token)
+      setSessions(Array.isArray(list) ? list : [])
+    } catch {
+      setSessions([])
+    } finally {
+      setSessionsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (activeTab === 'security') {
+      loadSessions()
+    }
+  }, [activeTab])
+
   // Handlers Profil
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -101,36 +145,36 @@ export default function ProfilePage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (!formData.name.trim()) {
+      toast.error('Le nom est requis')
+      return
+    }
     setSaving(true)
     try {
       const current = auth.getUser() || {}
       const token = auth.getToken()
-      let updated = {
-        ...current,
-        name: formData.name,
-        telephone: formData.telephone,
-        sexe: formData.sexe,
-        picture: formData.picture || current.picture,
+      if (!token) {
+        throw new Error('Session expirée. Veuillez vous reconnecter.')
       }
-      try {
-        updated = await api.updateMe(
-          {
-            name: formData.name,
-            telephone: formData.telephone,
-            sexe: formData.sexe,
-            ...(formData.picture ? { picture: formData.picture } : {}),
-          },
-          token
-        )
-      } catch {
-        // Keep a local copy if the API update is unavailable
-      }
+      const updated = await api.updateMe(
+        {
+          name: formData.name.trim(),
+          telephone: formData.telephone.trim(),
+          sexe: formData.sexe,
+          ...(formData.picture ? { picture: formData.picture } : {}),
+        },
+        token
+      )
       auth.setUser({ ...current, ...updated })
       setFormData((prev) => ({
         ...prev,
+        name: updated.name || prev.name,
+        telephone: updated.telephone || prev.telephone,
+        sexe: updated.sexe || prev.sexe,
         picture: updated.picture || prev.picture,
+        email: updated.email || prev.email,
       }))
-      toast.success('Profil enregistré')
+      toast.success('Profil mis à jour')
     } catch (error) {
       toast.error(error.message || 'Erreur lors de l’enregistrement')
     } finally {
@@ -146,20 +190,39 @@ export default function ProfilePage() {
 
   const handlePasswordSubmit = async (e) => {
     e.preventDefault()
+    if (!hasLocalPassword) {
+      toast.error('Ce compte n’a pas de mot de passe local.')
+      return
+    }
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       toast.error('Les nouveaux mots de passe ne correspondent pas.')
       return
     }
-    if (passwordData.newPassword.length < 8) {
-      toast.error('Le mot de passe doit contenir au moins 8 caractères.')
+    if (passwordData.newPassword.length < 6) {
+      toast.error('Le mot de passe doit contenir au moins 6 caractères.')
+      return
+    }
+    if (passwordData.currentPassword === passwordData.newPassword) {
+      toast.error('Le nouveau mot de passe doit être différent de l’actuel.')
       return
     }
 
     setPasswordSaving(true)
     try {
-      await new Promise((resolve) => setTimeout(resolve, 800))
-      toast.success('Mot de passe mis à jour avec succès')
+      const token = auth.getToken()
+      if (!token) {
+        throw new Error('Session expirée. Veuillez vous reconnecter.')
+      }
+      await api.changeMyPassword(
+        {
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword,
+        },
+        token
+      )
+      toast.success('Mot de passe mis à jour. L’ancien mot de passe ne fonctionne plus.')
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
+      await loadSessions()
     } catch (error) {
       toast.error(error.message || 'Erreur lors de la modification')
     } finally {
@@ -167,17 +230,29 @@ export default function ProfilePage() {
     }
   }
 
-  const handleToggleMFA = () => {
-    setMfaEnabled(!mfaEnabled)
-    toast.success(
-      !mfaEnabled
-        ? 'Double authentification (2FA) activée'
-        : 'Double authentification (2FA) désactivée'
-    )
-  }
-
-  const handleLogoutOtherSessions = () => {
-    toast.success('Déconnexion de toutes les autres sessions effectuée.')
+  const handleLogoutOtherSessions = async () => {
+    const token = auth.getToken()
+    if (!token) {
+      toast.error('Session expirée. Veuillez vous reconnecter.')
+      return
+    }
+    setRevokingSessions(true)
+    try {
+      const result = await api.revokeOtherSessions(token)
+      const n = Number(result?.revoked || 0)
+      await loadSessions()
+      toast.success(
+        n > 0
+          ? `${n} autre${n > 1 ? 's' : ''} appareil${n > 1 ? 's' : ''} déconnecté${n > 1 ? 's' : ''}.`
+          : 'Aucun autre appareil à déconnecter.'
+      )
+    } catch (error) {
+      toast.error(
+        error.message || 'Impossible de déconnecter les autres appareils.'
+      )
+    } finally {
+      setRevokingSessions(false)
+    }
   }
 
   const handleDeleteAccount = () => {
@@ -236,8 +311,8 @@ export default function ProfilePage() {
         const updated = await api.updateMe({ picture: dataUrl }, token)
         picture = updated.picture || dataUrl
         auth.setUser({ ...current, ...updated, picture })
-      } catch {
-        auth.setUser({ ...current, picture: dataUrl })
+      } catch (err) {
+        throw err
       }
       setFormData((prev) => ({ ...prev, picture }))
       setPhotoBroken(false)
@@ -371,7 +446,7 @@ export default function ProfilePage() {
               <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-200/80 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-gray-100">
                   <h3 className="text-lg font-semibold text-gray-900">Informations personnelles</h3>
-                  <p className="text-sm text-gray-500 mt-0.5">Mettez à jour vos coordonnées et vos préférences locales.</p>
+                  <p className="text-sm text-gray-500 mt-0.5">Mettez à jour vos coordonnées. Les changements sont enregistrés dans votre compte.</p>
                 </div>
 
                 <div className="p-6 space-y-6">
@@ -449,7 +524,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="px-6 py-4 bg-gray-50/80 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <span className="text-xs sm:text-sm text-gray-500">Mise à jour enregistrée uniquement dans la session locale.</span>
+                  <span className="text-xs sm:text-sm text-gray-500">Les modifications sont enregistrées dans la base de données.</span>
                   <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
                     <Link
                       href="/espace-client"
@@ -485,6 +560,11 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="p-6 space-y-5">
+                  {!hasLocalPassword ? (
+                    <p className="text-sm text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
+                      Ce compte a été créé avec Google ou Facebook. Il n’a pas de mot de passe à modifier ici.
+                    </p>
+                  ) : null}
                   <div>
                     <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">
                       Mot de passe actuel
@@ -495,8 +575,9 @@ export default function ProfilePage() {
                       value={passwordData.currentPassword}
                       onChange={handlePasswordChange}
                       placeholder="••••••••"
-                      className="w-full rounded-xl border border-gray-200 py-3 px-4 text-base outline-none focus:border-dice-blue focus:ring-2 focus:ring-dice-blue/20 transition-all text-gray-900"
-                      required
+                      disabled={!hasLocalPassword}
+                      className="w-full rounded-xl border border-gray-200 py-3 px-4 text-base outline-none focus:border-dice-blue focus:ring-2 focus:ring-dice-blue/20 transition-all text-gray-900 disabled:bg-gray-50 disabled:text-gray-400"
+                      required={hasLocalPassword}
                     />
                   </div>
 
@@ -535,7 +616,7 @@ export default function ProfilePage() {
                 <div className="px-6 py-4 bg-gray-50/80 border-t border-gray-100 flex justify-end">
                   <button
                     type="submit"
-                    disabled={passwordSaving}
+                    disabled={passwordSaving || !hasLocalPassword}
                     className="rounded-xl bg-dice-blue px-6 py-2.5 text-sm font-semibold text-white hover:bg-dice-blue-dark transition-all shadow-sm disabled:opacity-50"
                   >
                     {passwordSaving ? 'Mise à jour…' : 'Changer le mot de passe'}
@@ -543,81 +624,78 @@ export default function ProfilePage() {
                 </div>
               </form>
 
-              {/* 2. Double Authentification (2FA / MFA) */}
-              <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2.5">
-                    <h3 className="text-lg font-semibold text-gray-900">Double Authentification (2FA / MFA)</h3>
-                    <span className={`px-3 py-0.5 rounded-full text-xs font-bold ${mfaEnabled ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-gray-100 text-gray-600'
-                      }`}>
-                      {mfaEnabled ? 'Activée' : 'Désactivée'}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-500">
-                    Ajoutez une couche de sécurité supplémentaire à votre compte en utilisant une application d'authentification.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleToggleMFA}
-                  className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm flex-shrink-0 ${mfaEnabled
-                    ? 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
-                    : 'bg-dice-blue text-white hover:bg-dice-blue-dark'
-                    }`}
-                >
-                  {mfaEnabled ? 'Désactiver' : 'Activer la 2FA'}
-                </button>
-              </div>
-
-              {/* 3. Sessions & Appareils connectés */}
+              {/* 2. Sessions & Appareils connectés */}
               <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-gray-100">
                   <h3 className="text-lg font-semibold text-gray-900">Sessions & Appareils connectés</h3>
-                  <p className="text-sm text-gray-500 mt-0.5">Voici les appareils actuellement connectés à votre compte.</p>
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    Appareils actuellement connectés à votre compte. Reconnectez-vous après un déploiement pour que chaque appareil apparaisse.
+                  </p>
                 </div>
 
                 <div className="p-6 space-y-4">
-                  {/* Session Actuelle */}
-                  <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50/80 border border-gray-100">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 rounded-lg bg-white border border-gray-200 text-gray-700 shadow-sm">
-                        <FaDesktop className="text-base" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-bold text-gray-900">Navigateur Web (Session actuelle)</p>
-                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" title="En ligne" />
+                  {sessionsLoading ? (
+                    <div className="flex justify-center py-6">
+                      <div className="h-8 w-8 animate-spin rounded-full border-2 border-dice-blue border-t-transparent" />
+                    </div>
+                  ) : sessions.length === 0 ? (
+                    <p className="text-sm text-gray-500">
+                      Cet appareil est connecté. Déconnectez-vous puis reconnectez-vous pour voir la liste complète des appareils.
+                    </p>
+                  ) : (
+                    sessions.map((session) => {
+                      const mobile = session.device_type === 'mobile' || session.device_type === 'tablet'
+                      return (
+                        <div
+                          key={session.id}
+                          className={`flex items-center justify-between p-4 rounded-xl border ${
+                            session.current
+                              ? 'bg-gray-50/80 border-gray-100'
+                              : 'border-gray-100'
+                          }`}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="p-3 rounded-lg bg-white border border-gray-200 text-gray-700 shadow-sm">
+                              {mobile ? <FaMobileAlt className="text-base" /> : <FaDesktop className="text-base" />}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-bold text-gray-900">
+                                  {session.device_label || 'Navigateur'}
+                                </p>
+                                {session.current ? (
+                                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" title="En ligne" />
+                                ) : null}
+                              </div>
+                              <p className="text-xs text-gray-500 mt-0.5">
+                                {formatLastSeen(session.last_seen_at)}
+                                {session.ip ? ` • ${session.ip}` : ''}
+                              </p>
+                            </div>
+                          </div>
+                          {session.current ? (
+                            <span className="text-xs font-semibold text-dice-blue bg-blue-50 px-3 py-1 rounded-lg">
+                              Cet appareil
+                            </span>
+                          ) : (
+                            <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">
+                              En ligne
+                            </span>
+                          )}
                         </div>
-                        <p className="text-xs text-gray-500 mt-0.5">Actif maintenant • Yaoundé, Cameroun</p>
-                      </div>
-                    </div>
-                    <span className="text-xs font-semibold text-dice-blue bg-blue-50 px-3 py-1 rounded-lg">
-                      Cet appareil
-                    </span>
-                  </div>
-
-                  {/* Autre Session indicative */}
-                  <div className="flex items-center justify-between p-4 rounded-xl border border-gray-100">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 rounded-lg bg-gray-50 border border-gray-200 text-gray-500">
-                        <FaMobileAlt className="text-base" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-gray-800">Application Mobile (Safari / iOS)</p>
-                        <p className="text-xs text-gray-400 mt-0.5">Dernière activité : Il y a 2 heures</p>
-                      </div>
-                    </div>
-                  </div>
+                      )
+                    })
+                  )}
                 </div>
 
                 <div className="px-6 py-4 bg-gray-50/80 border-t border-gray-100 flex justify-end">
                   <button
                     type="button"
                     onClick={handleLogoutOtherSessions}
-                    className="rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
+                    disabled={revokingSessions || sessions.filter((s) => !s.current).length === 0}
+                    className="rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors shadow-sm disabled:opacity-50"
                   >
-                    Se déconnecter des autres appareils
+                    {revokingSessions ? 'Déconnexion…' : 'Se déconnecter des autres appareils'}
                   </button>
                 </div>
               </div>
