@@ -307,8 +307,17 @@ export default function EditEvent() {
           : undefined,
       }
 
-      await api.updateEvent(id, formattedData, token)
-      toast.success('Événement mis à jour avec succès')
+      const result = await api.updateEvent(id, formattedData, token)
+      if (result?.clients_notified) {
+        const n = Number(result.clients_notified_count || 0)
+        toast.success(
+          n > 0
+            ? `Événement mis à jour. ${n} client${n > 1 ? 's' : ''} notifié${n > 1 ? 's' : ''} (date, heure ou lieu).`
+            : 'Événement mis à jour. Les inscrits seront notifiés dès qu’ils ont un compte DiCe.'
+        )
+      } else {
+        toast.success('Événement mis à jour avec succès')
+      }
       router.push('/admin/events')
     } catch (err) {
       setError(err.message)
@@ -432,6 +441,10 @@ export default function EditEvent() {
               title="Planning"
               subtitle="Dates, horaires et lieu de l’événement"
             >
+              <div className="mb-4 rounded-2xl border border-[#F5D48A] bg-[#FFF8E8] px-3.5 py-3 text-xs leading-relaxed text-[#92400E]">
+                Changer la date, l’heure ou le lieu envoie une notification aux clients
+                confirmés pour qu’ils acceptent ou refusent la modification.
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className={labelClass}>Date de début *</label>
@@ -781,8 +794,10 @@ export default function EditEvent() {
               </div>
             </div>
 
-            <div className="rounded-[20px] border border-[#E8EEF5] bg-[#E8F3FE]/60 px-4 py-3 text-xs text-[#136db8] leading-relaxed">
-              Les modifications seront enregistrées et répercutées instantanément sur la page publique DiCe.
+            <div className="rounded-[20px] border border-[#F5D48A] bg-gradient-to-br from-[#FFF8E8] to-white px-4 py-3 text-xs text-[#92400E] leading-relaxed">
+              Si vous changez la <strong>date</strong>, l’<strong>heure</strong> ou le{' '}
+              <strong>lieu</strong>, les clients inscrits reçoivent une notification pour
+              accepter ou refuser la modification — comme sur l’application mobile.
             </div>
           </aside>
 

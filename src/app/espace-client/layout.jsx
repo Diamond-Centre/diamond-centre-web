@@ -13,14 +13,17 @@ import {
   FaCalendarAlt,
   FaUser,
   FaSignOutAlt,
+  FaBell,
 } from 'react-icons/fa'
 import { useAuth } from '@/hooks/useAuth'
+import { useNotifications } from '@/hooks/useNotifications'
 
 const tabs = [
   { href: '/espace-client', label: 'Vue d’ensemble', icon: FaHome, exact: true },
   { href: '/espace-client/tickets', label: 'Mes tickets', icon: FaTicketAlt },
   { href: '/espace-client/certificats', label: 'Certificats', icon: FaCertificate },
   { href: '/espace-client/agenda', label: 'Agenda', icon: FaCalendarAlt },
+  { href: '/espace-client/notifications', label: 'Notifications', icon: FaBell },
   { href: '/espace-client/profil', label: 'Mon profil', icon: FaUser },
 ]
 
@@ -29,6 +32,7 @@ export default function EspaceClientLayout({ children }) {
   const router = useRouter()
   const pathname = usePathname()
   const [ready, setReady] = useState(false)
+  const { unreadCount } = useNotifications({ autoLoad: true })
 
   useEffect(() => {
     if (loading) return
@@ -95,6 +99,11 @@ export default function EspaceClientLayout({ children }) {
                 >
                   <Icon className="text-xs opacity-80" />
                   {tab.label}
+                  {tab.href === '/espace-client/notifications' && unreadCount > 0 ? (
+                    <span className="ml-0.5 rounded-full bg-[#0A89F2] px-1.5 py-0.5 text-[10px] font-bold text-white">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  ) : null}
                   {active ? (
                     <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-[#0A89F2]" />
                   ) : null}

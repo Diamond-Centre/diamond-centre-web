@@ -730,11 +730,19 @@ export const api = {
   },
 
   // ===== NOTIFICATIONS =====
-  getNotifications: async (token) =>
-    request('/notifications', { headers: authHeaders(token) }),
+  getNotifications: async (token) => {
+    const data = await request('/notifications', {
+      headers: authHeaders(token),
+    })
+    return Array.isArray(data) ? data : data?.data || []
+  },
 
-  getUnreadNotificationsCount: async (token) =>
-    request('/notifications/unread-count', { headers: authHeaders(token) }),
+  getUnreadNotificationsCount: async (token) => {
+    const data = await request('/notifications/unread-count', {
+      headers: authHeaders(token),
+    })
+    return Number(data?.count ?? data?.unread ?? 0) || 0
+  },
 
   markNotificationRead: async (id, token) =>
     request(`/notifications/${id}/read`, {
@@ -748,10 +756,48 @@ export const api = {
       headers: authHeaders(token),
     }),
 
-  syncNotifications: async (token) =>
-    request('/notifications/sync', {
+  syncNotifications: async (token) => {
+    const data = await request('/notifications/sync', {
       method: 'POST',
       headers: authHeaders(token),
+    })
+    return Array.isArray(data) ? data : data?.data || []
+  },
+
+  // ===== EVENT CHANGES (client response to schedule edits) =====
+  getEventChange: async (changeId, token) =>
+    request(`/event-changes/${changeId}`, {
+      headers: authHeaders(token),
+    }),
+
+  acceptEventChange: async (changeId, ticketId, token) =>
+    request(`/event-changes/${changeId}/accept`, {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify({ ticket_id: Number(ticketId) }),
+    }),
+
+  getEventChangeAlternatives: async (changeId, ticketId, token, filter = 'all') =>
+    request(
+      `/event-changes/${changeId}/alternatives?ticket_id=${encodeURIComponent(ticketId)}&filter=${encodeURIComponent(filter)}`,
+      { headers: authHeaders(token) }
+    ),
+
+  swapEventChange: async (changeId, ticketId, alternativeEventId, token) =>
+    request(`/event-changes/${changeId}/swap`, {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify({
+        ticket_id: Number(ticketId),
+        alternative_event_id: Number(alternativeEventId),
+      }),
+    }),
+
+  refundEventChange: async (changeId, ticketId, token) =>
+    request(`/event-changes/${changeId}/refund`, {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify({ ticket_id: Number(ticketId) }),
     }),
 
   // ===== PAYMENTS =====
