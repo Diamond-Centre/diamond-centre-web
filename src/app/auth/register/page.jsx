@@ -177,7 +177,10 @@ export default function RegisterPage() {
       }
 
       auth.setToken(result.access_token)
-      auth.setUser(result.user)
+      auth.setUser({
+        ...result.user,
+        picture: result.user.picture || registerData.picture,
+      })
 
       setSuccess(true)
       toast.success('Inscription réussie ! Bienvenue dans votre espace.')

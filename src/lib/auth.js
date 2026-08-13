@@ -47,10 +47,22 @@ export const auth = {
     try {
       localStorage.setItem('user', serialized)
     } catch (error) {
-      console.error('[AUTH] Impossible de stocker l’utilisateur.', error)
+      // Data-URL photos can exceed quota — keep the rest of the session.
+      try {
+        const { picture: _picture, ...rest } = user || {}
+        localStorage.setItem('user', JSON.stringify(rest))
+      } catch (inner) {
+        console.error('[AUTH] Impossible de stocker l’utilisateur.', inner || error)
+      }
     }
 
-    document.cookie = `user=${encodeURIComponent(serialized)}; path=/; max-age=86400; SameSite=Lax`
+    // Cookies are ~4KB — never put the photo (often a data URL) in them.
+    try {
+      const { picture: _picture, ...safe } = user || {}
+      document.cookie = `user=${encodeURIComponent(JSON.stringify(safe))}; path=/; max-age=86400; SameSite=Lax`
+    } catch {
+      // Ignore cookie failures; localStorage is the source of truth.
+    }
   },
 
   getUser: () => {

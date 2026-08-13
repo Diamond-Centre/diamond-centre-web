@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -9,18 +9,20 @@ import {
   FaUser,
   FaVenusMars,
   FaLock,
-  FaCheckCircle,
   FaShieldAlt,
   FaChevronRight,
   FaKey,
   FaMobileAlt,
   FaDesktop,
   FaTrashAlt,
-  FaExclamationTriangle
+  FaExclamationTriangle,
+  FaCamera,
 } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 import { auth } from '@/lib/auth'
+import { api } from '@/lib/api'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import { fileToProfileDataUrl } from '@/lib/profileImage'
 
 /**
  * Profil client — lecture depuis la session auth.
@@ -38,7 +40,11 @@ export default function ProfilePage() {
     email: '',
     telephone: '',
     sexe: '',
+    picture: '',
   })
+  const [photoBroken, setPhotoBroken] = useState(false)
+  const [photoUploading, setPhotoUploading] = useState(false)
+  const photoInputRef = useRef(null)
 
   // State Sécurité
   const [passwordData, setPasswordData] = useState({
@@ -57,15 +63,33 @@ export default function ProfilePage() {
       router.push('/auth/login')
       return
     }
-    setFormData({
-      name:
-        userData.name ||
-        '',
-      email: userData.email || '',
-      telephone: userData.telephone || '',
-      sexe: userData.sexe || '',
-    })
-    setLoading(false)
+
+    const applyUser = (profile) => {
+      setFormData({
+        name: profile.name || '',
+        email: profile.email || '',
+        telephone: profile.telephone || '',
+        sexe: profile.sexe || '',
+        picture: profile.picture || '',
+      })
+      setPhotoBroken(false)
+    }
+
+    applyUser(userData)
+
+    const load = async () => {
+      try {
+        const profile = await api.getMe(token)
+        applyUser({ ...userData, ...profile })
+        auth.setUser({ ...userData, ...profile })
+      } catch {
+        // Keep the session photo if /users/me is unavailable
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    load()
   }, [router])
 
   // Handlers Profil
@@ -79,14 +103,33 @@ export default function ProfilePage() {
     setSaving(true)
     try {
       const current = auth.getUser() || {}
-      const updated = {
+      const token = auth.getToken()
+      let updated = {
         ...current,
         name: formData.name,
         telephone: formData.telephone,
         sexe: formData.sexe,
+        picture: formData.picture || current.picture,
       }
-      auth.setUser(updated)
-      toast.success('Profil enregistré localement')
+      try {
+        updated = await api.updateMe(
+          {
+            name: formData.name,
+            telephone: formData.telephone,
+            sexe: formData.sexe,
+            ...(formData.picture ? { picture: formData.picture } : {}),
+          },
+          token
+        )
+      } catch {
+        // Keep a local copy if the API update is unavailable
+      }
+      auth.setUser({ ...current, ...updated })
+      setFormData((prev) => ({
+        ...prev,
+        picture: updated.picture || prev.picture,
+      }))
+      toast.success('Profil enregistré')
     } catch (error) {
       toast.error(error.message || 'Erreur lors de l’enregistrement')
     } finally {
@@ -159,6 +202,42 @@ export default function ProfilePage() {
       .slice(0, 2)
   }
 
+  const handlePhotoChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      toast.error('Veuillez sélectionner une image')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("L'image ne doit pas dépasser 5MB")
+      return
+    }
+
+    setPhotoUploading(true)
+    try {
+      const dataUrl = await fileToProfileDataUrl(file)
+      const token = auth.getToken()
+      const current = auth.getUser() || {}
+      let picture = dataUrl
+      try {
+        const updated = await api.updateMe({ picture: dataUrl }, token)
+        picture = updated.picture || dataUrl
+        auth.setUser({ ...current, ...updated, picture })
+      } catch {
+        auth.setUser({ ...current, picture: dataUrl })
+      }
+      setFormData((prev) => ({ ...prev, picture }))
+      setPhotoBroken(false)
+      toast.success('Photo de profil mise à jour')
+    } catch (error) {
+      toast.error(error.message || "Impossible d'ajouter cette photo")
+    } finally {
+      setPhotoUploading(false)
+      if (photoInputRef.current) photoInputRef.current.value = ''
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
@@ -227,12 +306,39 @@ export default function ProfilePage() {
           <div className="bg-white rounded-2xl p-6 border border-gray-200/80 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-5">
               <div className="relative">
-                <div className="w-18 h-18 text-2xl w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-dice-blue to-indigo-600 text-white font-bold sm:text-2xl flex items-center justify-center shadow-md shadow-dice-blue/20">
-                  {getInitials(formData.name)}
-                </div>
-                <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-white p-1.5 rounded-full border-2 border-white text-xs" title="Compte Actif">
-                  <FaCheckCircle />
-                </div>
+                {formData.picture && !photoBroken ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={formData.picture}
+                    alt={formData.name || 'Photo de profil'}
+                    className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover bg-gray-100 shadow-md shadow-dice-blue/20"
+                    onError={() => setPhotoBroken(true)}
+                  />
+                ) : (
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-dice-blue to-indigo-600 text-white font-bold text-xl sm:text-2xl flex items-center justify-center shadow-md shadow-dice-blue/20">
+                    {getInitials(formData.name)}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => photoInputRef.current?.click()}
+                  disabled={photoUploading}
+                  className="absolute -bottom-1 -right-1 bg-dice-blue text-white p-1.5 rounded-full border-2 border-white text-xs hover:bg-dice-blue/90 disabled:opacity-60"
+                  title="Changer la photo"
+                >
+                  {photoUploading ? (
+                    <span className="block h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  ) : (
+                    <FaCamera />
+                  )}
+                </button>
+                <input
+                  ref={photoInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                />
               </div>
               <div>
                 <div className="flex items-center gap-2">
