@@ -31,15 +31,23 @@ export default function AdminLayout({ children }) {
   useEffect(() => {
     const token = auth.getToken()
     const storedUser = auth.getUser()
+    const isAdmin =
+      storedUser?.role === 'admin' || storedUser?.role === 'super_admin'
 
-    if (!token || !storedUser || (storedUser.role !== 'admin' && storedUser.role !== 'super_admin')) {
-      router.push('/auth/login')
+    if (!token || !storedUser) {
+      router.replace('/auth/login')
+      return
+    }
+
+    // Clients must never stay on /admin, even if middleware was bypassed
+    if (!isAdmin) {
+      router.replace('/espace-client')
       return
     }
 
     setUser(storedUser)
     setIsLoading(false)
-  }, [router])
+  }, [router, pathname])
 
   const handleLogout = () => {
     auth.logout()

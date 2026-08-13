@@ -36,12 +36,13 @@ export default function EspaceClientLayout({ children }) {
       router.replace('/auth/login')
       return
     }
+    // Admins must never stay on /espace-client, even via URL
     if (user?.role === 'admin' || user?.role === 'super_admin') {
       router.replace('/admin')
       return
     }
     setReady(true)
-  }, [loading, isAuthenticated, user, router])
+  }, [loading, isAuthenticated, user, router, pathname])
 
   if (loading || !ready) {
     return (
