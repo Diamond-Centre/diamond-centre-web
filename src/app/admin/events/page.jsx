@@ -38,6 +38,25 @@ const CATEGORY_FILTERS = [
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
 
+function todayISO() {
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+function dateISO(value) {
+  if (!value) return ''
+  if (typeof value === 'string') return value.slice(0, 10)
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return ''
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
 function getImageUrl(event) {
   if (!event) return null
 
@@ -353,19 +372,14 @@ export default function AdminEvents() {
     loadEvents()
   }, [router, loadEvents])
 
-  // Met à jour dynamiquement le statut à 'completed' si la date de début dépasse la date système
+  // Terminé uniquement après la date de fin — pas dès le début de l'événement
   const processedEvents = useMemo(() => {
-    const now = new Date()
+    const today = todayISO()
     return events.map((event) => {
-      if (!event.start_date) return event
-      const startDate = new Date(event.start_date)
+      const endKey = dateISO(event.end_date || event.start_date)
       const currentStatus = String(event.status || '').toLowerCase()
 
-      if (
-        currentStatus !== 'cancelled' &&
-        !Number.isNaN(startDate.getTime()) &&
-        startDate < now
-      ) {
+      if (currentStatus !== 'cancelled' && endKey && endKey < today) {
         return { ...event, status: 'completed' }
       }
       return event

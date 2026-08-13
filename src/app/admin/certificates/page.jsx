@@ -27,7 +27,7 @@ function isFormationEnded(event) {
   const end = parseDay(event?.end_date || event?.start_date)
   if (!end) return false
   const today = parseDay(new Date())
-  return end.getTime() <= today.getTime()
+  return end.getTime() < today.getTime()
 }
 
 function formatFrDate(value) {

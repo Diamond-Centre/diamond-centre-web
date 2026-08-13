@@ -15,7 +15,12 @@ export default function EventLightbox({
 }) {
   if (!isOpen || !event) return null
 
-  const isPast = new Date(event.start_date) < new Date()
+  const endKey = String(event.end_date || event.start_date || '').slice(0, 10)
+  const today = (() => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  })()
+  const isPast = Boolean(endKey && endKey < today)
   const placesRestantes = (event.available_tickets || event.capacity) - (event.nb_inscrits || 0)
   const isFull = placesRestantes <= 0
 
