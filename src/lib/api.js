@@ -145,7 +145,9 @@ async function request(path, options = {}) {
         response: data,
       })
 
-      throw new Error(error.message)
+      const err = new Error(error.message)
+      err.status = error.status
+      throw err
     }
 
     return data
@@ -806,6 +808,11 @@ export const api = {
   deleteMe: async (token) =>
     request('/users/me', {
       method: 'DELETE',
+      headers: authHeaders(token),
+    }),
+
+  pingSession: async (token) =>
+    request('/users/me/sessions/current', {
       headers: authHeaders(token),
     }),
 

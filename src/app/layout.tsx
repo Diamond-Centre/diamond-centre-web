@@ -1,6 +1,7 @@
 import { AuthProvider } from '@/context/AuthContext'
 import './globals.css'
 import AppShell from '@/components/layout/AppShell'
+import SessionGuard from '@/components/auth/SessionGuard'
 import { Toaster } from 'react-hot-toast'
 
 export const metadata = {
@@ -13,6 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="fr">
       <body>
         <AuthProvider>
+          <SessionGuard />
           <AppShell>{children}</AppShell>
           <Toaster position="top-right" />
         </AuthProvider>
