@@ -77,12 +77,41 @@ export function AuthProvider({ children }) {
 
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(error.error || 'Erreur d\'inscription')
+        throw new Error(error.error || error.message || 'Erreur d\'inscription')
       }
 
-      toast.success('Inscription réussie')
-      router.push('/auth/login')
-      return await response.json()
+      let data = await response.json()
+
+      if (!data?.access_token) {
+        const loginRes = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: userData.email,
+            password: userData.password,
+          }),
+        })
+        if (!loginRes.ok) {
+          throw new Error(
+            'Compte créé, mais la connexion automatique a échoué. Veuillez vous connecter.'
+          )
+        }
+        data = await loginRes.json()
+      }
+
+      if (data.access_token) {
+        localStorage.setItem('token', data.access_token)
+      } else if (data.token) {
+        localStorage.setItem('token', data.token)
+      }
+      if (data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user))
+        setUser(data.user)
+      }
+
+      toast.success('Inscription réussie ! Bienvenue.')
+      router.push('/espace-client')
+      return data
     } catch (error) {
       toast.error(error.message)
       throw error

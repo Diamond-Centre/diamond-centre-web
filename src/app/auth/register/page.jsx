@@ -17,6 +17,8 @@ import toast from 'react-hot-toast'
 import Button from '@/components/ui/Button'
 import Navbar from '@/components/layout/Navbar'
 import Image from 'next/image'
+import { auth } from '@/lib/auth'
+import { api } from '@/lib/api'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -181,45 +183,26 @@ export default function RegisterPage() {
         picture: userData.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.name.trim())}&background=0a89f2&color=fff&size=128`
       }
 
-      console.log('📤 Envoi au backend:', JSON.stringify(registerData, null, 2))
+      let result = await api.register(registerData)
 
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(registerData)
-      })
-
-      const text = await response.text()
-      console.log('📥 Réponse brute:', text)
-
-      if (!response.ok) {
-        let errorMessage
-        try {
-          const error = JSON.parse(text)
-          errorMessage = error.message || error.error || `Erreur ${response.status}`
-        } catch {
-          errorMessage = text || `Erreur ${response.status}`
-        }
-        throw new Error(errorMessage)
+      // Older APIs only return the user — then log in automatically
+      if (!result?.access_token) {
+        result = await api.login(registerData.email, registerData.password)
       }
 
-      let result
-      try {
-        result = JSON.parse(text)
-      } catch {
-        throw new Error(`Réponse invalide du serveur (${response.status})`)
+      if (!result?.access_token || !result?.user) {
+        throw new Error(
+          'Compte créé, mais la connexion automatique a échoué. Veuillez vous connecter.'
+        )
       }
-      console.log('✅ Inscription réussie:', result)
+
+      auth.setToken(result.access_token)
+      auth.setUser(result.user)
 
       setSuccess(true)
-      toast.success('Inscription réussie ! Connectez-vous pour continuer.')
+      toast.success('Inscription réussie ! Bienvenue dans votre espace.')
 
-      setTimeout(() => {
-        router.push('/auth/login')
-      }, 2000)
+      window.location.href = '/espace-client'
 
     } catch (error) {
       console.error('❌ Erreur inscription:', error)

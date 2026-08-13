@@ -110,21 +110,43 @@ export function useAuth() {
   }, [])
 
   /**
-   * Inscription.
+   * Inscription puis session automatique vers l'espace client.
    */
   const register = useCallback(async (userData) => {
     setLoading(true)
 
     try {
-      const response = await api.register(userData)
+      let response = await api.register(userData)
 
-      toast.success(
-        'Inscription réussie ! Connectez-vous pour continuer.'
-      )
+      // Prefer tokens from register; fall back to login for older APIs
+      if (!response?.access_token) {
+        response = await api.login(userData.email, userData.password)
+      }
 
-      window.location.href = '/auth/login'
+      if (!response?.access_token || !response?.user) {
+        throw new Error(
+          'Compte créé, mais la connexion automatique a échoué. Veuillez vous connecter.'
+        )
+      }
 
-      return response
+      const loggedUser = response.user
+      auth.setToken(response.access_token)
+      auth.setUser(loggedUser)
+      setUser(loggedUser)
+      setIsAuthenticated(true)
+
+      toast.success('Inscription réussie ! Bienvenue.')
+
+      if (
+        loggedUser.role === 'admin' ||
+        loggedUser.role === 'super_admin'
+      ) {
+        window.location.href = '/admin'
+      } else {
+        window.location.href = '/espace-client'
+      }
+
+      return loggedUser
     } catch (error) {
       /*
        * Les détails techniques restent dans les logs.
