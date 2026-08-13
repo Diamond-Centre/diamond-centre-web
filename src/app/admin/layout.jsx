@@ -10,7 +10,7 @@ import Image from 'next/image'
 import { auth } from '@/lib/auth'
 import {
   FaHome, FaCalendar, FaTicketAlt, FaUsers, FaCertificate, FaCalendarAlt,
-  FaSignOutAlt, FaUserShield,
+  FaSignOutAlt,
 } from 'react-icons/fa'
 
 const menuItems = [
@@ -20,7 +20,6 @@ const menuItems = [
   { href: '/admin/tickets', icon: FaTicketAlt, label: 'Tickets' },
   { href: '/admin/users', icon: FaUsers, label: 'Utilisateurs' },
   { href: '/admin/certificates', icon: FaCertificate, label: 'Certificats' },
-  { href: '/admin/profile', icon: FaUserShield, label: 'Mon profil' },
 ]
 
 export default function AdminLayout({ children }) {
