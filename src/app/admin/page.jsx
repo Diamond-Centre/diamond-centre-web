@@ -12,7 +12,7 @@ import {
   FaCalendar, FaUsers, FaTicketAlt, FaChartLine,
   FaPlus, FaEye, FaEdit, FaTrash, FaDollarSign,
   FaArrowUp, FaArrowDown, FaMinus, FaSync,
-  FaSpinner, FaTag, FaClock, FaMoneyBillWave, FaUserShield
+  FaSpinner, FaTag, FaClock, FaMoneyBillWave
 } from 'react-icons/fa'
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie,
@@ -324,13 +324,6 @@ export default function AdminPage() {
             )}
             Rafraîchir
           </button>
-          <Link
-            href="/admin/profile"
-            className="px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-sm flex items-center gap-2"
-          >
-            <FaUserShield className="text-dice-blue" />
-            Mon profil
-          </Link>
           <Link href="/admin/events/create">
             <button className="px-4 py-2 bg-dice-blue text-white rounded-lg hover:bg-dice-blue-dark transition-colors text-sm flex items-center gap-2">
               <FaPlus />
