@@ -187,7 +187,7 @@ export const api = {
       name: data.name,
       role: data.role || 'client',
       telephone: data.telephone || '+237000000000',
-      sexe: data.sexe || 'non_precise',
+      sexe: data.sexe || 'homme',
       picture:
         data.picture ||
         'https://ui-avatars.com/api/?name=User&background=0a89f2&color=fff&size=128',

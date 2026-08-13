@@ -15,9 +15,9 @@ import { GiDiamondRing } from 'react-icons/gi'
 import toast from 'react-hot-toast'
 import Button from '@/components/ui/Button'
 import Navbar from '@/components/layout/Navbar'
-import Image from 'next/image'
 import { auth } from '@/lib/auth'
 import { api } from '@/lib/api'
+import { fileToProfileDataUrl } from '@/lib/profileImage'
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -86,7 +86,7 @@ export default function RegisterPage() {
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('L\'image ne doit pas dépasser 5MB')
+      toast.error("L'image ne doit pas dépasser 5MB")
       return
     }
 
@@ -95,34 +95,16 @@ export default function RegisterPage() {
 
     setIsUploading(true)
     try {
-      const formDataUpload = new FormData()
-      formDataUpload.append('image', file)
-
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formDataUpload
-      })
-
-      if (response.ok) {
-        const result = await response.json()
-        setFormData(prev => ({ ...prev, picture: result.url }))
-        toast.success('Photo téléchargée avec succès')
-      } else {
-        const reader = new FileReader()
-        reader.onload = (e) => {
-          setFormData(prev => ({ ...prev, picture: e.target.result }))
-          toast.success('Photo sélectionnée')
-        }
-        reader.readAsDataURL(file)
-      }
+      const dataUrl = await fileToProfileDataUrl(file)
+      setFormData((prev) => ({ ...prev, picture: dataUrl }))
+      toast.success('Photo ajoutée')
     } catch (error) {
-      console.error('Erreur upload:', error)
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setFormData(prev => ({ ...prev, picture: e.target.result }))
-        toast.success('Photo sélectionnée')
-      }
-      reader.readAsDataURL(file)
+      console.error('Erreur photo:', error)
+      toast.error("Impossible d'ajouter cette photo. Réessayez avec une image plus petite.")
+      setImageFile(null)
+      setImagePreview(null)
+      setFormData((prev) => ({ ...prev, picture: '' }))
+      if (fileInputRef.current) fileInputRef.current.value = ''
     } finally {
       setIsUploading(false)
     }
@@ -308,11 +290,10 @@ export default function RegisterPage() {
                     ) : imagePreview ? (
                       <div className="relative inline-block">
                         <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-4 border-dice-blue shadow-lg">
-                          <Image
+                          <img
                             src={imagePreview}
                             alt="Photo"
-                            fill
-                            className="object-cover"
+                            className="w-full h-full object-cover"
                           />
                         </div>
                         <button
