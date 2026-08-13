@@ -22,7 +22,7 @@ import toast from 'react-hot-toast'
 import { auth } from '@/lib/auth'
 import { api } from '@/lib/api'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
-import { fileToProfileDataUrl } from '@/lib/profileImage'
+import { fileToProfileDataUrl, profileImageTooLargeMessage } from '@/lib/profileImage'
 
 /**
  * Profil client — lecture depuis la session auth.
@@ -55,6 +55,7 @@ export default function ProfilePage() {
   const [passwordSaving, setPasswordSaving] = useState(false)
   const [mfaEnabled, setMfaEnabled] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [deletingAccount, setDeletingAccount] = useState(false)
 
   useEffect(() => {
     const token = auth.getToken()
@@ -180,14 +181,29 @@ export default function ProfilePage() {
   }
 
   const handleDeleteAccount = () => {
+    if (deletingAccount) return
     setDeleteConfirmOpen(true)
   }
 
-  const confirmDeleteAccount = () => {
-    auth.logout?.()
-    toast.success('Votre compte a été supprimé.')
-    setDeleteConfirmOpen(false)
-    router.push('/auth/login')
+  const confirmDeleteAccount = async () => {
+    if (deletingAccount) return
+    setDeletingAccount(true)
+    try {
+      const token = auth.getToken()
+      if (!token) {
+        throw new Error('Session expirée. Veuillez vous reconnecter.')
+      }
+      await api.deleteMe(token)
+      setDeleteConfirmOpen(false)
+      auth.logout?.()
+      toast.success('Votre compte a été supprimé définitivement.')
+      window.location.href = '/auth/login'
+    } catch (error) {
+      toast.error(
+        error.message || 'Impossible de supprimer le compte. Réessayez plus tard.'
+      )
+      setDeletingAccount(false)
+    }
   }
 
   // Initiales Avatar
@@ -209,10 +225,6 @@ export default function ProfilePage() {
       toast.error('Veuillez sélectionner une image')
       return
     }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("L'image ne doit pas dépasser 5MB")
-      return
-    }
 
     setPhotoUploading(true)
     try {
@@ -231,7 +243,7 @@ export default function ProfilePage() {
       setPhotoBroken(false)
       toast.success('Photo de profil mise à jour')
     } catch (error) {
-      toast.error(error.message || "Impossible d'ajouter cette photo")
+      toast.error(profileImageTooLargeMessage())
     } finally {
       setPhotoUploading(false)
       if (photoInputRef.current) photoInputRef.current.value = ''
@@ -618,17 +630,18 @@ export default function ProfilePage() {
                     Zone de danger
                   </h3>
                   <p className="text-sm text-red-700/80">
-                    La suppression de votre compte entraînera la perte définitive de toutes vos données locales et l'accès à votre espace.
+                    La suppression de votre compte effacera définitivement vos données dans la base et fermera l&apos;accès à votre espace.
                   </p>
                 </div>
 
                 <button
                   type="button"
                   onClick={handleDeleteAccount}
-                  className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-red-600 hover:bg-red-700 text-white transition-all shadow-sm flex items-center gap-2 flex-shrink-0"
+                  disabled={deletingAccount}
+                  className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-red-600 hover:bg-red-700 text-white transition-all shadow-sm flex items-center gap-2 flex-shrink-0 disabled:opacity-60"
                 >
                   <FaTrashAlt className="text-xs" />
-                  Supprimer mon compte
+                  {deletingAccount ? 'Suppression…' : 'Supprimer mon compte'}
                 </button>
               </div>
 
@@ -641,12 +654,16 @@ export default function ProfilePage() {
       <ConfirmDialog
         open={deleteConfirmOpen}
         title="Confirmer la suppression"
-        message="Êtes-vous absolument sûr de vouloir supprimer votre compte ? Cette action est irréversible et effacera vos données de session."
+        message="Êtes-vous absolument sûr de vouloir supprimer votre compte ? Cette action est irréversible et supprimera votre compte de la base de données."
         confirmLabel="Supprimer"
         cancelLabel="Annuler"
         tone="danger"
+        loading={deletingAccount}
         onConfirm={confirmDeleteAccount}
-        onCancel={() => setDeleteConfirmOpen(false)}
+        onCancel={() => {
+          if (deletingAccount) return
+          setDeleteConfirmOpen(false)
+        }}
       />
     </div>
   )

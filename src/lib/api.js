@@ -774,6 +774,12 @@ export const api = {
       }),
     }),
 
+  deleteMe: async (token) =>
+    request('/users/me', {
+      method: 'DELETE',
+      headers: authHeaders(token),
+    }),
+
   createAdmin: async (data, token) =>
     request('/users/admins', {
       method: 'POST',
