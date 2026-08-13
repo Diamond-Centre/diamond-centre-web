@@ -249,8 +249,8 @@ export default function AdminPage() {
       color: 'from-blue-500 to-blue-600'
     },
     {
-      title: 'Utilisateurs',
-      value: stats?.totalUsers || 0,
+      title: 'Clients',
+      value: stats?.totalClients ?? 0,
       icon: FaUsers,
       color: 'from-green-500 to-green-600'
     },
