@@ -13,14 +13,18 @@ import {
   FaSpinner,
   FaTimes,
   FaTicketAlt,
+  FaTrash,
   FaUser,
 } from 'react-icons/fa'
 import QRCode from 'qrcode'
 import { api } from '@/lib/api'
 import { auth } from '@/lib/auth'
+import { ticketStore } from '@/lib/ticketStore'
+import { isEventEnded } from '@/lib/eventTiming'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 const FILTERS = [
-  { id: 'upcoming', label: 'À venir' },
+  { id: 'upcoming', label: 'Encore' },
   { id: 'past', label: 'Passés' },
   { id: 'all', label: 'Tous' },
 ]
@@ -90,16 +94,28 @@ function isPending(status) {
   return s === 'pending' || s === 'awaiting_payment'
 }
 
-function statusLabel(status) {
-  return isPending(status) ? 'En attente' : 'Confirmé'
+function isScanned(ticket) {
+  return String(ticket?.status || '').toLowerCase() === 'scanne'
+}
+
+function canDeleteTicket(ticket) {
+  if (!ticket) return false
+  if (isScanned(ticket)) return false
+  if (ticket.certificate_id || ticket.certificate || ticket.has_certificate) {
+    return false
+  }
+  return true
+}
+
+function ticketIdOf(ticket) {
+  return ticket?.id || ticket?.ticket_id
 }
 
 function isPastTicket(t) {
-  const d = new Date(ticketDate(t) || 0)
-  if (Number.isNaN(d.getTime())) return false
-  const end = new Date(d)
-  end.setHours(23, 59, 59, 999)
-  return end.getTime() < Date.now()
+  return isEventEnded({
+    end_date: t.event_end_date || t.end_date,
+    start_date: t.event_start_date || t.date || t.event_date || t.start_date,
+  })
 }
 
 function StatusChip({ status, past }) {
@@ -110,35 +126,44 @@ function StatusChip({ status, past }) {
       </span>
     )
   }
+  if (isPending(status)) {
+    return (
+      <span className="inline-flex items-center rounded-full bg-[#FFF4DE] px-2.5 py-0.5 text-[11px] font-semibold text-[#B78103]">
+        En attente
+      </span>
+    )
+  }
   return (
-    <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
-        isPending(status)
-          ? 'bg-[#FFF4DE] text-[#B78103]'
-          : 'bg-emerald-50 text-[#0B9B6B]'
-      }`}
-    >
-      {statusLabel(status)}
+    <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-[#0B9B6B]">
+      Encore
     </span>
   )
 }
 
-function TicketStub({ ticket, past, featured, onOpen }) {
+function TicketStub({ ticket, past, featured, onOpen, onDelete }) {
   const title = ticket.title || ticket.event_title || `Ticket #${ticket.id}`
   const day = new Date(ticketDate(ticket) || 0)
   const dayNum = Number.isNaN(day.getTime()) ? '—' : day.getDate()
   const month = Number.isNaN(day.getTime())
     ? ''
     : day.toLocaleDateString('fr-FR', { month: 'short' })
+  const showDelete = canDeleteTicket(ticket)
 
   return (
-    <motion.button
-      type="button"
+    <motion.div
+      role="button"
+      tabIndex={0}
       layout
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       onClick={() => onOpen(ticket)}
-      className={`group w-full overflow-hidden text-left transition ${
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onOpen(ticket)
+        }
+      }}
+      className={`group w-full cursor-pointer overflow-hidden text-left transition ${
         featured
           ? 'rounded-[28px] shadow-[0_20px_50px_rgba(10,137,242,0.22)]'
           : 'rounded-[22px] border border-[#E8EEF5] bg-white shadow-[0_8px_24px_rgba(11,18,32,0.04)] hover:border-[#0A89F2]/30 hover:shadow-[0_14px_32px_rgba(10,137,242,0.1)]'
@@ -194,9 +219,25 @@ function TicketStub({ ticket, past, featured, onOpen }) {
             <span className="font-mono tracking-[0.2em] font-semibold">
               {entryCodeOf(ticket) || qrPayload(ticket)}
             </span>
-            <span className="inline-flex items-center gap-1.5 font-semibold text-white">
-              Afficher le QR
-              <FaArrowRight className="text-[10px]" />
+            <span className="inline-flex items-center gap-2">
+              {showDelete ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onDelete?.(ticket)
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 font-semibold text-white transition hover:bg-red-500"
+                  aria-label="Supprimer ce ticket"
+                >
+                  <FaTrash className="text-[10px]" />
+                  Supprimer
+                </button>
+              ) : null}
+              <span className="inline-flex items-center gap-1.5 font-semibold text-white">
+                Afficher le QR
+                <FaArrowRight className="text-[10px]" />
+              </span>
             </span>
           </div>
         </div>
@@ -269,18 +310,34 @@ function TicketStub({ ticket, past, featured, onOpen }) {
             </div>
             <div className="flex items-center justify-between border-t border-[#F0F2F5] pt-2 text-xs text-[#98A2B3]">
               <span>1 place</span>
-              <span className="inline-flex items-center gap-1 font-medium text-[#0A89F2] opacity-0 transition group-hover:opacity-100">
-                Voir le billet <FaArrowRight className="text-[9px]" />
+              <span className="inline-flex items-center gap-2">
+                {showDelete ? (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onDelete?.(ticket)
+                    }}
+                    className="inline-flex items-center gap-1 rounded-lg px-2 py-1 font-medium text-red-500 transition hover:bg-red-50"
+                    aria-label="Supprimer ce ticket"
+                  >
+                    <FaTrash className="text-[10px]" />
+                    Supprimer
+                  </button>
+                ) : null}
+                <span className="inline-flex items-center gap-1 font-medium text-[#0A89F2] opacity-0 transition group-hover:opacity-100">
+                  Voir le billet <FaArrowRight className="text-[9px]" />
+                </span>
               </span>
             </div>
           </div>
         </div>
       )}
-    </motion.button>
+    </motion.div>
   )
 }
 
-function TicketDetail({ ticket, onClose }) {
+function TicketDetail({ ticket, onClose, onDelete }) {
   const [qrSrc, setQrSrc] = useState(null)
   const past = isPastTicket(ticket)
   const code = qrPayload(ticket)
@@ -411,6 +468,20 @@ function TicketDetail({ ticket, onClose }) {
           >
             Fermer
           </button>
+          {canDeleteTicket(ticket) ? (
+            <button
+              type="button"
+              onClick={() => onDelete?.(ticket)}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-100"
+            >
+              <FaTrash className="text-xs" />
+              Supprimer ce ticket
+            </button>
+          ) : isScanned(ticket) ? (
+            <p className="text-center text-xs text-[#98A2B3]">
+              Ce ticket a déjà été scanné et ne peut plus être supprimé.
+            </p>
+          ) : null}
         </div>
       </motion.div>
     </div>
@@ -423,6 +494,9 @@ export default function EspaceClientTicketsPage() {
   const [error, setError] = useState(null)
   const [filter, setFilter] = useState('upcoming')
   const [selected, setSelected] = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -477,6 +551,33 @@ export default function EspaceClientTicketsPage() {
     [sorted]
   )
 
+  function requestDelete(ticket) {
+    setDeleteError(null)
+    setDeleteTarget(ticket)
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return
+    const id = ticketIdOf(deleteTarget)
+    try {
+      setDeleting(true)
+      setDeleteError(null)
+      await api.deleteTicket(id, auth.getToken())
+      ticketStore.remove(id)
+      setTickets((prev) =>
+        prev.filter((t) => Number(ticketIdOf(t)) !== Number(id))
+      )
+      if (selected && Number(ticketIdOf(selected)) === Number(id)) {
+        setSelected(null)
+      }
+      setDeleteTarget(null)
+    } catch (err) {
+      setDeleteError(err.message || 'Impossible de supprimer ce ticket')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   return (
     <div className="space-y-7">
       <motion.header
@@ -512,7 +613,7 @@ export default function EspaceClientTicketsPage() {
                     {tickets.length}
                   </p>
                   <p className="mt-1 text-[11px] font-medium text-[#667085]">
-                    {counts.upcoming} à venir
+                    {counts.upcoming} encore
                     {counts.past > 0 ? ` · ${counts.past} passé${counts.past > 1 ? 's' : ''}` : ''}
                   </p>
                 </div>
@@ -600,6 +701,7 @@ export default function EspaceClientTicketsPage() {
               past={false}
               featured
               onOpen={setSelected}
+              onDelete={requestDelete}
             />
           ) : null}
 
@@ -616,6 +718,7 @@ export default function EspaceClientTicketsPage() {
                       ticket={t}
                       past={isPastTicket(t)}
                       onOpen={setSelected}
+                      onDelete={requestDelete}
                     />
                   </motion.div>
                 </li>
@@ -627,9 +730,32 @@ export default function EspaceClientTicketsPage() {
 
       <AnimatePresence>
         {selected ? (
-          <TicketDetail ticket={selected} onClose={() => setSelected(null)} />
+          <TicketDetail
+            ticket={selected}
+            onClose={() => setSelected(null)}
+            onDelete={requestDelete}
+          />
         ) : null}
       </AnimatePresence>
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Supprimer ce ticket"
+        message={
+          deleteError ||
+          'Cette action est irréversible. La place sera libérée si le ticket n’a pas encore été utilisé.'
+        }
+        confirmLabel="Supprimer"
+        cancelLabel="Annuler"
+        tone="danger"
+        loading={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          if (deleting) return
+          setDeleteTarget(null)
+          setDeleteError(null)
+        }}
+      />
     </div>
   )
 }

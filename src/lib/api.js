@@ -35,6 +35,14 @@ const API_MESSAGE_FR = {
   'None of the provided ticket_ids are valid for this formation':
     'Aucun des participants sélectionnés n’est valide pour cette formation.',
   'event_id is required': 'L’identifiant de la formation est requis.',
+  'Ticket not found': 'Ticket introuvable.',
+  'You do not have access to this ticket':
+    'Vous n’avez pas accès à ce ticket.',
+  'Ticket deleted': 'Ticket supprimé.',
+  'Impossible de supprimer un ticket déjà scanné.':
+    'Impossible de supprimer un ticket déjà scanné.',
+  'Impossible de supprimer un ticket associé à un certificat.':
+    'Impossible de supprimer un ticket associé à un certificat.',
 }
 
 function translateApiMessage(message) {
@@ -603,9 +611,11 @@ export const api = {
     }
   },
 
-  deleteTicket: async () => {
-    throw new Error('La suppression de tickets n’est pas encore disponible sur le backend')
-  },
+  deleteTicket: async (id, token) =>
+    request(`/tickets/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(token),
+    }),
 
   // ===== CERTIFICATES =====
   getMyCertificates: async (token) => {
