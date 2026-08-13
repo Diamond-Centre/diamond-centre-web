@@ -4,7 +4,6 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import {
@@ -21,7 +20,6 @@ import { auth } from '@/lib/auth'
 import { api } from '@/lib/api'
 
 export default function RegisterPage() {
-  const router = useRouter()
   const [formData, setFormData] = useState({
     name: '',
     email: '',
