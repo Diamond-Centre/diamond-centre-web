@@ -103,7 +103,13 @@ export default function AdminPage() {
     return Math.max(0, capacity - available)
   }
 
+  const isClientUser = (user) => {
+    const role = String(user?.role || 'client').toLowerCase()
+    return role === 'client' || role === 'user' || !user?.role
+  }
+
   const calculateStats = (eventsList, usersList, dashboard = null) => {
+    const clientsList = usersList.filter(isClientUser)
     const eventsByMonth = buildLast12Months()
     const revenueByMonth = buildLast12Months()
     const usersByMonth = buildLast12Months()
@@ -132,7 +138,7 @@ export default function AdminPage() {
       }
     })
 
-    usersList.forEach((u) => {
+    clientsList.forEach((u) => {
       const key = monthKeyFromDate(u.created_at)
       if (key != null && userIndex[key] != null) {
         usersByMonth[userIndex[key]].count += 1
@@ -141,6 +147,7 @@ export default function AdminPage() {
 
     const totalEvents = dashboard?.events?.total ?? eventsList.length
     const totalUsers = dashboard?.users?.total ?? usersList.length
+    const totalClients = dashboard?.users?.clients ?? clientsList.length
     const publishedEvents = dashboard?.events?.published
       ?? eventsList.filter((e) => e.status === 'published').length
     const draftEvents = dashboard?.events?.draft
@@ -184,6 +191,7 @@ export default function AdminPage() {
     return {
       totalEvents,
       totalUsers,
+      totalClients,
       totalRevenue,
       publishedEvents,
       draftEvents,
@@ -574,10 +582,10 @@ export default function AdminPage() {
                 </div>
                 Utilisateurs par mois
               </h3>
-              <p className="text-xs text-gray-400 mt-0.5">Acquisition de nouveaux membres</p>
+              <p className="text-xs text-gray-400 mt-0.5">Nouveaux clients inscrits</p>
             </div>
             <span className="text-sm font-extrabold text-purple-600 bg-purple-50 px-3 py-1 rounded-full">
-              {stats?.totalUsers || 0} inscrits
+              {stats?.totalClients ?? 0} clients
             </span>
           </div>
           <div className="h-72">
@@ -601,7 +609,7 @@ export default function AdminPage() {
                   fill="url(#colorUsersGrad)"
                   dot={{ fill: '#8b5cf6', stroke: '#fff', strokeWidth: 2, r: 4 }}
                   activeDot={{ r: 7, fill: '#8b5cf6', stroke: '#fff', strokeWidth: 3 }}
-                  name="Utilisateurs"
+                  name="Clients"
                 />
               </AreaChart>
             </ResponsiveContainer>
