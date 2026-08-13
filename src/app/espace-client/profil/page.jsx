@@ -20,6 +20,7 @@ import {
 } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 import { auth } from '@/lib/auth'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 /**
  * Profil client — lecture depuis la session auth.
@@ -47,6 +48,7 @@ export default function ProfilePage() {
   })
   const [passwordSaving, setPasswordSaving] = useState(false)
   const [mfaEnabled, setMfaEnabled] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
 
   useEffect(() => {
     const token = auth.getToken()
@@ -135,14 +137,14 @@ export default function ProfilePage() {
   }
 
   const handleDeleteAccount = () => {
-    const confirmed = window.confirm(
-      'Êtes-vous absolument sûr de vouloir supprimer votre compte ? Cette action est irréversible et effacera vos données de session.'
-    )
-    if (confirmed) {
-      auth.logout?.()
-      toast.success('Votre compte a été supprimé.')
-      router.push('/auth/login')
-    }
+    setDeleteConfirmOpen(true)
+  }
+
+  const confirmDeleteAccount = () => {
+    auth.logout?.()
+    toast.success('Votre compte a été supprimé.')
+    setDeleteConfirmOpen(false)
+    router.push('/auth/login')
   }
 
   // Initiales Avatar
@@ -529,6 +531,17 @@ export default function ProfilePage() {
 
         </main>
       </div>
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        title="Confirmer la suppression"
+        message="Êtes-vous absolument sûr de vouloir supprimer votre compte ? Cette action est irréversible et effacera vos données de session."
+        confirmLabel="Supprimer"
+        cancelLabel="Annuler"
+        tone="danger"
+        onConfirm={confirmDeleteAccount}
+        onCancel={() => setDeleteConfirmOpen(false)}
+      />
     </div>
   )
 }

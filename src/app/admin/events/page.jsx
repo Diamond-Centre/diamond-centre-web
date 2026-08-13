@@ -15,6 +15,7 @@ import {
 import { api } from '@/lib/api'
 import { auth } from '@/lib/auth'
 import EventLightbox from '@/components/events/EventLightbox'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import toast from 'react-hot-toast'
 
 const PAGE_SIZE = 12
@@ -326,6 +327,7 @@ export default function AdminEvents() {
   const [error, setError] = useState(null)
   const [selectedEvent, setSelectedEvent] = useState(null)
   const [isLightboxOpen, setIsLightboxOpen] = useState(false)
+  const [eventToDelete, setEventToDelete] = useState(null)
 
   const loadEvents = useCallback(async () => {
     try {
@@ -479,13 +481,18 @@ export default function AdminEvents() {
     return filteredEvents.slice(start, start + PAGE_SIZE)
   }, [filteredEvents, page])
 
-  const handleDelete = async (event) => {
-    if (!confirm(`Supprimer « ${event.title} » ?`)) return
+  const handleDelete = (event) => {
+    setEventToDelete(event)
+  }
+
+  const confirmDelete = async () => {
+    if (!eventToDelete) return
     try {
-      setDeletingId(event.id)
+      setDeletingId(eventToDelete.id)
       const token = auth.getToken()
-      await api.deleteEvent(event.id, token)
+      await api.deleteEvent(eventToDelete.id, token)
       toast.success('Événement supprimé')
+      setEventToDelete(null)
       await loadEvents()
     } catch (err) {
       toast.error(err.message || 'Erreur lors de la suppression')
@@ -690,6 +697,25 @@ export default function AdminEvents() {
         isOpen={isLightboxOpen}
         onClose={closeLightbox}
         event={selectedEvent}
+      />
+
+      <ConfirmDialog
+        open={Boolean(eventToDelete)}
+        title="Confirmer la suppression"
+        message={
+          eventToDelete
+            ? `Supprimer « ${eventToDelete.title} » ? Cette action est irréversible.`
+            : ''
+        }
+        confirmLabel="Supprimer"
+        cancelLabel="Annuler"
+        tone="danger"
+        loading={deletingId === eventToDelete?.id}
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          if (deletingId) return
+          setEventToDelete(null)
+        }}
       />
     </>
   )

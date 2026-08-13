@@ -14,6 +14,7 @@ import {
   FaGraduationCap, FaMapMarkerAlt, FaExclamationTriangle,
 } from 'react-icons/fa'
 import toast from 'react-hot-toast'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 function parseDay(value) {
   if (!value) return null
@@ -64,6 +65,8 @@ export default function AdminCertificatesPage() {
   const [error, setError] = useState(null)
   const [previewHtml, setPreviewHtml] = useState(null)
   const [previewCode, setPreviewCode] = useState(null)
+  const [issueConfirmOpen, setIssueConfirmOpen] = useState(false)
+  const [issueConfirmMessage, setIssueConfirmMessage] = useState('')
 
   const selectedFormation = useMemo(
     () => formations.find((f) => f.id === selectedId) || null,
@@ -281,7 +284,7 @@ export default function AdminCertificatesPage() {
     })
   }
 
-  const confirmAndIssue = async () => {
+  const confirmAndIssue = () => {
     if (!selectedId || selectedTickets.size === 0) return
     const count = selectedTickets.size
     const title = selectedFormation?.title || eventMeta?.title || 'cette formation'
@@ -289,7 +292,12 @@ export default function AdminCertificatesPage() {
     if (!formationEnded) {
       message += '\n\nAttention : la formation n’est pas encore terminée.'
     }
-    if (!confirm(message)) return
+    setIssueConfirmMessage(message)
+    setIssueConfirmOpen(true)
+  }
+
+  const executeIssue = async () => {
+    if (!selectedId || selectedTickets.size === 0) return
 
     try {
       setIssuing(true)
@@ -307,6 +315,7 @@ export default function AdminCertificatesPage() {
           ? 'Aucun nouveau certificat (déjà délivrés).'
           : `${issuedCount} certificat(s) délivré(s). Les participants sont notifiés.`
       )
+      setIssueConfirmOpen(false)
       await loadEligible(selectedId, { preserveSelection: false })
       if (issuedCount > 0) setTab('issued')
     } catch (err) {
@@ -734,6 +743,21 @@ export default function AdminCertificatesPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={issueConfirmOpen}
+        title="Confirmer la délivrance"
+        message={issueConfirmMessage}
+        confirmLabel="Délivrer"
+        cancelLabel="Annuler"
+        tone="primary"
+        loading={issuing}
+        onConfirm={executeIssue}
+        onCancel={() => {
+          if (issuing) return
+          setIssueConfirmOpen(false)
+        }}
+      />
     </div>
   )
 }
