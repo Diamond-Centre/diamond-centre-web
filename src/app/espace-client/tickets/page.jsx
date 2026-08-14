@@ -24,6 +24,7 @@ import { ticketStore } from '@/lib/ticketStore'
 import { eventTimingLabel, eventTimingPhase } from '@/lib/eventTiming'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import LoadError from '@/components/ui/LoadError'
+import toast from 'react-hot-toast'
 
 const FILTERS = [
   { id: 'upcoming', label: 'À venir' },
@@ -134,6 +135,67 @@ function isShareableTicket(t) {
   if (!t) return false
   if (t.shareable === true) return true
   return !String(t.customer_name || t.customerName || '').trim()
+}
+
+function ticketShareText(ticket) {
+  const code = entryCodeOf(ticket) || qrPayload(ticket)
+  const title = ticket.title || ticket.event_title || 'Événement'
+  return `Billet DiCe — ${title}\nCode d’entrée : ${code}\nPrésentez ce code ou le QR à l’entrée.`
+}
+
+async function copyShareText(text) {
+  try {
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text)
+      return true
+    }
+  } catch {
+    /* fall through */
+  }
+  try {
+    const el = document.createElement('textarea')
+    el.value = text
+    el.setAttribute('readonly', '')
+    el.style.position = 'fixed'
+    el.style.top = '0'
+    el.style.left = '-9999px'
+    document.body.appendChild(el)
+    el.select()
+    el.setSelectionRange(0, text.length)
+    const ok = document.execCommand('copy')
+    document.body.removeChild(el)
+    return ok
+  } catch {
+    return false
+  }
+}
+
+async function shareTicket(ticket) {
+  const text = ticketShareText(ticket)
+  const isMobile =
+    typeof navigator !== 'undefined' &&
+    (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '') ||
+      (navigator.maxTouchPoints > 1 && /Mac/i.test(navigator.userAgent || '')))
+
+  if (
+    isMobile &&
+    typeof navigator.share === 'function' &&
+    (typeof navigator.canShare !== 'function' || navigator.canShare({ text }))
+  ) {
+    try {
+      await navigator.share({ title: 'Billet DiCe', text })
+      return
+    } catch (err) {
+      if (err?.name === 'AbortError') return
+    }
+  }
+
+  const copied = await copyShareText(text)
+  if (copied) {
+    toast.success('Code d’entrée copié — collez-le pour l’envoyer à un ami.')
+    return
+  }
+  toast.error('Impossible de copier. Code d’entrée : ' + (entryCodeOf(ticket) || qrPayload(ticket)))
 }
 
 function StatusChip({ status, ticket }) {
@@ -536,24 +598,7 @@ function TicketDetail({ ticket, onClose, onDelete }) {
 
           <button
             type="button"
-            onClick={async () => {
-              const code = entryCodeOf(ticket) || qrPayload(ticket)
-              const title = ticket.title || ticket.event_title || 'Événement'
-              const text = `Billet DiCe — ${title}\nCode d’entrée : ${code}\nPrésentez ce code ou le QR à l’entrée.`
-              try {
-                if (typeof navigator !== 'undefined' && navigator.share) {
-                  await navigator.share({ title: 'Billet DiCe', text })
-                  return
-                }
-              } catch {
-                /* user cancelled or share unavailable */
-              }
-              try {
-                await navigator.clipboard.writeText(text)
-              } catch {
-                /* ignore */
-              }
-            }}
+            onClick={() => shareTicket(ticket)}
             className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#0A89F2]/20 bg-[#E8F3FE] py-3.5 text-sm font-semibold text-[#0A89F2] transition hover:bg-[#d7ecfd]"
           >
             <FaShareAlt className="text-xs" />
