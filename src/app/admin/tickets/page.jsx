@@ -11,7 +11,7 @@ import {
   FaCheckCircle, FaTimesCircle, FaClock,
   FaUser, FaEnvelope, FaPhone, FaCalendar,
   FaDownload, FaQrcode, FaTimes, FaUndo, FaTrash,
-  FaChevronLeft, FaChevronRight, FaKeyboard,
+  FaChevronLeft, FaChevronRight, FaKeyboard, FaShareAlt,
 } from 'react-icons/fa'
 import { auth } from '@/lib/auth'
 import { api } from '@/lib/api'
@@ -125,6 +125,23 @@ function initialOf(name) {
   return t ? t[0].toUpperCase() : '?'
 }
 
+function isShareableTicket(t) {
+  if (!t) return false
+  if (t.shareable === true) return true
+  return !String(t.customer_name || '').trim()
+}
+
+function buyerNameOf(ticket, tickets = []) {
+  const email = String(ticket?.customer_email || '').trim().toLowerCase()
+  if (!email) return ''
+  const sibling = tickets.find(
+    (t) =>
+      String(t.customer_email || '').trim().toLowerCase() === email &&
+      String(t.customer_name || '').trim()
+  )
+  return String(sibling?.customer_name || '').trim()
+}
+
 function Pagination({ page, totalPages, onChange, totalItems, pageSize }) {
   if (totalPages <= 1) return null
   const from = (page - 1) * pageSize + 1
@@ -184,7 +201,7 @@ function Pagination({ page, totalPages, onChange, totalItems, pageSize }) {
   )
 }
 
-function TicketCard({ ticket, index, onShowQr, onValidate, onHideExpired, validating }) {
+function TicketCard({ ticket, index, onShowQr, onValidate, onHideExpired, validating, buyerName }) {
   const meta = statusMeta(ticket.status)
   const StatusIcon = meta.icon
   const qr = ticket.qr_codes?.[0]
@@ -199,6 +216,8 @@ function TicketCard({ ticket, index, onShowQr, onValidate, onHideExpired, valida
   const alreadyScanned = statusKey(ticket.status) === 'scanne' || validated
   const expired = statusKey(ticket.status) === 'expire'
   const canValidate = Boolean(entryCode) && !alreadyScanned && !expired
+  const shareable = isShareableTicket(ticket)
+  const buyerLabel = buyerName || ticket.customer_email || 'Client'
 
   return (
     <motion.article
@@ -213,7 +232,11 @@ function TicketCard({ ticket, index, onShowQr, onValidate, onHideExpired, valida
         <div
           className={`w-11 h-11 rounded-2xl bg-white flex items-center justify-center font-extrabold text-sm shadow-sm ${meta.tone}`}
         >
-          {initialOf(ticket.customer_name)}
+          {shareable ? (
+            <FaShareAlt className="text-lg" />
+          ) : (
+            initialOf(ticket.customer_name)
+          )}
         </div>
         <p className="mt-2 text-[11px] font-bold text-[#98A2B3]">#{ticket.id}</p>
         {entryCode && (
@@ -228,8 +251,14 @@ function TicketCard({ ticket, index, onShowQr, onValidate, onHideExpired, valida
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2 mb-1">
               <h3 className="font-bold text-[#0B1220] text-[15px] truncate">
-                {ticket.customer_name || 'Client'}
+                {shareable ? 'À partager' : ticket.customer_name || 'Client'}
               </h3>
+              {shareable ? (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#E8F3FE] text-[#0A89F2]">
+                  <FaShareAlt className="text-[9px]" />
+                  Place invitée
+                </span>
+              ) : null}
               <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${meta.className}`}>
                 <StatusIcon className="text-[10px]" />
                 {meta.label}
@@ -243,6 +272,11 @@ function TicketCard({ ticket, index, onShowQr, onValidate, onHideExpired, valida
             <p className="text-sm text-[#667085] line-clamp-1">
               {ticket.event_title || 'Événement'}
             </p>
+            {shareable ? (
+              <p className="mt-1 text-xs text-[#667085]">
+                Acheté par <span className="font-semibold text-[#0B1220]">{buyerLabel}</span>
+              </p>
+            ) : null}
           </div>
           <div className="text-right shrink-0">
             <p className="text-sm font-extrabold text-[#0A89F2]">
@@ -377,11 +411,15 @@ export default function AdminTickets() {
       const key = statusKey(ticket.status)
       if (statusFilter !== 'all' && key !== statusFilter) return false
       if (!q) return true
+      const shareable = isShareableTicket(ticket)
+      const buyer = buyerNameOf(ticket, tickets).toLowerCase()
       return (
         ticket.customer_name?.toLowerCase().includes(q) ||
         ticket.customer_email?.toLowerCase().includes(q) ||
         ticket.customer_phone?.toLowerCase().includes(q) ||
         ticket.event_title?.toLowerCase().includes(q) ||
+        buyer.includes(q) ||
+        (shareable && (q.includes('partag') || q.includes('invite'))) ||
         String(ticket.id).includes(q) ||
         ticket.qr_codes?.[0]?.entry_code?.includes(q) ||
         ticket.qr_codes?.[0]?.code?.toLowerCase().includes(q) ||
@@ -666,6 +704,7 @@ export default function AdminTickets() {
                     onValidate={validateEntryCode}
                     onHideExpired={setHideTarget}
                     validating={validating}
+                    buyerName={buyerNameOf(ticket, tickets)}
                   />
                 ))}
               </div>
@@ -709,6 +748,12 @@ export default function AdminTickets() {
                     <p className="text-sm text-white/90 mt-1 line-clamp-1">
                       {selectedTicket.event_title}
                     </p>
+                    {isShareableTicket(selectedTicket) ? (
+                      <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold">
+                        <FaShareAlt className="text-[9px]" />
+                        À partager
+                      </span>
+                    ) : null}
                   </div>
                   <button
                     type="button"
@@ -742,23 +787,51 @@ export default function AdminTickets() {
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-[#E8EEF5] p-4 space-y-2 text-sm">
-                  <p className="flex items-center gap-2 text-[#667085]">
-                    <FaUser className="text-[#0A89F2] text-xs" />
-                    <span className="font-medium text-[#0B1220]">{selectedTicket.customer_name}</span>
-                  </p>
-                  <p className="flex items-center gap-2 text-[#667085]">
-                    <FaEnvelope className="text-[#0A89F2] text-xs" />
-                    {selectedTicket.customer_email || '—'}
-                  </p>
-                  <p className="text-[#667085]">
-                    Total{' '}
-                    <span className="font-bold text-[#0A89F2]">
-                      {formatPrice(selectedTicket.total_price, selectedTicket.currency || 'FCFA')}
-                    </span>
-                    {' · '}×{selectedTicket.quantity || 1}
-                  </p>
-                </div>
+                {isShareableTicket(selectedTicket) ? (
+                  <div className="rounded-2xl border border-[#E8F3FE] bg-[#F7FBFF] p-4 text-sm">
+                    <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#0A89F2]">
+                      <FaShareAlt className="text-[10px]" />
+                      Billet à partager
+                    </p>
+                    <p className="mt-1.5 text-[#667085]">
+                      Place sans nom, destinée à un invité. Achetée par{' '}
+                      <span className="font-semibold text-[#0B1220]">
+                        {buyerNameOf(selectedTicket, tickets) ||
+                          selectedTicket.customer_email ||
+                          'ce client'}
+                      </span>
+                      {buyerNameOf(selectedTicket, tickets) && selectedTicket.customer_email
+                        ? ` · ${selectedTicket.customer_email}`
+                        : ''}
+                      .
+                    </p>
+                    <p className="mt-2 text-[#667085]">
+                      Total{' '}
+                      <span className="font-bold text-[#0A89F2]">
+                        {formatPrice(selectedTicket.total_price, selectedTicket.currency || 'FCFA')}
+                      </span>
+                      {' · '}×{selectedTicket.quantity || 1}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-[#E8EEF5] p-4 space-y-2 text-sm">
+                    <p className="flex items-center gap-2 text-[#667085]">
+                      <FaUser className="text-[#0A89F2] text-xs" />
+                      <span className="font-medium text-[#0B1220]">{selectedTicket.customer_name}</span>
+                    </p>
+                    <p className="flex items-center gap-2 text-[#667085]">
+                      <FaEnvelope className="text-[#0A89F2] text-xs" />
+                      {selectedTicket.customer_email || '—'}
+                    </p>
+                    <p className="text-[#667085]">
+                      Total{' '}
+                      <span className="font-bold text-[#0A89F2]">
+                        {formatPrice(selectedTicket.total_price, selectedTicket.currency || 'FCFA')}
+                      </span>
+                      {' · '}×{selectedTicket.quantity || 1}
+                    </p>
+                  </div>
+                )}
 
                 <div className="flex flex-col sm:flex-row gap-2">
                   {statusKey(selectedTicket.status) === 'expire' ? (

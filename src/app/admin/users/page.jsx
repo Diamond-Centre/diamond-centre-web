@@ -9,7 +9,7 @@ import {
   FaEnvelope, FaPhone, FaUser, FaTimes, FaChevronLeft, FaChevronRight,
   FaEye, FaEdit, FaTrash, FaSpinner, FaLock, FaExclamationTriangle,
   FaEllipsisV, FaTicketAlt, FaCertificate, FaCheckCircle, FaClock,
-  FaTimesCircle, FaUndo, FaCalendar, FaQrcode, FaDownload
+  FaTimesCircle, FaUndo, FaCalendar, FaQrcode, FaDownload, FaShareAlt
 } from 'react-icons/fa'
 import Badge from '@/components/ui/Badge'
 import LoadError from '@/components/ui/LoadError'
@@ -46,6 +46,12 @@ function formatPriceFr(amount, currency = 'FCFA') {
 function initialOf(name) {
   const t = (name || '').trim()
   return t ? t[0].toUpperCase() : '?'
+}
+
+function isShareableTicket(t) {
+  if (!t) return false
+  if (t.shareable === true) return true
+  return !String(t.customer_name || '').trim()
 }
 
 // Design identique à /admin/tickets — mêmes couleurs, mêmes classes
@@ -163,7 +169,7 @@ function Pagination({ page, totalPages, onChange, totalItems, pageSize }) {
 }
 
 // Carte de ticket — copie fidèle du design de /admin/tickets (TicketCard)
-function ClientTicketCard({ ticket, index, onShowQr }) {
+function ClientTicketCard({ ticket, index, onShowQr, buyerName }) {
   const meta = ticketStatusMeta(ticket.status)
   const StatusIcon = meta.icon
   const qr = ticket.qr_codes?.[0]
@@ -174,6 +180,8 @@ function ClientTicketCard({ ticket, index, onShowQr }) {
         ? String(ticket.entry_code).padStart(8, '0').slice(-8)
         : null
   const validated = typeof qr === 'object' && qr?.validated
+  const shareable = isShareableTicket(ticket)
+  const buyerLabel = buyerName || ticket.customer_email || 'Client'
 
   return (
     <motion.article
@@ -188,7 +196,11 @@ function ClientTicketCard({ ticket, index, onShowQr }) {
         <div
           className={`w-11 h-11 rounded-2xl bg-white flex items-center justify-center font-extrabold text-sm shadow-sm ${meta.tone}`}
         >
-          {initialOf(ticket.customer_name)}
+          {shareable ? (
+            <FaShareAlt className="text-lg" />
+          ) : (
+            initialOf(ticket.customer_name)
+          )}
         </div>
         <p className="mt-2 text-[11px] font-bold text-[#98A2B3]">#{ticket.id}</p>
         {entryCode && (
@@ -203,8 +215,14 @@ function ClientTicketCard({ ticket, index, onShowQr }) {
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2 mb-1">
               <h3 className="font-bold text-[#0B1220] text-[15px] truncate">
-                {ticket.customer_name || 'Client'}
+                {shareable ? 'À partager' : ticket.customer_name || 'Client'}
               </h3>
+              {shareable ? (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#E8F3FE] text-[#0A89F2]">
+                  <FaShareAlt className="text-[9px]" />
+                  Place invitée
+                </span>
+              ) : null}
               <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${meta.className}`}>
                 <StatusIcon className="text-[10px]" />
                 {meta.label}
@@ -218,6 +236,11 @@ function ClientTicketCard({ ticket, index, onShowQr }) {
             <p className="text-sm text-[#667085] line-clamp-1">
               {ticket.event_title || 'Événement'}
             </p>
+            {shareable ? (
+              <p className="mt-1 text-xs text-[#667085]">
+                Acheté par <span className="font-semibold text-[#0B1220]">{buyerLabel}</span>
+              </p>
+            ) : null}
           </div>
           <div className="text-right shrink-0">
             <p className="text-sm font-extrabold text-[#0A89F2]">
@@ -1293,6 +1316,7 @@ export default function AdminUsersPage() {
                         ticket={ticket}
                         index={index}
                         onShowQr={generateClientQR}
+                        buyerName={modalTicketsUser.name}
                       />
                     ))}
                   </div>
@@ -1340,6 +1364,12 @@ export default function AdminUsersPage() {
                     <p className="text-sm text-white/90 mt-1 line-clamp-1">
                       {qrTicket.event_title}
                     </p>
+                    {isShareableTicket(qrTicket) ? (
+                      <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold">
+                        <FaShareAlt className="text-[9px]" />
+                        À partager
+                      </span>
+                    ) : null}
                   </div>
                   <button
                     type="button"
@@ -1369,23 +1399,49 @@ export default function AdminUsersPage() {
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-[#E8EEF5] p-4 space-y-2 text-sm">
-                  <p className="flex items-center gap-2 text-[#667085]">
-                    <FaUser className="text-[#0A89F2] text-xs" />
-                    <span className="font-medium text-[#0B1220]">{qrTicket.customer_name}</span>
-                  </p>
-                  <p className="flex items-center gap-2 text-[#667085]">
-                    <FaEnvelope className="text-[#0A89F2] text-xs" />
-                    {qrTicket.customer_email || '—'}
-                  </p>
-                  <p className="text-[#667085]">
-                    Total{' '}
-                    <span className="font-bold text-[#0A89F2]">
-                      {formatPriceFr(qrTicket.total_price, qrTicket.currency || 'FCFA') || '—'}
-                    </span>
-                    {' · '}×{qrTicket.quantity || 1}
-                  </p>
-                </div>
+                {isShareableTicket(qrTicket) ? (
+                  <div className="rounded-2xl border border-[#E8F3FE] bg-[#F7FBFF] p-4 text-sm">
+                    <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#0A89F2]">
+                      <FaShareAlt className="text-[10px]" />
+                      Billet à partager
+                    </p>
+                    <p className="mt-1.5 text-[#667085]">
+                      Place sans nom, destinée à un invité. Achetée par{' '}
+                      <span className="font-semibold text-[#0B1220]">
+                        {modalTicketsUser?.name || qrTicket.customer_email || 'ce client'}
+                      </span>
+                      {modalTicketsUser?.name && qrTicket.customer_email
+                        ? ` · ${qrTicket.customer_email}`
+                        : ''}
+                      .
+                    </p>
+                    <p className="mt-2 text-[#667085]">
+                      Total{' '}
+                      <span className="font-bold text-[#0A89F2]">
+                        {formatPriceFr(qrTicket.total_price, qrTicket.currency || 'FCFA') || '—'}
+                      </span>
+                      {' · '}×{qrTicket.quantity || 1}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-[#E8EEF5] p-4 space-y-2 text-sm">
+                    <p className="flex items-center gap-2 text-[#667085]">
+                      <FaUser className="text-[#0A89F2] text-xs" />
+                      <span className="font-medium text-[#0B1220]">{qrTicket.customer_name}</span>
+                    </p>
+                    <p className="flex items-center gap-2 text-[#667085]">
+                      <FaEnvelope className="text-[#0A89F2] text-xs" />
+                      {qrTicket.customer_email || '—'}
+                    </p>
+                    <p className="text-[#667085]">
+                      Total{' '}
+                      <span className="font-bold text-[#0A89F2]">
+                        {formatPriceFr(qrTicket.total_price, qrTicket.currency || 'FCFA') || '—'}
+                      </span>
+                      {' · '}×{qrTicket.quantity || 1}
+                    </p>
+                  </div>
+                )}
 
                 <div className="flex gap-2">
                   <button
