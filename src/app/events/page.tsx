@@ -18,11 +18,19 @@ import toast from 'react-hot-toast'
 
 const categories = [
   { id: 'all', label: 'Tous' },
-  { id: 'conférence', label: 'Conférences' },
-  { id: 'séminaire', label: 'Séminaires' },
+  { id: 'conference', label: 'Conférences' },
+  { id: 'seminaire', label: 'Séminaires' },
   { id: 'formation', label: 'Formations' },
   { id: 'atelier', label: 'Ateliers' },
 ]
+
+function normalizeCategory(value: unknown) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+}
 
 const sortOptions = [
   { value: 'created_at', label: 'Plus récent' },
@@ -33,17 +41,19 @@ const sortOptions = [
 ]
 
 const paramToCategoryMap: Record<string, string> = {
-  conference: 'conférence',
-  seminar: 'séminaire',
+  conference: 'conference',
+  seminar: 'seminaire',
+  seminaire: 'seminaire',
   formation: 'formation',
   workshop: 'atelier',
+  atelier: 'atelier',
 }
 
 const categoryToParamMap: Record<string, string> = {
-  'conférence': 'conference',
-  'séminaire': 'seminar',
-  'formation': 'formation',
-  'atelier': 'workshop',
+  conference: 'conference',
+  seminaire: 'seminar',
+  formation: 'formation',
+  atelier: 'workshop',
 }
 
 export default function EventsPage() {
@@ -74,7 +84,9 @@ function EventsPageContent() {
   // Synchroniser le filtre actif avec le paramètre de l'URL
   useEffect(() => {
     if (typeParam) {
-      const categoryId = paramToCategoryMap[typeParam]
+      const categoryId =
+        paramToCategoryMap[normalizeCategory(typeParam)] ||
+        paramToCategoryMap[typeParam]
       if (categoryId) {
         setSelectedCategory(categoryId)
       } else {
@@ -113,7 +125,8 @@ function EventsPageContent() {
         event.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         event.description?.toLowerCase().includes(searchTerm.toLowerCase())
       const matchCategory =
-        selectedCategory === 'all' || event.category === selectedCategory
+        selectedCategory === 'all' ||
+        normalizeCategory(event.category) === normalizeCategory(selectedCategory)
       return matchSearch && matchCategory
     }) || []
 
