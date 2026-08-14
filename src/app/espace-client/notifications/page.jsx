@@ -95,7 +95,7 @@ export default function NotificationsPage() {
     refresh,
     markAsRead,
     markAllAsRead,
-  } = useNotifications()
+  } = useNotifications({ autoLoad: true, sync: true })
   const [openingId, setOpeningId] = useState(null)
 
   const sorted = useMemo(

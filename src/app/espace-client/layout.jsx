@@ -32,7 +32,7 @@ export default function EspaceClientLayout({ children }) {
   const router = useRouter()
   const pathname = usePathname()
   const [ready, setReady] = useState(false)
-  const { unreadCount } = useNotifications({ autoLoad: true })
+  const { unreadCount } = useNotifications({ autoLoad: true, sync: false })
 
   useEffect(() => {
     if (loading) return

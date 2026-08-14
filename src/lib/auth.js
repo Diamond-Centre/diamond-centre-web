@@ -1,6 +1,8 @@
 /**
  * Gestion de l'authentification
  */
+import { clearNotificationCache } from '@/lib/notificationInbox'
+
 export const auth = {
   setToken: (token) => {
     if (typeof window === 'undefined') return
@@ -121,5 +123,6 @@ export const auth = {
 
     document.cookie = 'token=; path=/; max-age=0; SameSite=Lax'
     document.cookie = 'user=; path=/; max-age=0; SameSite=Lax'
+    clearNotificationCache()
   },
 }

@@ -4,49 +4,74 @@ import { useState, useCallback, useEffect } from 'react'
 import { auth } from '@/lib/auth'
 import { api } from '@/lib/api'
 import toast from 'react-hot-toast'
+import {
+  notificationInbox,
+  subscribeNotifications,
+  emitNotifications,
+  clearNotificationCache,
+} from '@/lib/notificationInbox'
 
 /**
- * Client notifications — same backend as the mobile app.
+ * Shared client inbox so the nav badge and the notifications page stay in sync.
+ * Only the signed-in user's rows from GET /notifications (or a user-scoped sync).
  */
-export function useNotifications({ autoLoad = true } = {}) {
-  const [notifications, setNotifications] = useState([])
-  const [unreadCount, setUnreadCount] = useState(0)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
+async function loadNotifications({ sync = false } = {}) {
+  const token = auth.getToken()
+  if (!token) {
+    clearNotificationCache()
+    return []
+  }
 
-  const refresh = useCallback(async ({ sync = true } = {}) => {
-    const token = auth.getToken()
-    if (!token) {
-      setNotifications([])
-      setUnreadCount(0)
-      return []
-    }
+  notificationInbox.loading = true
+  notificationInbox.error = null
+  emitNotifications()
 
-    try {
-      setLoading(true)
-      setError(null)
-      const list = sync
-        ? await api.syncNotifications(token)
-        : await api.getNotifications(token)
-      const rows = Array.isArray(list) ? list : []
-      setNotifications(rows)
-      setUnreadCount(rows.filter((n) => !n.is_read).length)
-      return rows
-    } catch (err) {
-      setError(err.message || 'Impossible de charger les notifications')
-      return []
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  try {
+    const list = sync
+      ? await api.syncNotifications(token)
+      : await api.getNotifications(token)
+    const rows = Array.isArray(list) ? list : []
+    notificationInbox.notifications = rows
+    notificationInbox.unreadCount = rows.filter((n) => !n.is_read).length
+    return rows
+  } catch (err) {
+    notificationInbox.error =
+      err.message || 'Impossible de charger les notifications'
+    return notificationInbox.notifications
+  } finally {
+    notificationInbox.loading = false
+    emitNotifications()
+  }
+}
+
+export function useNotifications({ autoLoad = true, sync = false } = {}) {
+  const [, setTick] = useState(0)
+
+  useEffect(() => subscribeNotifications(() => setTick((t) => t + 1)), [])
+
+  useEffect(() => {
+    if (!autoLoad) return
+    loadNotifications({ sync })
+  }, [autoLoad, sync])
+
+  const refresh = useCallback((opts = {}) => loadNotifications(opts), [])
 
   const markAsRead = useCallback(async (id) => {
     const token = auth.getToken()
     if (!token || !id) return
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
+    const wasUnread = notificationInbox.notifications.some(
+      (n) => n.id === id && !n.is_read
     )
-    setUnreadCount((c) => Math.max(0, c - 1))
+    notificationInbox.notifications = notificationInbox.notifications.map((n) =>
+      n.id === id ? { ...n, is_read: true } : n
+    )
+    if (wasUnread) {
+      notificationInbox.unreadCount = Math.max(
+        0,
+        notificationInbox.unreadCount - 1
+      )
+    }
+    emitNotifications()
     try {
       await api.markNotificationRead(id, token)
     } catch {
@@ -57,29 +82,30 @@ export function useNotifications({ autoLoad = true } = {}) {
   const markAllAsRead = useCallback(async () => {
     const token = auth.getToken()
     if (!token) return
-    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
-    setUnreadCount(0)
+    notificationInbox.notifications = notificationInbox.notifications.map(
+      (n) => ({
+        ...n,
+        is_read: true,
+      })
+    )
+    notificationInbox.unreadCount = 0
+    emitNotifications()
     try {
       await api.markAllNotificationsRead(token)
       toast.success('Toutes les notifications sont lues')
     } catch (err) {
       toast.error(err.message || 'Impossible de tout marquer comme lu')
-      await refresh({ sync: false })
+      await loadNotifications({ sync: false })
     }
-  }, [refresh])
-
-  useEffect(() => {
-    if (!autoLoad) return
-    refresh({ sync: true })
-  }, [autoLoad, refresh])
+  }, [])
 
   return {
-    notifications,
-    unreadCount,
-    loading,
-    error,
+    notifications: notificationInbox.notifications,
+    unreadCount: notificationInbox.unreadCount,
+    loading: notificationInbox.loading,
+    error: notificationInbox.error,
     refresh,
-    fetchNotifications: () => refresh({ sync: true }),
+    fetchNotifications: () => loadNotifications({ sync: true }),
     markAsRead,
     markAllAsRead,
   }
