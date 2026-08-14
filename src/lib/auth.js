@@ -3,6 +3,11 @@
  */
 import { clearNotificationCache } from '@/lib/notificationInbox'
 
+function emitAuthChanged() {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new Event('dice-auth-changed'))
+}
+
 export const auth = {
   setToken: (token) => {
     if (typeof window === 'undefined') return
@@ -14,6 +19,7 @@ export const auth = {
     }
 
     document.cookie = `token=${encodeURIComponent(token)}; path=/; max-age=86400; SameSite=Lax`
+    emitAuthChanged()
   },
 
   getToken: () => {
@@ -124,5 +130,6 @@ export const auth = {
     document.cookie = 'token=; path=/; max-age=0; SameSite=Lax'
     document.cookie = 'user=; path=/; max-age=0; SameSite=Lax'
     clearNotificationCache()
+    emitAuthChanged()
   },
 }

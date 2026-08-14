@@ -3,6 +3,7 @@ import './globals.css'
 import AppShell from '@/components/layout/AppShell'
 import SessionGuard from '@/components/auth/SessionGuard'
 import RoleRouteGuard from '@/components/auth/RoleRouteGuard'
+import NotificationLiveToaster from '@/components/notifications/NotificationLiveToaster'
 import { Toaster } from 'react-hot-toast'
 
 export const metadata = {
@@ -17,8 +18,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthProvider>
           <SessionGuard />
           <RoleRouteGuard />
+          <NotificationLiveToaster />
           <AppShell>{children}</AppShell>
-          <Toaster position="top-right" />
+          <Toaster
+            position="top-center"
+            containerStyle={{ zIndex: 99999, top: 88 }}
+            toastOptions={{ duration: 8000 }}
+          />
         </AuthProvider>
       </body>
     </html>

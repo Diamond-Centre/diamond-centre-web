@@ -9,39 +9,64 @@ import {
   subscribeNotifications,
   emitNotifications,
   clearNotificationCache,
+  rememberNotificationIds,
 } from '@/lib/notificationInbox'
+
+let inflight = null
+let queuedSilentRefresh = false
 
 /**
  * Shared client inbox so the nav badge and the notifications page stay in sync.
  * Only the signed-in user's rows from GET /notifications (or a user-scoped sync).
  */
-async function loadNotifications({ sync = false } = {}) {
+export async function loadNotifications({
+  sync = false,
+  silent = false,
+} = {}) {
   const token = auth.getToken()
   if (!token) {
     clearNotificationCache()
     return []
   }
 
-  notificationInbox.loading = true
-  notificationInbox.error = null
-  emitNotifications()
-
-  try {
-    const list = sync
-      ? await api.syncNotifications(token)
-      : await api.getNotifications(token)
-    const rows = Array.isArray(list) ? list : []
-    notificationInbox.notifications = rows
-    notificationInbox.unreadCount = rows.filter((n) => !n.is_read).length
-    return rows
-  } catch (err) {
-    notificationInbox.error =
-      err.message || 'Impossible de charger les notifications'
-    return notificationInbox.notifications
-  } finally {
-    notificationInbox.loading = false
-    emitNotifications()
+  if (inflight) {
+    queuedSilentRefresh = true
+    return inflight
   }
+
+  inflight = (async () => {
+    if (!silent) {
+      notificationInbox.loading = true
+      notificationInbox.error = null
+      emitNotifications()
+    }
+
+    try {
+      const list = sync
+        ? await api.syncNotifications(token)
+        : await api.getNotifications(token)
+      const rows = Array.isArray(list) ? list : []
+      notificationInbox.notifications = rows
+      notificationInbox.unreadCount = rows.filter((n) => !n.is_read).length
+      rememberNotificationIds(rows)
+      return rows
+    } catch (err) {
+      notificationInbox.error =
+        err.message || 'Impossible de charger les notifications'
+      return notificationInbox.notifications
+    } finally {
+      notificationInbox.loading = false
+      emitNotifications()
+    }
+  })().finally(() => {
+    inflight = null
+    if (queuedSilentRefresh) {
+      queuedSilentRefresh = false
+      loadNotifications({ silent: true })
+    }
+  })
+
+  return inflight
 }
 
 export function useNotifications({ autoLoad = true, sync = false } = {}) {
