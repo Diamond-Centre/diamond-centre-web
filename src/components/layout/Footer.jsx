@@ -100,14 +100,14 @@ export default function Footer() {
   return (
     <footer
       ref={footerRef}
-      className="relative overflow-hidden bg-[#03070C] pt-24 pb-12 text-white border-t border-white/10"
+      className="relative overflow-hidden bg-[#03070C] pt-16 md:pt-24 pb-12 text-white border-t border-white/10"
     >
       <div className="pointer-events-none absolute -left-40 top-0 h-96 w-96 rounded-full bg-[#0A89F2]/10 blur-[140px]" />
       <div className="pointer-events-none absolute right-0 bottom-0 h-96 w-96 rounded-full bg-[#0057C2]/15 blur-[150px]" />
 
       <div className="relative z-10 mx-auto max-w-7xl px-6 sm:px-8">
 
-        <div ref={contentRef} className="grid grid-cols-1 gap-10 pb-16 border-b border-white/10 sm:grid-cols-2 lg:grid-cols-12">
+        <div ref={contentRef} className="grid grid-cols-1 gap-8 md:gap-10 pb-12 md:pb-16 border-b border-white/10 sm:grid-cols-2 lg:grid-cols-12">
 
           {/* 1. Colonne Marque & Description (4 cols) */}
           <div className="lg:col-span-4 flex flex-col justify-between gap-6">

@@ -83,7 +83,7 @@ export default function HeroSection() {
             </div>
           </div>
 
-          <h1 className="text-4xl font-black tracking-tight text-white sm:text-5xl md:text-7xl lg:leading-[1.05]">
+          <h1 className="text-3xl font-black tracking-tight text-white sm:text-5xl md:text-7xl lg:leading-[1.05]">
             <div className="overflow-hidden py-1">
               <span className="reveal-text block">Conférences, séminaires</span>
             </div>
@@ -97,15 +97,15 @@ export default function HeroSection() {
             </div>
           </h1>
 
-          <p className="fade-in-up mt-6 max-w-xl text-lg leading-relaxed text-white/60 font-normal sm:text-xl opacity-0">
+          <p className="fade-in-up mt-6 max-w-xl text-base sm:text-lg leading-relaxed text-white/60 font-normal md:text-xl opacity-0">
             L’excellence DiCe, au service de votre parcours personnel et professionnel.
           </p>
 
           {/* Boutons d'action */}
-          <div className="fade-in-up mt-10 flex flex-wrap items-center gap-4 opacity-0">
+          <div className="fade-in-up mt-10 flex flex-col sm:flex-row flex-wrap items-center gap-4 opacity-0">
             <Link
               href="/events"
-              className="group relative inline-flex items-center gap-3 bg-[#0A89F2] px-8 py-4 text-sm font-semibold text-white transition-all duration-300 hover:bg-[#0770cc] hover:px-9"
+              className="group w-full sm:w-auto relative inline-flex items-center justify-center gap-3 bg-[#0A89F2] px-6 sm:px-8 py-4 text-sm font-semibold text-white transition-all duration-300 hover:bg-[#0770cc] hover:px-7 sm:hover:px-9"
             >
               <span>Voir les événements</span>
               <FaArrowRight className="text-xs transition-transform duration-300 group-hover:translate-x-1" />
@@ -113,7 +113,7 @@ export default function HeroSection() {
 
             <Link
               href="/about"
-              className="inline-flex items-center gap-2 border border-white/20 bg-transparent px-8 py-4 text-sm font-semibold text-white transition-all duration-300 hover:border-white hover:bg-white/5"
+              className="inline-flex w-full sm:w-auto items-center justify-center gap-2 border border-white/20 bg-transparent px-6 sm:px-8 py-4 text-sm font-semibold text-white transition-all duration-300 hover:border-white hover:bg-white/5"
             >
               Qui sommes-nous
             </Link>

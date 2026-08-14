@@ -18,21 +18,21 @@ const pillars = [
     title: 'Excellence',
     text: 'Des programmes exigeants animés par des experts reconnus pour garantir un apprentissage de premier plan.',
     icon: FaShieldAlt,
-    colSpan: 'lg:col-span-7',
+    colSpan: 'md:col-span-1 lg:col-span-7',
   },
   {
     num: '02',
     title: 'Communauté',
     text: 'Un réseau puissant de professionnels et d’apprenants engagés pour grandir ensemble.',
     icon: FaUsers,
-    colSpan: 'lg:col-span-5',
+    colSpan: 'md:col-span-1 lg:col-span-5',
   },
   {
     num: '03',
     title: 'Accompagnement',
     text: 'Un suivi concret, personnalisé et orienté résultats pour propulser vos projets vers le sommet.',
     icon: FaChartLine,
-    colSpan: 'lg:col-span-12',
+    colSpan: 'md:col-span-2 lg:col-span-12',
   },
 ]
 
@@ -110,7 +110,7 @@ export default function WhyDiceSection() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6">
           {pillars.map((item) => {
             const Icon = item.icon
             return (
