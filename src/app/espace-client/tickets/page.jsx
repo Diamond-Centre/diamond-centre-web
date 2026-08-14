@@ -698,7 +698,7 @@ function TicketDetail({ ticket, onClose, onDelete }) {
             </div>
           )}
 
-          <TicketShareBar ticket={ticket} />
+          {isShareableTicket(ticket) ? <TicketShareBar ticket={ticket} /> : null}
 
           <button
             type="button"
