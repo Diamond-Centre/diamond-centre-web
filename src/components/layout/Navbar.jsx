@@ -189,7 +189,7 @@ export default function Navbar() {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: -16, opacity: 0 }}
               transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-              className="absolute inset-x-3 top-[4.75rem] overflow-hidden rounded-[24px] border border-[#E8EEF5] bg-white shadow-[0_24px_60px_rgba(11,18,32,0.18)]"
+              className="absolute inset-x-3 top-[4.75rem] max-h-[calc(100vh-6rem)] overflow-y-auto overflow-x-hidden rounded-[24px] border border-[#E8EEF5] bg-white shadow-[0_24px_60px_rgba(11,18,32,0.18)]"
             >
               <div className="border-b border-[#F0F2F5] px-5 py-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#0A89F2]">

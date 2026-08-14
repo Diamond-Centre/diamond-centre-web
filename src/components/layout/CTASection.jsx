@@ -105,21 +105,21 @@ export default function CTASection() {
             Créez votre compte et réservez votre prochaine formation ou conférence en quelques minutes.
           </p>
 
-          <div className="mt-9 flex flex-wrap items-center gap-4">
-            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+          <div className="mt-9 flex flex-col sm:flex-row flex-wrap items-center gap-4">
+            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="w-full sm:w-auto">
               <Link
                 href="/auth/register"
-                className="group inline-flex items-center gap-3 rounded-full bg-white px-8 py-4 text-sm font-semibold text-[#0A89F2] shadow-[0_14px_32px_rgba(11,18,32,0.18)] transition-all duration-300 hover:bg-white/95"
+                className="group flex w-full sm:w-auto justify-center items-center gap-3 rounded-full bg-white px-8 py-4 text-sm font-semibold text-[#0A89F2] shadow-[0_14px_32px_rgba(11,18,32,0.18)] transition-all duration-300 hover:bg-white/95"
               >
                 <span>Commencer</span>
                 <FaArrowRight className="text-xs transition-transform duration-300 group-hover:translate-x-1" />
               </Link>
             </motion.div>
 
-            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="w-full sm:w-auto">
               <Link
                 href="/events"
-                className="inline-flex items-center gap-2 rounded-full border border-white/35 bg-white/10 px-8 py-4 text-sm font-semibold text-white backdrop-blur-md transition-all duration-300 hover:border-white hover:bg-white/20"
+                className="flex w-full sm:w-auto justify-center items-center gap-2 rounded-full border border-white/35 bg-white/10 px-8 py-4 text-sm font-semibold text-white backdrop-blur-md transition-all duration-300 hover:border-white hover:bg-white/20"
               >
                 Voir le programme
               </Link>
