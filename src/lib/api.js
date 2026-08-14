@@ -43,6 +43,8 @@ const API_MESSAGE_FR = {
     'Impossible de supprimer un ticket déjà scanné.',
   'Impossible de supprimer un ticket associé à un certificat.':
     'Impossible de supprimer un ticket associé à un certificat.',
+  'Vous ne pouvez supprimer qu’un ticket dont l’événement est déjà passé.':
+    'Vous ne pouvez supprimer qu’un ticket dont l’événement est déjà passé.',
   'entry_code must be an 8-digit number':
     'Le code d’entrée doit contenir 8 chiffres.',
   'Invalid code': 'Code d’entrée invalide.',

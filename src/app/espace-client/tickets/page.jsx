@@ -119,7 +119,7 @@ function canDeleteTicket(ticket) {
   if (ticket.certificate_id || ticket.certificate || ticket.has_certificate) {
     return false
   }
-  return true
+  return ticketPhase(ticket) === 'ended'
 }
 
 function ticketIdOf(ticket) {
@@ -720,6 +720,10 @@ function TicketDetail({ ticket, onClose, onDelete }) {
             <p className="text-center text-xs text-[#98A2B3]">
               Ce ticket a déjà été scanné et ne peut plus être supprimé.
             </p>
+          ) : ticketPhase(ticket) !== 'ended' ? (
+            <p className="text-center text-xs text-[#98A2B3]">
+              Vous pourrez supprimer ce ticket une fois l’événement passé.
+            </p>
           ) : null}
         </div>
       </motion.div>
@@ -983,7 +987,7 @@ export default function EspaceClientTicketsPage() {
         title="Supprimer ce ticket"
         message={
           deleteError ||
-          'Cette action est irréversible. La place sera libérée si le ticket n’a pas encore été utilisé.'
+          'Cette action est irréversible. Seuls les billets d’événements déjà passés peuvent être supprimés.'
         }
         confirmLabel="Supprimer"
         cancelLabel="Annuler"
