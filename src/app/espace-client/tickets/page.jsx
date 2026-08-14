@@ -15,7 +15,13 @@ import {
   FaTicketAlt,
   FaTrash,
   FaUser,
-  FaShareAlt,
+  FaWhatsapp,
+  FaFacebookF,
+  FaTelegramPlane,
+  FaTwitter,
+  FaEnvelope,
+  FaCopy,
+  FaEllipsisH,
 } from 'react-icons/fa'
 import QRCode from 'qrcode'
 import { api } from '@/lib/api'
@@ -143,6 +149,27 @@ function ticketShareText(ticket) {
   return `Billet DiCe — ${title}\nCode d’entrée : ${code}\nPrésentez ce code ou le QR à l’entrée.`
 }
 
+function ticketShareLinks(text) {
+  const encoded = encodeURIComponent(text)
+  const site =
+    typeof window !== 'undefined' ? window.location.origin : 'https://diamond-centre.vercel.app'
+  return {
+    whatsapp: `https://wa.me/?text=${encoded}`,
+    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(site)}&quote=${encoded}`,
+    telegram: `https://t.me/share/url?url=${encodeURIComponent(site)}&text=${encoded}`,
+    twitter: `https://twitter.com/intent/tweet?text=${encoded}`,
+    email: `mailto:?subject=${encodeURIComponent('Billet DiCe')}&body=${encoded}`,
+  }
+}
+
+function openShareWindow(url) {
+  if (url.startsWith('mailto:')) {
+    window.location.href = url
+    return
+  }
+  window.open(url, '_blank', 'noopener,noreferrer,width=640,height=720')
+}
+
 async function copyShareText(text) {
   try {
     if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
@@ -172,30 +199,105 @@ async function copyShareText(text) {
 
 async function shareTicket(ticket) {
   const text = ticketShareText(ticket)
-  const isMobile =
-    typeof navigator !== 'undefined' &&
-    (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '') ||
-      (navigator.maxTouchPoints > 1 && /Mac/i.test(navigator.userAgent || '')))
-
-  if (
-    isMobile &&
-    typeof navigator.share === 'function' &&
-    (typeof navigator.canShare !== 'function' || navigator.canShare({ text }))
-  ) {
+  if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
     try {
       await navigator.share({ title: 'Billet DiCe', text })
-      return
+      return true
     } catch (err) {
-      if (err?.name === 'AbortError') return
+      if (err?.name === 'AbortError') return true
     }
   }
+  return false
+}
 
-  const copied = await copyShareText(text)
-  if (copied) {
-    toast.success('Code d’entrée copié — collez-le pour l’envoyer à un ami.')
-    return
+function TicketShareBar({ ticket }) {
+  const text = ticketShareText(ticket)
+  const links = ticketShareLinks(text)
+  const canNativeShare =
+    typeof navigator !== 'undefined' && typeof navigator.share === 'function'
+
+  const actions = [
+    {
+      id: 'whatsapp',
+      label: 'WhatsApp',
+      icon: FaWhatsapp,
+      className: 'bg-[#25D366] text-white',
+      onClick: () => openShareWindow(links.whatsapp),
+    },
+    {
+      id: 'facebook',
+      label: 'Facebook',
+      icon: FaFacebookF,
+      className: 'bg-[#1877F2] text-white',
+      onClick: () => openShareWindow(links.facebook),
+    },
+    {
+      id: 'telegram',
+      label: 'Telegram',
+      icon: FaTelegramPlane,
+      className: 'bg-[#229ED9] text-white',
+      onClick: () => openShareWindow(links.telegram),
+    },
+    {
+      id: 'twitter',
+      label: 'X',
+      icon: FaTwitter,
+      className: 'bg-[#0B1220] text-white',
+      onClick: () => openShareWindow(links.twitter),
+    },
+    {
+      id: 'email',
+      label: 'Email',
+      icon: FaEnvelope,
+      className: 'bg-[#0A89F2] text-white',
+      onClick: () => openShareWindow(links.email),
+    },
+    {
+      id: 'copy',
+      label: 'Copier',
+      icon: FaCopy,
+      className: 'bg-[#E8F3FE] text-[#0A89F2]',
+      onClick: async () => {
+        const copied = await copyShareText(text)
+        if (copied) toast.success('Code d’entrée copié.')
+        else toast.error('Impossible de copier le code.')
+      },
+    },
+  ]
+
+  if (canNativeShare) {
+    actions.push({
+      id: 'more',
+      label: 'Plus',
+      icon: FaEllipsisH,
+      className: 'bg-[#F3F6FA] text-[#0B1220]',
+      onClick: () => shareTicket(ticket),
+    })
   }
-  toast.error('Impossible de copier. Code d’entrée : ' + (entryCodeOf(ticket) || qrPayload(ticket)))
+
+  return (
+    <div className="rounded-2xl border border-[#E8F3FE] bg-[#F7FBFF] p-3">
+      <p className="mb-3 text-center text-[11px] font-semibold uppercase tracking-wide text-[#0A89F2]">
+        Partager sur les réseaux
+      </p>
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+        {actions.map((action) => {
+          const Icon = action.icon
+          return (
+            <button
+              key={action.id}
+              type="button"
+              onClick={action.onClick}
+              className={`flex flex-col items-center gap-1.5 rounded-2xl px-2 py-3 text-xs font-semibold transition hover:opacity-90 ${action.className}`}
+            >
+              <Icon className="text-base" />
+              {action.label}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 function StatusChip({ status, ticket }) {
@@ -596,14 +698,7 @@ function TicketDetail({ ticket, onClose, onDelete }) {
             </div>
           )}
 
-          <button
-            type="button"
-            onClick={() => shareTicket(ticket)}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#0A89F2]/20 bg-[#E8F3FE] py-3.5 text-sm font-semibold text-[#0A89F2] transition hover:bg-[#d7ecfd]"
-          >
-            <FaShareAlt className="text-xs" />
-            Partager le billet
-          </button>
+          <TicketShareBar ticket={ticket} />
 
           <button
             type="button"
