@@ -64,6 +64,18 @@ export const ticketStore = {
     writeRaw(current)
   },
 
+  renameNamedHolder(name) {
+    const next = String(name || '').trim()
+    if (!next) return
+    writeRaw(
+      readRaw().map((t) =>
+        String(t.customer_name || '').trim()
+          ? { ...t, customer_name: next }
+          : t
+      )
+    )
+  },
+
   remove(ticketId) {
     writeRaw(readRaw().filter((t) => Number(t.ticket_id) !== Number(ticketId)))
   },

@@ -23,6 +23,7 @@ import { auth } from '@/lib/auth'
 import { api } from '@/lib/api'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { fileToProfileDataUrl, profileImageTooLargeMessage } from '@/lib/profileImage'
+import { ticketStore } from '@/lib/ticketStore'
 
 function formatLastSeen(iso) {
   if (!iso) return 'Actif récemment'
@@ -167,6 +168,9 @@ export default function ProfilePage() {
         token
       )
       auth.setUser({ ...current, ...updated })
+      if (updated.name && updated.name !== current.name) {
+        ticketStore.renameNamedHolder(updated.name)
+      }
       setFormData((prev) => ({
         ...prev,
         name: updated.name || prev.name,
