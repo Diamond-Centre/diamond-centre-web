@@ -160,7 +160,6 @@ export default function LoginPage() {
                     </div>
                     <input
                       type="email"
-                      placeholder="admin@diamondcentre.com"
                       className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-dice-blue/30 focus:border-dice-blue outline-none transition-all text-sm"
                       {...register('email')}
                     />
@@ -176,7 +175,6 @@ export default function LoginPage() {
                     </div>
                     <input
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="••••••••"
                       className="w-full pl-9 pr-9 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-dice-blue/30 focus:border-dice-blue outline-none transition-all text-sm"
                       {...register('password')}
                     />
