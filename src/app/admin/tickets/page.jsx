@@ -10,7 +10,7 @@ import {
   FaTicketAlt, FaSearch, FaSync,
   FaCheckCircle, FaTimesCircle, FaClock,
   FaUser, FaEnvelope, FaPhone, FaCalendar,
-  FaDownload, FaQrcode, FaTimes, FaUndo,
+  FaDownload, FaQrcode, FaTimes, FaUndo, FaTrash,
   FaChevronLeft, FaChevronRight, FaKeyboard,
 } from 'react-icons/fa'
 import { auth } from '@/lib/auth'
@@ -18,6 +18,7 @@ import { api } from '@/lib/api'
 import toast from 'react-hot-toast'
 import QRCode from 'qrcode'
 import LoadError from '@/components/ui/LoadError'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 const PAGE_SIZE = 9
 
@@ -25,6 +26,7 @@ const STATUS_FILTERS = [
   { id: 'all', label: 'Tous' },
   { id: 'confirmed', label: 'Confirmés' },
   { id: 'scanne', label: 'Validés' },
+  { id: 'expire', label: 'Expirés' },
   { id: 'pending', label: 'En attente' },
   { id: 'refunded', label: 'Remboursés' },
 ]
@@ -182,7 +184,7 @@ function Pagination({ page, totalPages, onChange, totalItems, pageSize }) {
   )
 }
 
-function TicketCard({ ticket, index, onShowQr, onValidate, validating }) {
+function TicketCard({ ticket, index, onShowQr, onValidate, onHideExpired, validating }) {
   const meta = statusMeta(ticket.status)
   const StatusIcon = meta.icon
   const qr = ticket.qr_codes?.[0]
@@ -195,6 +197,8 @@ function TicketCard({ ticket, index, onShowQr, onValidate, validating }) {
   const qrCode = entryCode
   const validated = typeof qr === 'object' && qr?.validated
   const alreadyScanned = statusKey(ticket.status) === 'scanne' || validated
+  const expired = statusKey(ticket.status) === 'expire'
+  const canValidate = Boolean(entryCode) && !alreadyScanned && !expired
 
   return (
     <motion.article
@@ -284,7 +288,7 @@ function TicketCard({ ticket, index, onShowQr, onValidate, validating }) {
             <FaQrcode className="text-xs" />
             Voir QR
           </button>
-          {entryCode && !alreadyScanned ? (
+          {canValidate ? (
             <button
               type="button"
               onClick={() => onValidate(entryCode)}
@@ -293,6 +297,15 @@ function TicketCard({ ticket, index, onShowQr, onValidate, validating }) {
             >
               <FaCheckCircle className="text-xs" />
               Valider
+            </button>
+          ) : expired ? (
+            <button
+              type="button"
+              onClick={() => onHideExpired(ticket)}
+              className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 transition-colors inline-flex items-center justify-center gap-2"
+            >
+              <FaTrash className="text-xs" />
+              Retirer
             </button>
           ) : null}
         </div>
@@ -314,6 +327,8 @@ export default function AdminTickets() {
   const [qrLoading, setQrLoading] = useState(false)
   const [entryCodeInput, setEntryCodeInput] = useState('')
   const [validating, setValidating] = useState(false)
+  const [hideTarget, setHideTarget] = useState(null)
+  const [hiding, setHiding] = useState(false)
 
   const loadTickets = useCallback(async () => {
     try {
@@ -347,6 +362,7 @@ export default function AdminTickets() {
       pending: 0,
       cancelled: 0,
       refunded: 0,
+      expire: 0,
     }
     for (const t of tickets) {
       const key = statusKey(t.status)
@@ -423,6 +439,22 @@ export default function AdminTickets() {
       toast.error(err.message || 'Impossible de valider ce ticket')
     } finally {
       setValidating(false)
+    }
+  }
+
+  const hideExpiredTicket = async () => {
+    if (!hideTarget?.id) return
+    try {
+      setHiding(true)
+      await api.deleteTicket(hideTarget.id, auth.getToken())
+      toast.success('Ticket retiré de votre liste. Le client le conserve.')
+      setHideTarget(null)
+      closeQr()
+      await loadTickets()
+    } catch (err) {
+      toast.error(err.message || 'Impossible de retirer ce ticket')
+    } finally {
+      setHiding(false)
     }
   }
 
@@ -632,6 +664,7 @@ export default function AdminTickets() {
                     index={index}
                     onShowQr={generateQRCode}
                     onValidate={validateEntryCode}
+                    onHideExpired={setHideTarget}
                     validating={validating}
                   />
                 ))}
@@ -728,29 +761,45 @@ export default function AdminTickets() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      validateEntryCode(
-                        selectedTicket.entry_code ||
-                          selectedTicket.qr_codes?.[0]?.entry_code
-                      )
-                    }
-                    disabled={
-                      validating ||
-                      statusKey(selectedTicket.status) === 'scanne' ||
+                  {statusKey(selectedTicket.status) === 'expire' ? (
+                    <p className="flex-1 py-3 text-center text-sm font-semibold text-slate-500">
+                      Ticket expiré — il ne peut plus être validé.
+                    </p>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        validateEntryCode(
+                          selectedTicket.entry_code ||
+                            selectedTicket.qr_codes?.[0]?.entry_code
+                        )
+                      }
+                      disabled={
+                        validating ||
+                        statusKey(selectedTicket.status) === 'scanne' ||
+                        selectedTicket.qr_codes?.[0]?.validated
+                      }
+                      className="flex-1 py-3 rounded-2xl bg-[#0B9B6B] text-white text-sm font-bold hover:bg-[#09865c] transition-colors inline-flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      <FaCheckCircle />
+                      {statusKey(selectedTicket.status) === 'scanne' ||
                       selectedTicket.qr_codes?.[0]?.validated
-                    }
-                    className="flex-1 py-3 rounded-2xl bg-[#0B9B6B] text-white text-sm font-bold hover:bg-[#09865c] transition-colors inline-flex items-center justify-center gap-2 disabled:opacity-50"
-                  >
-                    <FaCheckCircle />
-                    {statusKey(selectedTicket.status) === 'scanne' ||
-                    selectedTicket.qr_codes?.[0]?.validated
-                      ? 'Déjà validé'
-                      : validating
-                        ? 'Validation…'
-                        : 'Valider ce ticket'}
-                  </button>
+                        ? 'Déjà validé'
+                        : validating
+                          ? 'Validation…'
+                          : 'Valider ce ticket'}
+                    </button>
+                  )}
+                  {statusKey(selectedTicket.status) === 'expire' ? (
+                    <button
+                      type="button"
+                      onClick={() => setHideTarget(selectedTicket)}
+                      className="flex-1 py-3 rounded-2xl bg-red-50 text-red-600 text-sm font-bold hover:bg-red-100 transition-colors inline-flex items-center justify-center gap-2"
+                    >
+                      <FaTrash />
+                      Retirer de ma liste
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     onClick={downloadQR}
@@ -773,6 +822,21 @@ export default function AdminTickets() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ConfirmDialog
+        open={Boolean(hideTarget)}
+        title="Retirer ce ticket expiré"
+        message="Il disparaîtra de votre liste admin. Le client le conserve dans son espace, et il ne pourra plus être validé."
+        confirmLabel="Retirer"
+        cancelLabel="Annuler"
+        tone="danger"
+        loading={hiding}
+        onConfirm={hideExpiredTicket}
+        onCancel={() => {
+          if (hiding) return
+          setHideTarget(null)
+        }}
+      />
     </div>
   )
 }

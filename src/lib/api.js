@@ -51,6 +51,10 @@ const API_MESSAGE_FR = {
   'Ticket already scanned': 'Ce ticket a déjà été scanné.',
   'Ticket already validated': 'Ce ticket a déjà été validé.',
   'Ticket expired': 'Ce ticket a expiré.',
+  'Ticket removed from admin view':
+    'Ticket retiré de la liste admin. Le client le conserve.',
+  'Les administrateurs ne peuvent retirer que les tickets expirés.':
+    'Les administrateurs ne peuvent retirer que les tickets expirés.',
   'Ticket refunded': 'Ce ticket a été remboursé.',
   'Ticket not confirmed': 'Ce ticket n’est pas confirmé.',
   'Ticket not paid': 'Ce ticket n’est pas payé.',
