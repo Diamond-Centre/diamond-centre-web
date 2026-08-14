@@ -53,7 +53,9 @@ const API_MESSAGE_FR = {
   'Ticket not confirmed': 'Ce ticket n’est pas confirmé.',
   'Ticket not paid': 'Ce ticket n’est pas payé.',
   'Admin not found': 'Administrateur introuvable.',
+  'Admin deleted': 'Administrateur supprimé.',
   'Client not found': 'Client introuvable.',
+  'Client deleted': 'Client supprimé.',
   'Email already exists': 'Cet email est déjà utilisé.',
   'email cannot be empty': 'L’email ne peut pas être vide.',
   'name cannot be empty': 'Le nom ne peut pas être vide.',
@@ -189,9 +191,7 @@ async function request(path, options = {}) {
     ) {
       console.error("NETWORK ERROR :", error)
 
-      throw new Error(
-        "Impossible de communiquer avec le service. Veuillez réessayer plus tard."
-      )
+      throw new Error("Chargement impossible.")
     }
 
     // erreur déjà normalisée

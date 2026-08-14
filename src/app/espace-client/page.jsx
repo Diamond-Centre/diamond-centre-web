@@ -15,6 +15,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { api } from '@/lib/api'
 import { auth } from '@/lib/auth'
 import { eventTimingLabel, eventTimingPhase } from '@/lib/eventTiming'
+import LoadError from '@/components/ui/LoadError'
 
 function bookingDate(b) {
   return b.date || b.event_start_date || b.event_date || b.created_at
@@ -161,9 +162,7 @@ export default function EspaceClientHomePage() {
           Chargement de vos réservations…
         </div>
       ) : error ? (
-        <div className="rounded-[28px] border border-red-200 bg-red-50 px-6 py-8 text-sm text-red-700">
-          {error}
-        </div>
+        <LoadError onRetry={() => window.location.reload()} />
       ) : next ? (
         <motion.section
           initial={{ opacity: 0, y: 18 }}

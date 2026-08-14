@@ -12,6 +12,7 @@ import {
   FaTimesCircle, FaUndo, FaCalendar, FaQrcode, FaDownload
 } from 'react-icons/fa'
 import Badge from '@/components/ui/Badge'
+import LoadError from '@/components/ui/LoadError'
 import toast from 'react-hot-toast'
 import QRCode from 'qrcode'
 
@@ -663,11 +664,10 @@ export default function AdminUsersPage() {
     }
   }
 
-  // Confirmation et exécution de la suppression d'un admin
-  const confirmDeleteAdmin = async () => {
+  const confirmDeleteUser = async () => {
     if (!deletingUser) return
     if (!isSuperAdmin) {
-      toast.error('Seul le super admin peut gérer les administrateurs')
+      toast.error('Seul le super admin peut supprimer un utilisateur')
       return
     }
     if (deletingUser.role === 'super_admin') {
@@ -675,11 +675,15 @@ export default function AdminUsersPage() {
       return
     }
 
+    const isClient = deletingUser.role === 'client'
+
     try {
       setDeletingId(deletingUser.id)
       const token = auth.getToken()
-      await api.deleteUser(deletingUser.id, token, 'admin')
-      toast.success('Administrateur supprimé avec succès')
+      await api.deleteUser(deletingUser.id, token, isClient ? 'client' : 'admin')
+      toast.success(
+        isClient ? 'Client supprimé avec succès' : 'Administrateur supprimé avec succès'
+      )
       setDeletingUser(null)
       await loadUsers()
     } catch (err) {
@@ -846,11 +850,11 @@ export default function AdminUsersPage() {
         </select>
       </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 mb-6">
-          {error}
+      {error ? (
+        <div className="mb-6">
+          <LoadError onRetry={loadUsers} />
         </div>
-      )}
+      ) : null}
 
       {filteredUsers.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
@@ -991,6 +995,19 @@ export default function AdminUsersPage() {
                                   <FaCertificate className="text-dice-blue text-xs" />
                                   Tous les certificats
                                 </button>
+                                {isSuperAdmin ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setActiveDropdownId(null)
+                                      setDeletingUser(user)
+                                    }}
+                                    className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 font-medium"
+                                  >
+                                    <FaTrash className="text-xs" />
+                                    Supprimer le client
+                                  </button>
+                                ) : null}
                               </div>
                             )}
                           </div>
@@ -1206,7 +1223,10 @@ export default function AdminUsersPage() {
               </div>
               <h3 className="text-lg font-bold text-gray-800 mb-2">Confirmer la suppression</h3>
               <p className="text-sm text-gray-600">
-                Êtes-vous sûr de vouloir supprimer l'administrateur <span className="font-semibold text-gray-800">{deletingUser.name}</span> ? Cette action est irréversible.
+                Êtes-vous sûr de vouloir supprimer{' '}
+                {deletingUser.role === 'client' ? 'le client' : "l'administrateur"}{' '}
+                <span className="font-semibold text-gray-800">{deletingUser.name}</span> ?
+                Cette action est irréversible.
               </p>
             </div>
             <div className="flex justify-end gap-3">
@@ -1219,7 +1239,7 @@ export default function AdminUsersPage() {
               </button>
               <button
                 type="button"
-                onClick={confirmDeleteAdmin}
+                onClick={confirmDeleteUser}
                 disabled={deletingId === deletingUser.id}
                 className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-medium transition-colors inline-flex items-center gap-2 disabled:opacity-50"
               >

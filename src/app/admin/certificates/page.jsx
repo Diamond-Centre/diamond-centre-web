@@ -16,6 +16,7 @@ import {
 } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import LoadError from '@/components/ui/LoadError'
 
 function formatFrDate(value) {
   if (!value) return '—'
@@ -354,14 +355,7 @@ export default function AdminCertificatesPage() {
         </button>
       </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 mb-6">
-          {error}
-          <button type="button" onClick={loadFormations} className="ml-3 underline text-sm">
-            Réessayer
-          </button>
-        </div>
-      )}
+      {error ? <LoadError onRetry={loadFormations} /> : null}
 
       {formations.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-xl border border-gray-200">

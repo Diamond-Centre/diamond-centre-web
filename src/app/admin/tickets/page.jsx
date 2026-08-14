@@ -17,6 +17,7 @@ import { auth } from '@/lib/auth'
 import { api } from '@/lib/api'
 import toast from 'react-hot-toast'
 import QRCode from 'qrcode'
+import LoadError from '@/components/ui/LoadError'
 
 const PAGE_SIZE = 9
 
@@ -601,14 +602,7 @@ export default function AdminTickets() {
           </div>
         </div>
 
-        {error && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
-            <button type="button" onClick={loadTickets} className="ml-3 underline font-medium">
-              Réessayer
-            </button>
-          </div>
-        )}
+        {error ? <LoadError onRetry={loadTickets} /> : null}
 
         {loading && tickets.length === 0 ? (
           <div className="rounded-[24px] border border-[#E8EEF5] bg-white p-16 text-center text-[#667085]">

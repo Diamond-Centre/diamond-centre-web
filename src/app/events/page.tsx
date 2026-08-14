@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/useAuth'
 import Container from '@/components/ui/Container'
 import Button from '@/components/ui/Button'
 import Spinner from '@/components/ui/Spinner'
+import LoadError from '@/components/ui/LoadError'
 import EventCard from '@/components/events/EventCard'
 import ReservationModal from '@/components/events/ReservationModal'
 import toast from 'react-hot-toast'
@@ -161,19 +162,9 @@ function EventsPageContent() {
 
   if (error) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center pt-24">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-700">
-            Erreur de chargement
-          </h2>
-          <p className="mt-2 text-gray-500">{error}</p>
-          <Button
-            variant="primary"
-            className="mt-4"
-            onClick={() => fetchPublicEvents()}
-          >
-            Réessayer
-          </Button>
+      <div className="flex min-h-[60vh] items-center justify-center pt-24 px-4">
+        <div className="w-full max-w-md">
+          <LoadError onRetry={() => fetchPublicEvents()} />
         </div>
       </div>
     )

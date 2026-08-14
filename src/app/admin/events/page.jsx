@@ -18,6 +18,7 @@ import { auth } from '@/lib/auth'
 import { eventTimingMeta, eventTimingPhase } from '@/lib/eventTiming'
 import EventLightbox from '@/components/events/EventLightbox'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import LoadError from '@/components/ui/LoadError'
 import toast from 'react-hot-toast'
 
 const PAGE_SIZE = 12
@@ -659,14 +660,7 @@ export default function AdminEvents() {
             </div>
           </div>
 
-          {error && (
-            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {error}
-              <button type="button" onClick={loadEvents} className="ml-3 underline font-medium">
-                Réessayer
-              </button>
-            </div>
-          )}
+          {error ? <LoadError onRetry={loadEvents} /> : null}
 
           {/* Content */}
           {loading && events.length === 0 ? (

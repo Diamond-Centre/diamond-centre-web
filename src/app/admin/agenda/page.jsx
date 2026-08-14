@@ -21,6 +21,7 @@ import {
 import { auth } from '@/lib/auth'
 import { api } from '@/lib/api'
 import { eventTimingMeta } from '@/lib/eventTiming'
+import LoadError from '@/components/ui/LoadError'
 import toast from 'react-hot-toast'
 
 const WEEKDAYS = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
@@ -448,14 +449,7 @@ export default function AdminAgendaPage() {
           ))}
         </div>
 
-        {error && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
-            <button type="button" onClick={loadEvents} className="ml-3 underline font-medium">
-              Réessayer
-            </button>
-          </div>
-        )}
+        {error ? <LoadError onRetry={loadEvents} /> : null}
 
         {/* Next event hero */}
         <motion.div

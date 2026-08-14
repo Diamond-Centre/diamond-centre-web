@@ -19,6 +19,7 @@ import {
   FaUndo,
 } from 'react-icons/fa'
 import { useNotifications } from '@/hooks/useNotifications'
+import LoadError from '@/components/ui/LoadError'
 
 const TYPE_META = {
   reservation: {
@@ -154,11 +155,7 @@ export default function NotificationsPage() {
         </div>
       </div>
 
-      {error ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      ) : null}
+      {error ? <LoadError onRetry={() => refresh({ sync: true })} /> : null}
 
       {loading && sorted.length === 0 ? (
         <div className="flex h-40 items-center justify-center rounded-[24px] border border-[#E8EEF5] bg-white text-[#667085]">

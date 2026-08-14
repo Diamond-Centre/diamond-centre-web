@@ -22,6 +22,7 @@ import { auth } from '@/lib/auth'
 import { ticketStore } from '@/lib/ticketStore'
 import { eventTimingLabel, eventTimingPhase } from '@/lib/eventTiming'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import LoadError from '@/components/ui/LoadError'
 
 const FILTERS = [
   { id: 'upcoming', label: 'À venir' },
@@ -696,9 +697,7 @@ export default function EspaceClientTicketsPage() {
           Chargement des billets…
         </div>
       ) : error ? (
-        <div className="rounded-[28px] border border-red-200 bg-red-50 px-6 py-8 text-sm text-red-700">
-          {error}
-        </div>
+        <LoadError onRetry={() => window.location.reload()} />
       ) : filtered.length === 0 ? (
         <motion.div
           initial={{ opacity: 0, y: 12 }}

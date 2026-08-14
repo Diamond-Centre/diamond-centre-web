@@ -17,6 +17,7 @@ import toast from 'react-hot-toast'
 import { api } from '@/lib/api'
 import { auth } from '@/lib/auth'
 import { ticketStore } from '@/lib/ticketStore'
+import LoadError from '@/components/ui/LoadError'
 
 function formatLabel(change, which = 'new') {
   if (!change) return '—'
@@ -165,9 +166,7 @@ function EventChangeInner() {
   if (error) {
     return (
       <div className="space-y-4">
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
+        <LoadError onRetry={load} />
         <Link
           href="/espace-client/notifications"
           className="inline-flex items-center gap-2 text-sm font-semibold text-[#0A89F2]"

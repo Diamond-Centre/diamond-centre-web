@@ -17,6 +17,7 @@ import {
 import toast from 'react-hot-toast'
 import { api } from '@/lib/api'
 import { auth } from '@/lib/auth'
+import LoadError from '@/components/ui/LoadError'
 
 function formatDate(value) {
   if (!value) return '—'
@@ -366,9 +367,7 @@ export default function CertificatesPage() {
           Chargement des certificats…
         </div>
       ) : error ? (
-        <div className="rounded-[28px] border border-red-200 bg-red-50 px-6 py-8 text-sm text-red-700">
-          {error}
-        </div>
+        <LoadError onRetry={() => window.location.reload()} />
       ) : filtered.length === 0 ? (
         <div className="relative overflow-hidden rounded-[28px] border border-[#E8EEF5] bg-white">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(10,137,242,0.1),_transparent_55%)]" />

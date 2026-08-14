@@ -18,6 +18,7 @@ import {
 import { api } from '@/lib/api'
 import { auth } from '@/lib/auth'
 import { eventTimingLabel, eventTimingPhase } from '@/lib/eventTiming'
+import LoadError from '@/components/ui/LoadError'
 
 const WEEKDAYS = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
 
@@ -438,9 +439,7 @@ export default function AgendaPage() {
           Chargement de l’agenda…
         </div>
       ) : error ? (
-        <div className="rounded-[24px] border border-red-200 bg-red-50 p-6 text-sm text-red-700">
-          {error}
-        </div>
+        <LoadError onRetry={() => window.location.reload()} />
       ) : (
         <>
       {/* Hero — prochain événement */}

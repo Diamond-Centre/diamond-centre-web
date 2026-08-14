@@ -9,6 +9,7 @@ import Link from 'next/link'
 import { auth } from '@/lib/auth'
 import { api } from '@/lib/api'
 import { isEventUpcoming } from '@/lib/eventTiming'
+import LoadError from '@/components/ui/LoadError'
 import {
   FaCalendar, FaUsers, FaTicketAlt, FaChartLine,
   FaPlus, FaEye, FaEdit, FaTrash, FaDollarSign,
@@ -225,19 +226,7 @@ export default function AdminPage() {
   }
 
   if (error) {
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-        <div className="text-4xl mb-4">⚠️</div>
-        <h3 className="text-lg font-semibold text-red-700">Erreur de chargement</h3>
-        <p className="text-red-600 mt-2">{error}</p>
-        <button
-          onClick={handleRefresh}
-          className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-        >
-          Réessayer
-        </button>
-      </div>
-    )
+    return <LoadError onRetry={handleRefresh} />
   }
 
   // Statistiques pour les cartes
