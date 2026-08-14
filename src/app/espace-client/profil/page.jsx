@@ -60,6 +60,7 @@ export default function ProfilePage() {
   })
   const [photoBroken, setPhotoBroken] = useState(false)
   const [photoUploading, setPhotoUploading] = useState(false)
+  const [photoRemoving, setPhotoRemoving] = useState(false)
   const photoInputRef = useRef(null)
 
   // State Sécurité
@@ -171,7 +172,7 @@ export default function ProfilePage() {
         name: updated.name || prev.name,
         telephone: updated.telephone || prev.telephone,
         sexe: updated.sexe || prev.sexe,
-        picture: updated.picture || prev.picture,
+        picture: updated.picture !== undefined ? updated.picture : prev.picture,
         email: updated.email || prev.email,
       }))
       toast.success('Profil mis à jour')
@@ -325,6 +326,28 @@ export default function ProfilePage() {
     }
   }
 
+  const handlePhotoRemove = async () => {
+    if (photoUploading || photoRemoving) return
+    setPhotoRemoving(true)
+    try {
+      const token = auth.getToken()
+      if (!token) {
+        throw new Error('Session expirée. Veuillez vous reconnecter.')
+      }
+      const current = auth.getUser() || {}
+      const updated = await api.updateMe({ picture: '' }, token)
+      const picture = updated.picture !== undefined ? updated.picture : ''
+      auth.setUser({ ...current, ...updated, picture })
+      setFormData((prev) => ({ ...prev, picture }))
+      setPhotoBroken(false)
+      toast.success('Photo de profil supprimée')
+    } catch (error) {
+      toast.error(error.message || 'Impossible de supprimer la photo')
+    } finally {
+      setPhotoRemoving(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
@@ -409,7 +432,7 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={() => photoInputRef.current?.click()}
-                  disabled={photoUploading}
+                  disabled={photoUploading || photoRemoving}
                   className="absolute -bottom-1 -right-1 bg-dice-blue text-white p-1.5 rounded-full border-2 border-white text-xs hover:bg-dice-blue/90 disabled:opacity-60"
                   title="Changer la photo"
                 >
@@ -435,6 +458,21 @@ export default function ProfilePage() {
                   </span>
                 </div>
                 <p className="text-sm text-gray-500 mt-1">{formData.email}</p>
+                {formData.picture ? (
+                  <button
+                    type="button"
+                    onClick={handlePhotoRemove}
+                    disabled={photoUploading || photoRemoving}
+                    className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-red-600 hover:text-red-700 disabled:opacity-60"
+                  >
+                    {photoRemoving ? (
+                      <span className="h-3 w-3 animate-spin rounded-full border-2 border-red-500 border-t-transparent" />
+                    ) : (
+                      <FaTrashAlt className="text-xs" />
+                    )}
+                    Supprimer la photo
+                  </button>
+                ) : null}
               </div>
             </div>
           </div>
