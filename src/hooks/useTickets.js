@@ -77,6 +77,7 @@ export function useTickets() {
               user?.phone ||
               '+237000000000'
           ).trim() || '+237000000000',
+          confirmDuplicate: Boolean(data.confirm_duplicate || data.confirmDuplicate),
           event_date: data.event_date || data.date,
           location: data.location || data.lieu,
           time: data.time,
@@ -102,7 +103,9 @@ export function useTickets() {
       } catch (err) {
         const message = err.message || 'Erreur lors de la création du ticket'
         setError(message)
-        throw new Error(message)
+        const wrapped = new Error(message)
+        wrapped.status = err.status
+        throw wrapped
       } finally {
         setLoading(false)
       }

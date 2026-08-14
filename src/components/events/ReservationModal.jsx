@@ -17,6 +17,7 @@ import { GiDiamondRing } from 'react-icons/gi'
 import { api } from '@/lib/api'
 import { auth } from '@/lib/auth'
 import Button from '@/components/ui/Button'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import toast from 'react-hot-toast'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
@@ -66,6 +67,7 @@ export default function ReservationModal({
   const [qrCode, setQrCode] = useState(null)
   const [countdown, setCountdown] = useState(0)
   const [ticketCreated, setTicketCreated] = useState(false)
+  const [duplicatePrompt, setDuplicatePrompt] = useState(false)
 
   const availablePlaces = Math.max(0, Number(event?.available_tickets ?? 0))
   const maxTickets = Math.max(1, Math.min(10, availablePlaces || 1))
@@ -83,6 +85,7 @@ export default function ReservationModal({
       setPayment(null)
       setQrCode(null)
       setTicketCreated(false)
+      setDuplicatePrompt(false)
     }
   }, [isOpen])
 
@@ -257,6 +260,67 @@ export default function ReservationModal({
     }
   }
 
+  const runReservation = async ({ confirmDuplicate = false } = {}) => {
+    const token = auth.getToken()
+    const storedUser = auth.getUser()
+
+    if (!token || !storedUser) {
+      toast.error('Veuillez vous connecter pour réserver')
+      setStep('login')
+      return
+    }
+
+    setIsAuthenticated(true)
+    setUser(storedUser)
+    setLoading(true)
+    try {
+      const reservation = await api.reserveTickets({
+        eventId: event.id,
+        quantity: formData.quantity,
+        customerName: storedUser.name || storedUser.email || 'Client DiCe',
+        customerEmail: storedUser.email,
+        customerPhone:
+          String(storedUser.telephone || storedUser.phone || '').trim() ||
+          '+237000000000',
+        event_date: event.start_date || event.date || event.starts_at,
+        location: event.location || event.lieu,
+        time:
+          event.start_time && event.end_time
+            ? `${event.start_time} - ${event.end_time}`
+            : null,
+        confirmDuplicate,
+      }, token)
+
+      setTicket(reservation)
+
+      const ticketId = reservation?.id ?? reservation?.ticket_id
+      if (!ticketId) {
+        throw new Error('La réservation n’a pas renvoyé d’identifiant de ticket')
+      }
+
+      const paymentData = await api.initiatePayment({
+        ticketId,
+        method: 'mtn_momo',
+        phone:
+          String(storedUser.telephone || storedUser.phone || '').trim() ||
+          '+237000000000',
+      }, token)
+
+      setPayment(paymentData)
+      setCountdown(300)
+      setStep('payment')
+    } catch (error) {
+      if (error.status === 409 && !confirmDuplicate) {
+        setDuplicatePrompt(true)
+        return
+      }
+      console.error('❌ Erreur réservation:', error)
+      toast.error(error.message || 'Erreur lors de la réservation')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     
@@ -285,62 +349,8 @@ export default function ReservationModal({
       )
       return
     }
-    
-    setIsAuthenticated(true)
-    setUser(storedUser)
 
-    setLoading(true)
-    try {
-      console.log('📤 Réservation pour:', {
-        eventId: event.id,
-        quantity: formData.quantity,
-        customerName: storedUser.name,
-        customerEmail: storedUser.email,
-        customerPhone: storedUser.telephone
-      })
-      
-      const reservation = await api.reserveTickets({
-        eventId: event.id,
-        quantity: formData.quantity,
-        customerName: storedUser.name || storedUser.email || 'Client DiCe',
-        customerEmail: storedUser.email,
-        customerPhone:
-          String(storedUser.telephone || storedUser.phone || '').trim() ||
-          '+237000000000',
-        event_date: event.start_date || event.date || event.starts_at,
-        location: event.location || event.lieu,
-        time:
-          event.start_time && event.end_time
-            ? `${event.start_time} - ${event.end_time}`
-            : null,
-      }, token)
-
-      console.log('✅ Réservation créée:', reservation)
-      setTicket(reservation)
-
-      const ticketId = reservation?.id ?? reservation?.ticket_id
-      if (!ticketId) {
-        throw new Error('La réservation n’a pas renvoyé d’identifiant de ticket')
-      }
-
-      const paymentData = await api.initiatePayment({
-        ticketId,
-        method: 'mtn_momo',
-        phone:
-          String(storedUser.telephone || storedUser.phone || '').trim() ||
-          '+237000000000',
-      }, token)
-
-      setPayment(paymentData)
-      setCountdown(300)
-      setStep('payment')
-
-    } catch (error) {
-      console.error('❌ Erreur réservation:', error)
-      toast.error(error.message || 'Erreur lors de la réservation')
-    } finally {
-      setLoading(false)
-    }
+    await runReservation({ confirmDuplicate: false })
   }
 
   const finishSuccessfulPayment = (status, paidTicket) => {
@@ -1012,10 +1022,17 @@ export default function ReservationModal({
                       >
                         <div className="mb-2 flex items-center justify-between text-sm">
                           <span className="font-semibold text-gray-800">
-                            Ticket {index + 1}
+                            {t.shareable
+                              ? 'À partager'
+                              : `Ticket ${index + 1}`}
                           </span>
                           <span className="text-xs text-gray-400">#{t.id}</span>
                         </div>
+                        {t.shareable ? (
+                          <p className="mb-2 text-xs text-gray-500">
+                            Envoyez le QR ou le code d’entrée à un ami, dans ou hors de l’application.
+                          </p>
+                        ) : null}
                         <div className="flex flex-col items-center rounded-xl border border-gray-100 bg-gray-50 p-4">
                           <div className="mb-2 text-4xl">🎫</div>
                           <p className="text-[10px] uppercase tracking-wide text-gray-400">
@@ -1067,6 +1084,20 @@ export default function ReservationModal({
           </div>
         </motion.div>
       </div>
+      <ConfirmDialog
+        open={duplicatePrompt}
+        title="Vous avez déjà des billets"
+        message="Vous avez déjà un ou plusieurs billets pour cet événement. Si vous confirmez, les nouvelles places seront vides : uniquement le QR et le code d’entrée, à partager avec un ami."
+        confirmLabel="Réserver quand même"
+        cancelLabel="Annuler"
+        tone="info"
+        loading={loading}
+        onCancel={() => setDuplicatePrompt(false)}
+        onConfirm={() => {
+          setDuplicatePrompt(false)
+          runReservation({ confirmDuplicate: true })
+        }}
+      />
     </AnimatePresence>
   )
 }

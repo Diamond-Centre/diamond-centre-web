@@ -64,8 +64,8 @@ const API_MESSAGE_FR = {
   'Super admin access required':
     'Seul le super administrateur peut effectuer cette action.',
   'Admin access required': 'Accès administrateur requis.',
-  'Password must be at least 6 characters':
-    'Le mot de passe doit contenir au moins 6 caractères.',
+  'ALREADY_HAS_TICKETS':
+    'Vous avez déjà un ou plusieurs billets pour cet événement. Confirmez pour réserver des places supplémentaires à partager (QR et code d’entrée uniquement).',
 }
 
 function translateApiMessage(message) {
@@ -438,6 +438,9 @@ export const api = {
         customer_phone:
           String(data.customerPhone ?? data.customer_phone ?? '').trim() ||
           '+237000000000',
+        ...(data.confirmDuplicate || data.confirm_duplicate
+          ? { confirm_duplicate: true }
+          : {}),
       }),
     })
 
@@ -451,6 +454,8 @@ export const api = {
             {
               id: result.id,
               qr_codes: result.qr_codes || [],
+              customer_name: data.customerName ?? data.customer_name,
+              shareable: false,
             },
           ]
 
@@ -460,12 +465,17 @@ export const api = {
           typeof qrItem === 'string' ? qrItem : qrItem?.code || null
         const entryCode =
           typeof qrItem === 'object' && qrItem ? qrItem.entry_code : null
+        const shareable =
+          t.shareable === true ||
+          (typeof t.customer_name === 'string' && !String(t.customer_name).trim())
 
         ticketStore.upsert({
           ticket_id: t.id ?? result.id,
           event_id: result.event_id,
           event_title: result.event_title,
-          customer_name: data.customerName ?? data.customer_name,
+          customer_name: shareable
+            ? ''
+            : t.customer_name || data.customerName || data.customer_name || '',
           qr_code: qrCode,
           entry_code: entryCode,
           date: data.event_date || new Date().toISOString(),
@@ -538,6 +548,10 @@ export const api = {
         const start = formatTimeValue(detail.event_start_time, '09:00')
         const end = formatTimeValue(detail.event_end_time, '17:00')
 
+        const shareable =
+          detail.shareable === true ||
+          !String(detail.customer_name || '').trim()
+
         const booking = {
           id: detail.id,
           event_id: detail.event_id,
@@ -546,8 +560,9 @@ export const api = {
           total_price: detail.total_price,
           currency: detail.currency || 'XAF',
           status: detail.status,
-          customer_name: detail.customer_name || meta.customer_name,
+          customer_name: shareable ? '' : (detail.customer_name || meta.customer_name),
           customer_email: detail.customer_email,
+          shareable,
           qr_codes: detail.qr_codes || [],
           qr_code: displayCode,
           entry_code: entryCode
@@ -600,7 +615,8 @@ export const api = {
           total_price: 0,
           currency: 'XAF',
           status: 'pending',
-          customer_name: meta.customer_name,
+          customer_name: meta.customer_name || '',
+          shareable: !String(meta.customer_name || '').trim(),
           qr_codes: meta.qr_code ? [{ code: meta.qr_code, validated: false }] : [],
           qr_code: meta.qr_code,
           date: cachedDate,

@@ -15,6 +15,7 @@ import {
   FaTicketAlt,
   FaTrash,
   FaUser,
+  FaShareAlt,
 } from 'react-icons/fa'
 import QRCode from 'qrcode'
 import { api } from '@/lib/api'
@@ -129,6 +130,12 @@ function ticketPhase(t) {
   return eventTimingPhase(ticketEvent(t))
 }
 
+function isShareableTicket(t) {
+  if (!t) return false
+  if (t.shareable === true) return true
+  return !String(t.customer_name || t.customerName || '').trim()
+}
+
 function StatusChip({ status, ticket }) {
   const phase = ticketPhase(ticket || {})
 
@@ -220,6 +227,11 @@ function TicketStub({ ticket, featured, onOpen, onDelete }) {
                     Prochain billet
                   </span>
                   <StatusChip status={ticket.status} ticket={ticket} />
+                  {isShareableTicket(ticket) ? (
+                    <span className="inline-flex items-center rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold">
+                      À partager
+                    </span>
+                  ) : null}
                 </div>
                 <h3 className="text-xl font-bold leading-snug sm:text-2xl">
                   {title}
@@ -314,8 +326,13 @@ function TicketStub({ ticket, featured, onOpen, onDelete }) {
           <div className="flex min-w-0 flex-1 flex-col justify-between gap-3 p-4 pl-5">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <div className="mb-1.5">
+                <div className="mb-1.5 flex flex-wrap items-center gap-2">
                   <StatusChip status={ticket.status} ticket={ticket} />
+                  {isShareableTicket(ticket) ? (
+                    <span className="inline-flex items-center rounded-full bg-[#E8F3FE] px-2.5 py-0.5 text-[11px] font-semibold text-[#0A89F2]">
+                      À partager
+                    </span>
+                  ) : null}
                 </div>
                 <h3 className="truncate text-[15px] font-semibold text-[#0B1220] group-hover:text-[#0A89F2]">
                   {title}
@@ -428,7 +445,14 @@ function TicketDetail({ ticket, onClose, onDelete }) {
               <FaTimes />
             </button>
           </div>
-          <StatusChip status={ticket.status} ticket={ticket} />
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusChip status={ticket.status} ticket={ticket} />
+            {isShareableTicket(ticket) ? (
+              <span className="inline-flex items-center rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold">
+                À partager
+              </span>
+            ) : null}
+          </div>
         </div>
 
         <div className="relative -mt-5 px-6">
@@ -483,21 +507,58 @@ function TicketDetail({ ticket, onClose, onDelete }) {
             </div>
           )}
 
-          <div className="flex items-start gap-2 rounded-2xl border border-[#E8EEF5] p-3 text-[#667085]">
-            <FaUser className="mt-0.5 shrink-0 text-[#0A89F2]" />
-            <div>
-              <p className="text-[11px] text-[#98A2B3]">Participant</p>
-              <p className="font-medium text-[#0B1220]">
-                {ticket.customer_name || ticket.customerName || '—'}
+          {isShareableTicket(ticket) ? (
+            <div className="rounded-2xl border border-[#E8F3FE] bg-[#F7FBFF] p-3 text-[#667085]">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#0A89F2]">
+                Billet à partager
               </p>
-              <p className="mt-0.5 text-xs">
-                1 place
-                {ticket.total_price != null
-                  ? ` · ${Number(ticket.total_price).toLocaleString('fr-FR')} ${ticket.currency || 'XAF'}`
-                  : ''}
+              <p className="mt-1 text-sm">
+                Ce billet n’a pas de nom. Envoyez le QR ou le code d’entrée à un ami, dans ou hors de l’application.
               </p>
             </div>
-          </div>
+          ) : (
+            <div className="flex items-start gap-2 rounded-2xl border border-[#E8EEF5] p-3 text-[#667085]">
+              <FaUser className="mt-0.5 shrink-0 text-[#0A89F2]" />
+              <div>
+                <p className="text-[11px] text-[#98A2B3]">Participant</p>
+                <p className="font-medium text-[#0B1220]">
+                  {ticket.customer_name || ticket.customerName || '—'}
+                </p>
+                <p className="mt-0.5 text-xs">
+                  1 place
+                  {ticket.total_price != null
+                    ? ` · ${Number(ticket.total_price).toLocaleString('fr-FR')} ${ticket.currency || 'XAF'}`
+                    : ''}
+                </p>
+              </div>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={async () => {
+              const code = entryCodeOf(ticket) || qrPayload(ticket)
+              const title = ticket.title || ticket.event_title || 'Événement'
+              const text = `Billet DiCe — ${title}\nCode d’entrée : ${code}\nPrésentez ce code ou le QR à l’entrée.`
+              try {
+                if (typeof navigator !== 'undefined' && navigator.share) {
+                  await navigator.share({ title: 'Billet DiCe', text })
+                  return
+                }
+              } catch {
+                /* user cancelled or share unavailable */
+              }
+              try {
+                await navigator.clipboard.writeText(text)
+              } catch {
+                /* ignore */
+              }
+            }}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#0A89F2]/20 bg-[#E8F3FE] py-3.5 text-sm font-semibold text-[#0A89F2] transition hover:bg-[#d7ecfd]"
+          >
+            <FaShareAlt className="text-xs" />
+            Partager le billet
+          </button>
 
           <button
             type="button"

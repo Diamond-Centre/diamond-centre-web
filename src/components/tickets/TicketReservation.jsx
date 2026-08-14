@@ -15,6 +15,7 @@ import Modal from '@/components/ui/Modal'
 import RegisterModal from '@/components/auth/RegisterModal'
 import TicketPayment from './TicketPayment'
 import TicketConfirmation from './TicketConfirmation'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import toast from 'react-hot-toast'
@@ -34,6 +35,8 @@ export default function TicketReservation({
   const [showRegister, setShowRegister] = useState(false)
   const [selectedQuantity, setSelectedQuantity] = useState(1)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [duplicatePrompt, setDuplicatePrompt] = useState(false)
+  const [pendingPayment, setPendingPayment] = useState(null)
 
   const maxPlaces = Math.max(
     0,
@@ -53,6 +56,8 @@ export default function TicketReservation({
       setSelectedQuantity(1)
       setShowRegister(false)
       setIsProcessing(false)
+      setDuplicatePrompt(false)
+      setPendingPayment(null)
     }
   }, [isOpen])
 
@@ -76,7 +81,7 @@ export default function TicketReservation({
     setStep(2)
   }
 
-  const handlePayment = async (paymentData) => {
+  const handlePayment = async (paymentData, { confirmDuplicate = false } = {}) => {
     setIsProcessing(true)
     try {
       const storedUser = auth.getUser() || user
@@ -111,6 +116,7 @@ export default function TicketReservation({
           event.start_time && event.end_time
             ? `${event.start_time} - ${event.end_time}`
             : null,
+        confirm_duplicate: confirmDuplicate,
       })
 
       const ticketId = ticket?.id ?? ticket?.ticket_id
@@ -154,6 +160,11 @@ export default function TicketReservation({
         onSuccess(paidTicket)
       }
     } catch (error) {
+      if (error.status === 409 && !confirmDuplicate) {
+        setPendingPayment(paymentData)
+        setDuplicatePrompt(true)
+        return
+      }
       toast.error(error.message || 'Erreur lors de la réservation')
     } finally {
       setIsProcessing(false)
@@ -327,13 +338,34 @@ export default function TicketReservation({
   }
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      size="lg"
-      closeOnOverlayClick={step !== 2 && step !== 3}
-    >
-      <div className="p-6">{renderStep()}</div>
-    </Modal>
+    <>
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        size="lg"
+        closeOnOverlayClick={step !== 2 && step !== 3}
+      >
+        <div className="p-6">{renderStep()}</div>
+      </Modal>
+      <ConfirmDialog
+        open={duplicatePrompt}
+        title="Vous avez déjà des billets"
+        message="Vous avez déjà un ou plusieurs billets pour cet événement. Si vous confirmez, les nouvelles places seront vides : uniquement le QR et le code d’entrée, à partager avec un ami."
+        confirmLabel="Réserver quand même"
+        cancelLabel="Annuler"
+        tone="info"
+        loading={isProcessing}
+        onCancel={() => {
+          setDuplicatePrompt(false)
+          setPendingPayment(null)
+        }}
+        onConfirm={() => {
+          const payload = pendingPayment
+          setDuplicatePrompt(false)
+          setPendingPayment(null)
+          handlePayment(payload || {}, { confirmDuplicate: true })
+        }}
+      />
+    </>
   )
 }
