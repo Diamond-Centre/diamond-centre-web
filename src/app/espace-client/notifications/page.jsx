@@ -19,6 +19,10 @@ import {
   FaUndo,
 } from 'react-icons/fa'
 import { useNotifications } from '@/hooks/useNotifications'
+import {
+  notificationOpenLabel,
+  notificationTargetHref,
+} from '@/lib/notificationTargets'
 import LoadError from '@/components/ui/LoadError'
 
 const TYPE_META = {
@@ -71,20 +75,6 @@ function formatWhen(value) {
   })
 }
 
-function targetHref(notification) {
-  if (
-    notification.type === 'modification' &&
-    notification.change_id &&
-    notification.ticket_id
-  ) {
-    return `/espace-client/notifications/changement/${notification.change_id}?ticket=${notification.ticket_id}`
-  }
-  if (notification.type === 'certificat') return '/espace-client/certificats'
-  if (notification.ticket_id) return '/espace-client/tickets'
-  if (notification.event_id) return '/espace-client/agenda'
-  return null
-}
-
 export default function NotificationsPage() {
   const router = useRouter()
   const {
@@ -113,7 +103,7 @@ export default function NotificationsPage() {
     if (!notification.is_read) {
       await markAsRead(notification.id)
     }
-    const href = targetHref(notification)
+    const href = notificationTargetHref(notification, { fallback: false })
     if (href) router.push(href)
     setOpeningId(null)
   }
@@ -177,7 +167,7 @@ export default function NotificationsPage() {
           {sorted.map((n, index) => {
             const meta = TYPE_META[n.type] || TYPE_META.info
             const Icon = meta.icon
-            const href = targetHref(n)
+            const href = notificationTargetHref(n, { fallback: false })
             return (
               <motion.li
                 key={n.id}
@@ -221,9 +211,7 @@ export default function NotificationsPage() {
                       </p>
                       {href ? (
                         <p className="mt-2 text-xs font-semibold text-[#0A89F2]">
-                          {n.type === 'modification'
-                            ? 'Voir la modification →'
-                            : 'Ouvrir →'}
+                          {notificationOpenLabel(n)}
                         </p>
                       ) : null}
                     </div>

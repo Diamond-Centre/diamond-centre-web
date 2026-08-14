@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useSearchParams } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   FaArrowRight,
@@ -677,7 +678,9 @@ function TicketDetail({ ticket, onClose, onDelete }) {
                 Billet à partager
               </p>
               <p className="mt-1 text-sm">
-                Ce billet n’a pas de nom. Envoyez le QR ou le code d’entrée à un ami, dans ou hors de l’application.
+                Acheté par vous
+                {ticket.customer_email ? ` (${ticket.customer_email})` : ''}. Ce
+                billet n’a pas de nom — envoyez le QR ou le code d’entrée à un ami.
               </p>
             </div>
           ) : (
@@ -732,6 +735,8 @@ function TicketDetail({ ticket, onClose, onDelete }) {
 }
 
 export default function EspaceClientTicketsPage() {
+  const searchParams = useSearchParams()
+  const focusTicketId = searchParams?.get('ticket')
   const [tickets, setTickets] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -766,6 +771,16 @@ export default function EspaceClientTicketsPage() {
       cancelled = true
     }
   }, [])
+
+  useEffect(() => {
+    if (!focusTicketId || tickets.length === 0) return
+    const match = tickets.find(
+      (t) => String(ticketIdOf(t)) === String(focusTicketId)
+    )
+    if (!match) return
+    setFilter('all')
+    setSelected(match)
+  }, [focusTicketId, tickets])
 
   const sorted = useMemo(() => {
     return [...tickets].sort((a, b) => {
