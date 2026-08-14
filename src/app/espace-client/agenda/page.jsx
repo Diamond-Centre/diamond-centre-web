@@ -40,7 +40,9 @@ function toDateKey(d) {
 }
 
 function parseKey(key) {
-  const [y, m, d] = key.split('-').map(Number)
+  if (!key) return startOfDay(new Date())
+  const [y, m, d] = String(key).split('-').map(Number)
+  if ([y, m, d].some((n) => Number.isNaN(n))) return startOfDay(new Date())
   return new Date(y, m - 1, d)
 }
 
@@ -240,6 +242,7 @@ function BookingCard({ booking, onOpen }) {
 function DetailModal({ booking, onClose }) {
   if (!booking) return null
   const phase = bookingPhase(booking)
+  const day = parseKey(booking.date)
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm">
@@ -348,7 +351,11 @@ export default function AgendaPage() {
         const token = auth.getToken()
         const list = await api.getMyBookings(token)
         if (!cancelled) {
-          setBookings(list.map(normalizeBooking).filter((b) => b.date))
+          setBookings(
+            (Array.isArray(list) ? list : [])
+              .map(normalizeBooking)
+              .filter((b) => b.date)
+          )
           setError(null)
         }
       } catch (err) {
@@ -553,10 +560,7 @@ export default function AgendaPage() {
               <button
                 key={key}
                 type="button"
-                onClick={() => {
-                  setSelectedDay(date)
-                  if (isNearest && nearestUpcoming) setDetail(nearestUpcoming)
-                }}
+                onClick={() => setSelectedDay(date)}
                 className={`
                   relative aspect-square rounded-2xl flex flex-col items-center justify-center
                   transition-all text-sm font-semibold
