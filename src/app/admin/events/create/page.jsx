@@ -163,11 +163,18 @@ export default function CreateEvent() {
     if (!(Number(form.capacity) >= 1)) return 'La capacité minimale est 1'
     if (Number(form.price) < 0 || form.price === '') return 'Le prix est requis'
     if (hasPromotion) {
-      const nombre = Number(promotion.nombre)
+      // Seul le pourcentage de réduction est obligatoire pour une promotion.
       const pourcentage = Number(promotion.pourcentage)
-      const duree = Number(promotion.duree)
-      if (!(nombre > 0 && pourcentage > 0 && pourcentage <= 100 && duree > 0)) {
-        return 'Promotion incomplete : places, % (1–100) et durée sont requis'
+      if (!(pourcentage > 0 && pourcentage <= 100)) {
+        return 'La réduction (%) est requise et doit être comprise entre 1 et 100'
+      }
+      // Les autres champs (places, durée) sont optionnels : s'ils sont renseignés,
+      // ils doivent néanmoins être valides.
+      if (promotion.nombre !== '' && !(Number(promotion.nombre) > 0)) {
+        return 'Le nombre de places promo doit être supérieur à 0'
+      }
+      if (promotion.duree !== '' && !(Number(promotion.duree) > 0)) {
+        return 'La durée de la promotion doit être supérieure à 0'
       }
     }
     return null
@@ -228,11 +235,16 @@ export default function CreateEvent() {
         hasPromotion,
         promotion: hasPromotion
           ? {
-            nombre: Number(promotion.nombre),
-            sexe: promotion.sexe || 'tous',
+            // Seul pourcentage est garanti d'être renseigné ; le reste est envoyé
+            // uniquement si l'utilisateur l'a rempli, le backend applique ses
+            // propres valeurs par défaut sinon (nombre illimité, durée 30j, sexe 'tous').
             pourcentage: Number(promotion.pourcentage),
-            duree: Number(promotion.duree),
-            description: promotion.description || '',
+            ...(promotion.nombre !== '' ? { nombre: Number(promotion.nombre) } : {}),
+            ...(promotion.sexe ? { sexe: promotion.sexe } : {}),
+            ...(promotion.duree !== '' ? { duree: Number(promotion.duree) } : {}),
+            ...(promotion.description?.trim()
+              ? { description: promotion.description.trim() }
+              : {}),
           }
           : undefined,
       }
@@ -523,7 +535,7 @@ export default function CreateEvent() {
                 <div className="text-left">
                   <p className="text-sm font-bold text-[#0B1220]">Activer une promotion</p>
                   <p className="text-xs text-[#667085] mt-0.5">
-                    Places promo, pourcentage et durée
+                    Seule la réduction (%) est obligatoire
                   </p>
             </div>
                 <span
@@ -547,34 +559,6 @@ export default function CreateEvent() {
                   >
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
               <div>
-                        <label className={labelClass}>Places promo *</label>
-                <input
-                  type="number"
-                          min="1"
-                          value={promotion.nombre}
-                          onChange={(e) =>
-                            setPromotion((p) => ({ ...p, nombre: e.target.value }))
-                          }
-                          placeholder="15"
-                          className={inputClass}
-                          required={hasPromotion}
-                />
-              </div>
-              <div>
-                        <label className={labelClass}>Public ciblé</label>
-                <select
-                          value={promotion.sexe}
-                          onChange={(e) =>
-                            setPromotion((p) => ({ ...p, sexe: e.target.value }))
-                          }
-                          className={inputClass}
-                >
-                  <option value="tous">Tous</option>
-                  <option value="homme">Homme</option>
-                  <option value="femme">Femme</option>
-                </select>
-              </div>
-              <div>
                         <label className={labelClass}>Réduction (%) *</label>
                 <input
                   type="number"
@@ -590,7 +574,34 @@ export default function CreateEvent() {
                 />
               </div>
               <div>
-                        <label className={labelClass}>Durée (jours) *</label>
+                        <label className={labelClass}>Places promo (optionnel)</label>
+                <input
+                  type="number"
+                          min="1"
+                          value={promotion.nombre}
+                          onChange={(e) =>
+                            setPromotion((p) => ({ ...p, nombre: e.target.value }))
+                          }
+                          placeholder="Illimité si vide"
+                          className={inputClass}
+                />
+              </div>
+              <div>
+                        <label className={labelClass}>Public ciblé (optionnel)</label>
+                <select
+                          value={promotion.sexe}
+                          onChange={(e) =>
+                            setPromotion((p) => ({ ...p, sexe: e.target.value }))
+                          }
+                          className={inputClass}
+                >
+                  <option value="tous">Tous</option>
+                  <option value="homme">Homme</option>
+                  <option value="femme">Femme</option>
+                </select>
+              </div>
+              <div>
+                        <label className={labelClass}>Durée en jours (optionnel)</label>
                 <input
                   type="number"
                           min="1"
@@ -598,19 +609,18 @@ export default function CreateEvent() {
                           onChange={(e) =>
                             setPromotion((p) => ({ ...p, duree: e.target.value }))
                           }
-                  placeholder="7"
+                  placeholder="30 jours par défaut"
                           className={inputClass}
-                          required={hasPromotion}
                         />
                       </div>
                       <div className="sm:col-span-2">
-                        <label className={labelClass}>Description promo</label>
+                        <label className={labelClass}>Description promo (optionnel)</label>
                         <input
                           value={promotion.description}
                           onChange={(e) =>
                             setPromotion((p) => ({ ...p, description: e.target.value }))
                           }
-                          placeholder="Early bird -20%"
+                          placeholder="Ex. Réduction de 15%"
                           className={inputClass}
                         />
                       </div>

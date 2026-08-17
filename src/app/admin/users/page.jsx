@@ -951,7 +951,7 @@ export default function AdminUsersPage() {
                             <button
                               type="button"
                               onClick={() => setViewUser(user)}
-                              className="px-3 py-1.5 rounded-xl text-sm font-semibold text-dice-blue bg-dice-blue/10 hover:bg-dice-blue/20 transition-colors inline-flex items-center gap-1"
+                              className="px-3 py-1.5 rounded-xl text-sm font-semibold text-dice-blue bg-dice-blue/10 hover:bg-dice-blue/20 transition-colors inline-flex items-center gap-1 -translate-x-12"
                               title="Voir"
                             >
                               <FaEye className="text-xs" />
