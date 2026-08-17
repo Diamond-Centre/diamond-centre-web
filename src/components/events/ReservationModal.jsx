@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
   FaTimes, FaTicketAlt, FaUser, FaEnvelope, FaPhone, 
   FaMobileAlt, FaCheckCircle, FaArrowRight, FaCalendar, 
-  FaMapMarker, FaClock, FaEuroSign, FaDownload, 
+  FaMapMarker, FaClock, FaMoneyBillWave, FaDownload, 
   FaVenusMars, FaTag, FaExclamationTriangle,
   FaSpinner, FaLock, FaEye, FaEyeSlash
 } from 'react-icons/fa'
@@ -535,7 +535,6 @@ export default function ReservationModal({
             <button
               onClick={handleClose}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              disabled={step === 'payment' && payment?.status === 'pending'}
             >
               <FaTimes className="text-gray-500" />
             </button>
@@ -572,7 +571,7 @@ export default function ReservationModal({
                   <div className="flex items-center gap-2 text-gray-600">
                     {hasPromotion ? (
                       <div className="flex items-center gap-2">
-                        <FaEuroSign className="text-dice-blue" />
+                        <FaMoneyBillWave className="text-dice-blue" />
                         <span className="font-bold text-dice-blue">{promoPrice} FCFA</span>
                         <span className="text-gray-400 line-through text-sm">{event?.price} FCFA</span>
                         <span className="text-xs bg-green-500 text-white px-2 py-0.5 rounded-full">
@@ -581,7 +580,7 @@ export default function ReservationModal({
                       </div>
                     ) : (
                       <>
-                        <FaEuroSign className="text-dice-blue" />
+                        <FaMoneyBillWave className="text-dice-blue" />
                         <span className="font-bold text-dice-blue">{event?.price} FCFA</span>
                       </>
                     )}

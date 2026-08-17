@@ -35,7 +35,7 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-, "app/dashboard/page.jsx"  ],
+, "app/dashboard/page.jsx", "components/events/EventCard.jsx", "components/events/EventCard.jsx"  ],
   "exclude": [
     "node_modules"
   ]

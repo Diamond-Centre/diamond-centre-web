@@ -9,6 +9,10 @@
  *   ce qui causait la carte "disparaît/réapparaît" au scroll.
  * - Le scroll du body est verrouillé tant que le modal est ouvert, et restauré proprement
  *   à la fermeture / au démontage.
+ *
+ * Affichage planning :
+ * - Date de début et date de fin affichées séparément (plus de condensé "{spanDays} j").
+ * - Heure de début et heure de fin affichées séparément, sur toute la durée de l'événement.
  */
 'use client'
 
@@ -19,6 +23,7 @@ import Image from 'next/image'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   FaArrowRight,
+  FaCalendarAlt,
   FaClock,
   FaMapMarkerAlt,
   FaTag,
@@ -379,6 +384,13 @@ export default function EventCard({
       ? Math.max(1, differenceInCalendarDays(dayEnd, dayStart) + 1)
       : 1
 
+  // Affichage explicite : la date de fin n'est montrée que si elle diffère
+  // de la date de début (évite la redondance "12 juin 2026 → 12 juin 2026").
+  const sameDay =
+    dayStart && dayEnd
+      ? formatDay(dayStart) === formatDay(dayEnd)
+      : spanDays <= 1
+
   const canReserve = !isPast && !isFull
 
   const handleReserve = (e: any) => {
@@ -484,14 +496,23 @@ export default function EventCard({
                 <span className="truncate">{location}</span>
               </span>
             ) : null}
-            <span className="inline-flex items-center gap-1">
-              <FaClock className="text-[10px] text-[#0A89F2]" />
-              {spanDays > 1
-                ? `${spanDays} j`
-                : startT && endT
-                  ? `${startT}–${endT}`
-                  : formatDay(start_date)}
-            </span>
+
+            {/* Date de fin — affichée uniquement si différente de la date de début */}
+            {!sameDay ? (
+              <span className="inline-flex items-center gap-1">
+                <FaCalendarAlt className="text-[10px] text-[#0A89F2]" />
+                Fin : {formatDay(end_date)}
+              </span>
+            ) : null}
+
+            {/* Heure de début / heure de fin */}
+            {startT || endT ? (
+              <span className="inline-flex items-center gap-1">
+                <FaClock className="text-[10px] text-[#0A89F2]" />
+                {startT && endT ? `${startT} – ${endT}` : startT || endT}
+              </span>
+            ) : null}
+
             <span className="inline-flex items-center gap-1">
               <FaUsers className="text-[10px] text-[#0A89F2]" />
               {isFull ? 'Complet' : `${placesRestantes} pl.`}
