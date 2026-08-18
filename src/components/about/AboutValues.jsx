@@ -22,7 +22,7 @@ const values = [
     title: 'Excellence',
     description: 'Nous visons le plus haut niveau de qualité et d\'exigence dans toutes nos formations et accompagnements pour garantir des résultats hors du commun.',
     color: 'from-[#0a89f2] to-purple-600',
-    gridClass: 'lg:col-span-8',
+    gridClass: 'md:col-span-2 lg:col-span-8',
     isLarge: true,
     bgGlow: 'rgba(10, 137, 242, 0.08)'
   },
@@ -67,7 +67,7 @@ const values = [
     title: 'Reconnaissance',
     description: 'Nous célébrons la singularité, valorisons le talent individuel et créons les conditions optimales pour révéler le leader endormi en chacun de vous.',
     color: 'from-purple-500 to-indigo-500',
-    gridClass: 'lg:col-span-12',
+    gridClass: 'md:col-span-2 lg:col-span-12',
     isLarge: true,
     isHorizontal: true,
     bgGlow: 'rgba(139, 92, 246, 0.08)'

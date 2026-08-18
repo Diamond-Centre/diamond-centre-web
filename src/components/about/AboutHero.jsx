@@ -116,12 +116,12 @@ export default function AboutHero({ onVideoClick }) {
             </div>
 
             {/* Colonne 3 : Bouton Film Institutionnel Épuré */}
-            <div className="md:col-span-3 flex md:justify-end items-center">
+            <div className="md:col-span-3 flex md:justify-end items-center mt-4 md:mt-0">
               <button
                 onClick={onVideoClick}
-                className="group flex items-center gap-4 px-6 py-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 text-white font-medium text-sm transition-all duration-300 backdrop-blur-md"
+                className="group flex items-center justify-center w-full md:w-auto md:justify-start gap-4 px-6 py-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 text-white font-medium text-sm transition-all duration-300 backdrop-blur-md"
               >
-                <span className="w-10 h-10 rounded-full bg-[#0a89f2] flex items-center justify-center text-white text-xs group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(10,137,242,0.4)]">
+                <span className="w-10 h-10 rounded-full bg-[#0a89f2] flex flex-shrink-0 items-center justify-center text-white text-xs group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(10,137,242,0.4)]">
                   <FaPlay className="ml-0.5" />
                 </span>
                 <span className="text-left leading-tight">

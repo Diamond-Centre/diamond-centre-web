@@ -557,7 +557,6 @@ export default function ProfilePage() {
                         onChange={handleChange}
                         className="w-full rounded-xl border border-gray-200 bg-white py-3 pl-11 pr-4 text-base outline-none focus:border-dice-blue focus:ring-2 focus:ring-dice-blue/20 transition-all text-gray-900"
                       >
-                        <option value="">Sélectionner</option>
                         <option value="homme">Homme</option>
                         <option value="femme">Femme</option>
                       </select>

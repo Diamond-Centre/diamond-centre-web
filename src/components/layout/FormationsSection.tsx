@@ -91,10 +91,10 @@ export default function FormationsSection({
             </p>
           </div>
 
-          <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+          <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="w-full sm:w-auto">
             <Link
               href="/events"
-              className="group inline-flex items-center gap-2 rounded-full border border-[#E8EEF5] bg-[#F4F7FB] px-6 py-3 text-sm font-semibold text-[#0B1220] transition-all duration-300 hover:border-[#0A89F2]/40 hover:bg-[#0A89F2] hover:text-white"
+              className="group flex w-full sm:w-auto items-center justify-center gap-2 rounded-full border border-[#E8EEF5] bg-[#F4F7FB] px-6 py-3 text-sm font-semibold text-[#0B1220] transition-all duration-300 hover:border-[#0A89F2]/40 hover:bg-[#0A89F2] hover:text-white"
             >
               <span>Tout voir</span>
               <FaArrowRight className="text-xs transition-transform duration-300 group-hover:translate-x-1" />
@@ -128,7 +128,7 @@ export default function FormationsSection({
             </Link>
           </motion.div>
         ) : (
-          <div ref={gridRef} className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+          <div ref={gridRef} className="grid grid-cols-1 gap-8 justify-items-center md:grid-cols-2 lg:grid-cols-3">
             {list.map((event, index) => (
               <motion.div
                 key={event.id}
