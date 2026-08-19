@@ -99,7 +99,7 @@ export default function AboutHero({ onVideoClick }) {
             className="grid md:grid-cols-12 gap-8 items-start pt-10 border-t border-white/10"
           >
             {/* Colonne 1 : Posture */}
-            <div className="md:col-span-4">
+            <div className="md:col-span-6">
               <p className="text-xs font-semibold tracking-wider text-gray-400 uppercase mb-2">
                 Notre Promesse Institutionnelle
               </p>
@@ -109,14 +109,14 @@ export default function AboutHero({ onVideoClick }) {
             </div>
 
             {/* Colonne 2 : Texte Manifeste avec séparateur vertical */}
-            <div className="md:col-span-5 md:border-l md:border-white/10 md:pl-8">
+            <div className="md:col-span-6 md:border-l md:border-white/10 md:pl-8">
               <p className="text-base sm:text-lg text-gray-400 font-light leading-relaxed">
                 Chez Diamond Centre, nous croyons que le potentiel humain est la ressource la plus précieuse d'un continent. Depuis une décennie, nous concevons des écosystèmes d'excellence pour transformer les compétences individuelles en valeur mesurable et durable.
               </p>
             </div>
 
             {/* Colonne 3 : Bouton Film Institutionnel Épuré */}
-            <div className="md:col-span-3 flex md:justify-end items-center mt-4 md:mt-0">
+            {/* <div className="md:col-span-3 flex md:justify-end items-center mt-4 md:mt-0">
               <button
                 onClick={onVideoClick}
                 className="group flex items-center justify-center w-full md:w-auto md:justify-start gap-4 px-6 py-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 text-white font-medium text-sm transition-all duration-300 backdrop-blur-md"
@@ -129,7 +129,7 @@ export default function AboutHero({ onVideoClick }) {
                   <span className="text-xs text-gray-400 font-normal">2 min 30 s</span>
                 </span>
               </button>
-            </div>
+            </div> */}
 
           </motion.div>
 
