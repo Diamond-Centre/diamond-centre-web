@@ -58,7 +58,7 @@ export default function AboutPage() {
     <div className="min-h-screen bg-[#f8fafc] overflow-hidden antialiased">
       <main>
         {/* 1. Cinematic Hero Section */}
-        <AboutHero onVideoClick={() => handleVideoOpen('https://www.youtube.com/embed/dQw4w9WgXcQ')} />
+        <AboutHero/>
 
         {/* 2. Visual Statistics Milestones */}
         {/* <AboutStats /> */}
