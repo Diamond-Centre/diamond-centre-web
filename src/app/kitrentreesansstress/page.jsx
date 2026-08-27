@@ -85,6 +85,13 @@ const RESOURCES = [
     href: `${KIT_BASE}/10_Presentation_du_PACK_Rentree_Sans_Stress.pdf`,
     filename: '10_Presentation_du_PACK_Rentree_Sans_Stress.pdf',
   },
+  {
+    id: '11',
+    title: 'Diagnostic financier',
+    description: 'Le diagnostic complet pour clarifier votre situation.',
+    href: `${KIT_BASE}/11_Diagnostic_financier.pdf`,
+    filename: '11_Diagnostic_financier.pdf',
+  },
 ];
 
 function DownloadIcon({ className = 'w-5 h-5' }) {
@@ -148,7 +155,7 @@ export default function KitRentreePage() {
                   clipRule="evenodd"
                 />
               </svg>
-              Aucune inscription requise · 10 fiches PDF dans un seul fichier ZIP
+              Aucune inscription requise · 11 fiches PDF dans un seul fichier ZIP
             </p>
           </div>
 
