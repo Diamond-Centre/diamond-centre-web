@@ -114,104 +114,11 @@ function DownloadIcon({ className = 'w-5 h-5' }) {
 }
 
 export default function KitRentreePage() {
-  const resources = [
-    {
-      id: 'livre-1',
-      category: 'LIVRE 1',
-      title: 'Comment gérer efficacement les pressions financières',
-      description: 'Comprendre le fonctionnement de la pression financière et la transformer en signal d’action.',
-      format: 'Format PDF',
-      type: 'book',
-    },
-    {
-      id: 'livre-2',
-      category: 'LIVRE 2',
-      title: 'Comment utiliser les pressions financières à votre avantage',
-      description: 'Un guide stratégique pour transformer les contraintes budgétaires en leviers d’indépendance.',
-      format: 'Format PDF',
-      type: 'book',
-    },
-    {
-      id: 'diag-1',
-      category: 'DIAGNOSTIC 1',
-      title: 'Diagnostic financier personnel',
-      description: 'Mesurer votre niveau réel de préparation et évaluer la zone de tension financière.',
-      format: 'Fiche pratique (FCFA)',
-      type: 'tool',
-    },
-    {
-      id: 'diag-2',
-      category: 'DIAGNOSTIC 2',
-      title: 'Fiche « Où va mon argent ? »',
-      description: 'Cartographier les sorties d’argent sur 7 jours et identifier les fuites budgétaires.',
-      format: 'Fiche pratique (FCFA)',
-      type: 'tool',
-    },
-    {
-      id: 'diag-3',
-      category: 'DIAGNOSTIC 3',
-      title: 'Grille des sources de pression financière',
-      description: 'Distinguer ce qui est urgent, important, négociable ou émotionnel.',
-      format: 'Grille d’analyse',
-      type: 'tool',
-    },
-    {
-      id: 'prep-1',
-      category: 'PRÉPARATION 1',
-      title: 'Checklist Rentrée Sans Stress',
-      description: 'Liste opérationnelle pour préparer l’essentiel sans oublis ni dépenses inutiles.',
-      format: 'Checklist',
-      type: 'tool',
-    },
-    {
-      id: 'prep-2',
-      category: 'PRÉPARATION 2',
-      title: 'Budget prévisionnel de rentrée',
-      description: 'Chiffrer le coût total, identifier l’écart à financer et préserver la réserve de sécurité.',
-      format: 'Grille budgétaire',
-      type: 'tool',
-    },
-    {
-      id: 'prep-3',
-      category: 'PRÉPARATION 3',
-      title: 'Tableau de suivi des dépenses',
-      description: 'Suivi quotidien des achats réels pour garder le contrôle du reste disponible.',
-      format: 'Tableau de suivi',
-      type: 'tool',
-    },
-    {
-      id: 'plan-1',
-      category: 'PLANIFICATION 1',
-      title: 'Plan Rentrée Sans Stress',
-      description: 'Transformer le budget en étapes concrètes, planifier le calendrier de paiement et les plans B.',
-      format: 'Feuille de route',
-      type: 'tool',
-    },
-    {
-      id: 'plan-2',
-      category: 'PLANIFICATION 2',
-      title: 'Plan d’action 30 jours',
-      description: 'Programme étape par étape (Jours 1 à 30) pour réduire la pression avant et après la rentrée.',
-      format: 'Programme 30 jours',
-      type: 'tool',
-    },
-    {
-      id: 'plan-3',
-      category: 'PLANIFICATION 3',
-      title: 'Fiche d’engagement personnel',
-      description: 'Formaliser et signer vos 3 décisions non négociables pour protéger votre foyer.',
-      format: 'Contrat personnel',
-      type: 'tool',
-    },
-  ];
-
   return (
     <div className="min-h-screen bg-[#F4F7FB] text-slate-900 py-12 sm:py-16 px-4 font-sans antialiased">
       <main className="max-w-4xl mx-auto space-y-16 sm:space-y-20">
-        
         {/* --- HERO SECTION --- */}
         <section className="flex flex-col items-center text-center max-w-2xl mx-auto">
-          {/* Badge top */}
           <span className="inline-block mt-24 bg-[#FFE2D1] text-[#9C3800] text-xs font-bold tracking-wide uppercase px-4 py-1.5 rounded-full mb-6">
             KIT RENTRÉE DICE 2026 — EXCLUSIF
           </span>
@@ -221,7 +128,9 @@ export default function KitRentreePage() {
           </h1>
 
           <p className="text-slate-600 text-base sm:text-lg mb-8 max-w-xl font-normal leading-relaxed">
-            Reprenez le contrôle des finances de votre foyer. Des outils pratiques et éprouvés pour aborder la rentrée avec sérénité et clarté.
+            Reprenez le contrôle des finances de votre foyer. Des outils
+            pratiques et éprouvés pour aborder la rentrée avec sérénité et
+            clarté.
           </p>
 
           <div className="w-full max-w-md flex flex-col items-center">
@@ -246,7 +155,7 @@ export default function KitRentreePage() {
                   clipRule="evenodd"
                 />
               </svg>
-              Aucune inscription requise. Lien direct (PDF/DOC)
+              Aucune inscription requise · 11 fiches PDF dans un seul fichier ZIP
             </p>
           </div>
 
@@ -262,94 +171,38 @@ export default function KitRentreePage() {
 
         {/* --- RESOURCE GRID --- */}
         <section className="w-full pt-4">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#0F172A] text-center mb-10">
-            Les 4 Ressources de votre Kit
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#0F172A] text-center mb-3">
+            Les ressources de votre Kit
           </h2>
+          <p className="text-center text-slate-500 text-sm sm:text-base mb-10 max-w-xl mx-auto">
+            Téléchargez chaque fiche séparément, ou le pack complet ci-dessus.
+          </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
-            {/* CARD 1 */}
-            <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-100 shadow-sm flex flex-col justify-between">
-              <div>
-                <div className="w-12 h-12 rounded-xl bg-[#EBF3FF] flex items-center justify-center mb-6 text-[#0066FF]">
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z" />
-                  </svg>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {RESOURCES.map((resource) => (
+              <article
+                key={resource.id}
+                className="bg-white rounded-2xl p-6 sm:p-7 border border-slate-100 shadow-sm flex flex-col justify-between gap-6"
+              >
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-[#0066FF] mb-2">
+                    Fiche {resource.id}
+                  </p>
+                  <h3 className="text-lg font-extrabold text-[#0F172A] mb-2 leading-snug">
+                    {resource.title}
+                  </h3>
+                  <p className="text-slate-500 text-sm">{resource.description}</p>
                 </div>
-                <h3 className="text-xl font-extrabold text-[#0F172A] mb-1">LIVRE 1</h3>
-                <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-tight mb-4">
-                  LA FIN DU CYCLE DE PAUVRETÉ
-                </h4>
-                <p className="text-slate-400 text-sm mb-8">Format PDF, 150 pages.</p>
-              </div>
-              <button className="w-full border border-[#0066FF] text-[#0066FF] hover:bg-blue-50 font-semibold py-3 px-4 rounded-xl transition-colors text-sm">
-                Télécharger le Livre 1
-              </button>
-            </div>
-
-            {/* CARD 2 */}
-            <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-100 shadow-sm flex flex-col justify-between">
-              <div>
-                <div className="w-12 h-12 rounded-xl bg-[#EBF3FF] flex items-center justify-center mb-6 text-[#0066FF]">
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.2.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1zm0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-extrabold text-[#0F172A] mb-1">LIVRE 2</h3>
-                <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-tight mb-4">
-                  L'INDÉPENDANCE FINANCIÈRE DE LA FAMILLE
-                </h4>
-                <p className="text-slate-400 text-sm mb-8">Format PDF, 120 pages.</p>
-              </div>
-              <button className="w-full border border-[#0066FF] text-[#0066FF] hover:bg-blue-50 font-semibold py-3 px-4 rounded-xl transition-colors text-sm">
-                Télécharger le Livre 2
-              </button>
-            </div>
-
-            {/* CARD 3 */}
-            <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-100 shadow-sm flex flex-col justify-between">
-              <div>
-                <div className="w-12 h-12 rounded-xl bg-[#EBF3FF] flex items-center justify-center mb-6 text-[#0066FF]">
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.4-2.4c.4-.4.4-1 0-1.3z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-extrabold text-[#0F172A] mb-1">OUTILS</h3>
-                <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-tight mb-4">
-                  FICHES PRATIQUES DE GESTION FINANCIÈRE &amp; GRILLES DE RENTRÉE
-                </h4>
-                <p className="text-slate-400 text-sm mb-8">Modèles prêts à l'emploi.</p>
-              </div>
-              <button className="w-full border border-[#0066FF] text-[#0066FF] hover:bg-blue-50 font-semibold py-3 px-4 rounded-xl transition-colors text-sm">
-                Télécharger les Fiches
-              </button>
-            </div>
-
-            {/* CARD 4 (BONUS) */}
-            <div className="bg-[#FFE2D1] rounded-2xl p-6 sm:p-8 border border-[#FFD0B8] shadow-sm flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-6">
-                  <div className="w-12 h-12 rounded-xl bg-[#FFCEB3] flex items-center justify-center text-[#9C3800]">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                  </div>
-                  <span className="bg-[#9C3800] text-white text-[11px] font-extrabold uppercase px-3.5 py-1 rounded-full tracking-wider">
-                    BONUS
-                  </span>
-                </div>
-                <h3 className="text-xl sm:text-2xl font-extrabold text-[#2C1100] leading-snug mb-3">
-                  Accès permanent au replay exclusif de la conférence
-                </h3>
-                <p className="text-[#8C421A] text-sm mb-8">
-                  Revivez les moments clés à votre rythme.
-                </p>
-              </div>
-              <button className="w-full bg-[#9C3800] hover:bg-[#802E00] text-white font-semibold py-3.5 px-4 rounded-xl transition-colors text-sm">
-                Accéder au Replay
-              </button>
-            </div>
-
+                <a
+                  href={resource.href}
+                  download={resource.filename}
+                  className="w-full border border-[#0066FF] text-[#0066FF] hover:bg-blue-50 font-semibold py-3 px-4 rounded-xl transition-colors text-sm inline-flex items-center justify-center gap-2"
+                >
+                  <DownloadIcon className="w-4 h-4" />
+                  Télécharger le PDF
+                </a>
+              </article>
+            ))}
           </div>
         </section>
       </main>
