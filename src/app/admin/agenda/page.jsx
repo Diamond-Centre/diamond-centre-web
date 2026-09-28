@@ -21,6 +21,7 @@ import {
 import { auth } from '@/lib/auth'
 import { api } from '@/lib/api'
 import { eventTimingMeta } from '@/lib/eventTiming'
+import { toAbsoluteMediaUrl } from '@/lib/mediaUrl'
 import LoadError from '@/components/ui/LoadError'
 import toast from 'react-hot-toast'
 
@@ -171,7 +172,7 @@ function EventCard({ event, index }) {
         <div className="hidden sm:block w-14 h-14 rounded-2xl overflow-hidden bg-[#F3F6FA] shrink-0">
           {event.image_url ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={event.image_url} alt="" className="w-full h-full object-cover" />
+            <img src={toAbsoluteMediaUrl(event.image_url)} alt="" className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-[#0A89F2] bg-[#E8F3FE]">
               <FaCalendarAlt />
@@ -466,7 +467,7 @@ export default function AdminAgendaPage() {
               <div className="hidden md:block w-24 h-24 rounded-2xl overflow-hidden ring-2 ring-white/25 shrink-0">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={nextUpcoming.image_url}
+                  src={toAbsoluteMediaUrl(nextUpcoming.image_url)}
                   alt=""
                   className="w-full h-full object-cover"
                 />

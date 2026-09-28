@@ -19,7 +19,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
-import Image from 'next/image'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   FaArrowRight,
@@ -36,6 +35,7 @@ import { format, differenceInCalendarDays, isValid, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { eventTimingLabel, eventTimingPhase, isEventEnded, timingOverlayClass } from '@/lib/eventTiming'
+import { toAbsoluteMediaUrl } from '@/lib/mediaUrl'
 import { useAuth } from '@/hooks/useAuth'
 import toast from 'react-hot-toast'
 
@@ -433,13 +433,12 @@ export default function EventCard({
         {/* Media — shorter */}
         <div className="relative h-40 shrink-0 overflow-hidden bg-[#0B1220]">
           {image_url && !imgError ? (
-            <Image
-              src={image_url}
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={toAbsoluteMediaUrl(image_url) ?? undefined}
               alt={title || 'Événement DiCe'}
-              fill
-              className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
               onError={() => setImgError(true)}
-              sizes="(max-width: 768px) 100vw, 33vw"
             />
           ) : (
             <div className="absolute inset-0 bg-gradient-to-br from-[#0A89F2] via-[#0870cc] to-[#003f8a]">

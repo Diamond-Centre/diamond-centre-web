@@ -62,7 +62,9 @@ const statsData = [
 
 function Counter({ value, duration = 2 }) {
   const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, margin: "-50px" })
+  // once: false -> useInView continue de basculer à chaque sortie/entrée de
+  // la section dans le viewport, ce qui permet de relancer le comptage.
+  const isInView = useInView(ref, { once: false, amount: 0.6, margin: "-50px" })
 
   // Extract number and suffix
   const numOnly = parseInt(value.replace(/[^0-9]/g, '')) || 0
@@ -80,12 +82,18 @@ function Counter({ value, duration = 2 }) {
 
   useEffect(() => {
     if (isInView) {
+      // On repart toujours de 0 avant de relancer l'animation, y compris
+      // quand on revient sur la section après l'avoir quittée.
+      count.set(0)
       const controls = animate(count, numOnly, {
         duration: duration,
         ease: [0.16, 1, 0.3, 1]
       })
       return controls.stop
     }
+    // Écran quitté : on remet le compteur à 0 pour qu'il recompte depuis le
+    // début au prochain passage dans la section.
+    count.set(0)
   }, [isInView, numOnly, count, duration])
 
   return (

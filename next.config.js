@@ -1,4 +1,3 @@
-/** @type {import('next').NextConfig} */
 const path = require('path')
 const fs = require('fs')
 
@@ -13,15 +12,21 @@ const backendUrl = (process.env.BACKEND_URL || 'http://127.0.0.1:3001').replace(
   ''
 )
 
+/** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+
+  // Racine explicite pour Turbopack (évite de prendre en compte
+  // le package-lock.json situé dans /home/willy)
+  turbopack: {
+    root: __dirname,
+  },
+
   // Untyped JSX UI (forwardRef Button, etc.) breaks TSX pages on Vercel otherwise
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+
   images: {
     remotePatterns: [
       {
@@ -35,11 +40,13 @@ const nextConfig = {
     ],
     unoptimized: process.env.NODE_ENV === 'development',
   },
+
   experimental: {
     serverActions: {
       bodySizeLimit: '2mb',
     },
   },
+
   // Browser calls same-origin /api → Next proxies to DICE backend
   async rewrites() {
     return [
@@ -49,6 +56,7 @@ const nextConfig = {
       },
     ]
   },
+
   async redirects() {
     return [
       // Keep French URL working; canonical path is /admin/profile

@@ -3,13 +3,13 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { FaArrowLeft, FaCalendar, FaClock, FaMapMarker, FaUser } from 'react-icons/fa'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { useEvents } from '@/hooks/useEvents'
 import { eventTimingLabel, eventTimingPhase } from '@/lib/eventTiming'
+import { toAbsoluteMediaUrl } from '@/lib/mediaUrl'
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
 import Spinner from '@/components/ui/Spinner'
@@ -95,11 +95,11 @@ export default function EventDetailPage() {
           className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100"
         >
           <div className="relative h-64 md:h-80 bg-gray-100">
-            <Image
-              src={event.image || '/images/events/placeholder.jpg'}
-              alt={event.titre || 'Événement'}
-              fill
-              className="object-cover"
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={toAbsoluteMediaUrl(event.image_url || event.image) || '/images/events/placeholder.jpg'}
+              alt={event.titre || event.title || 'Événement'}
+              className="absolute inset-0 h-full w-full object-cover"
             />
           </div>
 

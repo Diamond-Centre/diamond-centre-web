@@ -18,6 +18,11 @@ module.exports = {
       },
       fontFamily: {
         'google-sans': ['Google Sans', 'sans-serif'],
+        // Refonte accueil — polices chargées via next/font dans app/layout.tsx
+        anton: ['var(--font-anton)', 'Impact', 'Haettenschweiler', 'sans-serif'],
+        barlow: ['var(--font-barlow)', 'Arial Narrow', 'sans-serif'],
+        outfit: ['var(--font-outfit)', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+        cormorant: ['var(--font-cormorant)', 'Georgia', 'serif'],
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',

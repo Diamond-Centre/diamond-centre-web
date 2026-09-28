@@ -1,13 +1,17 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useEvents } from '@/hooks/useEvents'
 import { useAuth } from '@/hooks/useAuth'
 import { isEventEnded } from '@/lib/eventTiming'
 import HeroSection from '@/components/layout/HeroSection'
-import WhyDiceSection from '@/components/layout/WhyDiceSection'
+import PanelsSection from '@/components/home/PanelsSection'
 import FormationsSection from '@/components/layout/FormationsSection'
+import WhyDiceSection from '@/components/layout/WhyDiceSection'
+import SpeakersSection from '@/components/home/SpeakersSection'
 import CTASection from '@/components/layout/CTASection'
+import FloatingDiamond from '@/components/home/FloatingDiamond'
 import ReservationModal from '@/components/events/ReservationModal'
 import toast from 'react-hot-toast'
 
@@ -20,6 +24,15 @@ export default function Home() {
   useEffect(() => {
     fetchPublicEvents?.()
   }, [fetchPublicEvents])
+
+  // Recalcule les positions ScrollTrigger une fois polices / images chargées
+  useEffect(() => {
+    const refresh = () => ScrollTrigger.refresh()
+    window.addEventListener('load', refresh)
+    const fonts = (document as any).fonts
+    if (fonts?.ready) fonts.ready.then(refresh)
+    return () => window.removeEventListener('load', refresh)
+  }, [])
 
   const upcomingEvents = (events || [])
     .filter((e: any) => {
@@ -43,15 +56,19 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F4F7FB]">
+    <div className="min-h-screen bg-[#020817] font-outfit">
       <HeroSection />
-      <WhyDiceSection />
+      <PanelsSection />
       <FormationsSection
         events={upcomingEvents}
         loading={loading}
         onReserve={openReservation}
       />
+      <WhyDiceSection />
+      <SpeakersSection />
       <CTASection />
+
+      <FloatingDiamond />
 
       <ReservationModal
         isOpen={isModalOpen}

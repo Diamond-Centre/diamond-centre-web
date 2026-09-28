@@ -14,10 +14,10 @@ import {
   FaExternalLinkAlt
 } from 'react-icons/fa'
 import { GiDiamondRing } from 'react-icons/gi'
-import Image from 'next/image'
 import Link from 'next/link'
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
+import { toAbsoluteMediaUrl } from '@/lib/mediaUrl'
 
 export default function EventLightbox({ event, isOpen, onClose, onEdit }) {
   const lightboxRef = useRef(null)
@@ -108,12 +108,11 @@ export default function EventLightbox({ event, isOpen, onClose, onEdit }) {
               {/* Image - 40% sur desktop */}
               <div className="relative w-full md:w-2/5 h-64 md:h-auto bg-gradient-to-br from-dice-blue/10 to-purple-500/10 flex-shrink-0">
                 {event.image_url && event.image_url !== '/images/events/placeholder.jpg' ? (
-                  <Image
-                    src={event.image_url}
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={toAbsoluteMediaUrl(event.image_url)}
                     alt={event.title}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 40vw"
+                    className="absolute inset-0 h-full w-full object-cover"
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full">
