@@ -1,4 +1,15 @@
 /* ==========================================================================
+   Familles de polices (auto-hébergées via @fontsource, importées dans
+   app/layout.tsx). Plus aucune dépendance à fonts.googleapis.com au runtime.
+   ========================================================================== */
+:root {
+  --font-anton: 'Anton';
+  --font-barlow: 'Barlow Condensed';
+  --font-outfit: 'Outfit';
+  --font-cormorant: 'Cormorant Garamond';
+}
+
+/* ==========================================================================
    Polices — classes définies ici (et non uniquement dans tailwind.config.js)
    pour fonctionner que le projet utilise Tailwind v3 ou v4.
    Les variables --font-* sont injectées par next/font dans app/layout.tsx.

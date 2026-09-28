@@ -1,10 +1,11 @@
 /**
- * <img> tolérant aux échecs : essaie `src`, puis `fallbackSrc`, puis se masque
- * (le fond en dégradé du parent reste visible, jamais d'icône d'image cassée).
+ * <img> tolérant aux échecs : essaie `src` (chaîne OU tableau de candidats),
+ * puis `fallbackSrc`, puis se masque (le fond en dégradé du parent reste
+ * visible, jamais d'icône d'image cassée).
  */
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 export default function SafeImage({
   src = '',
@@ -14,16 +15,20 @@ export default function SafeImage({
   style = undefined,
   eager = false,
 }) {
-  const [current, setCurrent] = useState(src || fallbackSrc)
-  const [failed, setFailed] = useState(!(src || fallbackSrc))
+  const key = JSON.stringify([src, fallbackSrc])
+  const candidates = useMemo(
+    () => [].concat(src || [], fallbackSrc || []).filter(Boolean),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [key]
+  )
+  const [index, setIndex] = useState(0)
 
   useEffect(() => {
-    const next = src || fallbackSrc
-    setCurrent(next)
-    setFailed(!next)
-  }, [src, fallbackSrc])
+    setIndex(0)
+  }, [key])
 
-  if (failed || !current) return null
+  const current = candidates[index]
+  if (!current) return null
 
   return (
     // eslint-disable-next-line @next/next/no-img-element
@@ -35,13 +40,7 @@ export default function SafeImage({
       loading={eager ? 'eager' : 'lazy'}
       decoding="async"
       draggable={false}
-      onError={() => {
-        if (fallbackSrc && current !== fallbackSrc) {
-          setCurrent(fallbackSrc)
-        } else {
-          setFailed(true)
-        }
-      }}
+      onError={() => setIndex((i) => i + 1)}
     />
   )
 }

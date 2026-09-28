@@ -1123,7 +1123,7 @@ export default function HeroSection() {
                 mode="sway"
                 speed={0.38}
                 amp={0.62}
-                tilt={14}
+                tilt={4}
                 scale={0.392}
               />
             </div>

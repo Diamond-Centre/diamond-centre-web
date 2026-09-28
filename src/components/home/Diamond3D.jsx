@@ -1,11 +1,13 @@
 /**
- * Diamant 3D facetté (brillant à 8 côtés) dessiné sur <canvas>.
- * Aucune dépendance : projection + éclairage + culling calculés à la main.
+ * Diamant 3D facetté dessiné sur <canvas> (aucune dépendance).
+ *
+ * Géométrie calquée sur la maquette Figma : couronne basse aux facettes
+ * larges (violet → bleu ciel → blanc → bleu clair) et pavillon très profond,
+ * bleu marine, qui se termine en pointe.
  *
  *  mode 'sway' : oscillation douce autour de l'axe vertical (hero)
- *  mode 'spin' : rotation continue « pièce qui tourne » (diamant flottant)
- *  depth       : 1 = section ronde ; < 1 = section aplatie (largeur qui varie plus
- *                fortement quand il tourne)
+ *  mode 'spin' : rotation continue « pièce qui tourne »
+ *  depth       : 1 = section ronde ; < 1 = section aplatie
  */
 'use client'
 
@@ -14,21 +16,27 @@ import { useEffect, useRef } from 'react'
 const N = 8
 const CENTER_Y = -0.39 // recentre verticalement le maillage
 
-// Rampe éclaircie / plus saturée pour se rapprocher du rendu Figma (moins de
-// facettes quasi noires en bas, un bleu plus riche et lumineux partout).
-const RAMP = [
-  [0.0, [26, 46, 150]],
-  [0.35, [40, 104, 228]],
-  [0.68, [104, 182, 252]],
-  [1.0, [236, 246, 255]],
+// Couronne : violet profond -> bleu ciel -> blanc bleuté
+const RAMP_CROWN = [
+  [0.0, [66, 44, 214]],
+  [0.35, [58, 150, 240]],
+  [0.7, [140, 200, 242]],
+  [1.0, [244, 246, 255]],
 ]
 
-function ramp(t) {
+// Pavillon : bleu marine profond -> bleu vif (facette éclairée)
+const RAMP_PAVILION = [
+  [0.0, [4, 18, 132]],
+  [0.5, [8, 40, 186]],
+  [1.0, [34, 124, 240]],
+]
+
+function ramp(stops, t) {
   const v = Math.max(0, Math.min(1, t))
-  for (let i = 1; i < RAMP.length; i++) {
-    if (v <= RAMP[i][0]) {
-      const [t0, c0] = RAMP[i - 1]
-      const [t1, c1] = RAMP[i]
+  for (let i = 1; i < stops.length; i++) {
+    if (v <= stops[i][0]) {
+      const [t0, c0] = stops[i - 1]
+      const [t1, c1] = stops[i]
       const k = (v - t0) / (t1 - t0)
       return [
         c0[0] + (c1[0] - c0[0]) * k,
@@ -37,7 +45,7 @@ function ramp(t) {
       ]
     }
   }
-  return RAMP[RAMP.length - 1][1]
+  return stops[stops.length - 1][1]
 }
 
 function normalize(v) {
@@ -60,13 +68,12 @@ function ring(r, y, offset, depth) {
   })
 }
 
-function buildFaces(depth) {
+export function buildFaces(depth = 1) {
   const half = Math.PI / N
   const G = ring(1, 0, half, depth) // ceinture (haut)
-  const L = ring(1, -0.08, half, depth) // ceinture (bas)
-  const T = ring(0.67, 0.43, half, depth) // table : plus large et plus plate (comme sur la vidéo)
-  const M = ring(0.62, -0.4, 0, depth) // anneau intermédiaire du pavillon (moins profond)
-  const C = [0, -0.86 - CENTER_Y, 0] // colette (pointe plus courte, forme plus trapue)
+  const L = ring(1, -0.07, half, depth) // ceinture (bas)
+  const T = ring(0.56, 0.43, half, depth) // table : couronne basse et évasée
+  const C = [0, -1.18 - CENTER_Y, 0] // colette : pointe profonde (pavillon long)
 
   const faces = []
   faces.push({ pts: T, kind: 'table' })
@@ -79,16 +86,13 @@ function buildFaces(depth) {
     const n = (i + 1) % N
     faces.push({ pts: [G[i], G[n], L[n], L[i]], kind: 'girdle' })
   }
+  // Pavillon : 8 grands triangles qui convergent vers la pointe
   for (let i = 0; i < N; i++) {
-    const p = (i + N - 1) % N
     const n = (i + 1) % N
-    faces.push({ pts: [L[p], L[i], M[i]], kind: 'pavilion' })
-    faces.push({ pts: [M[i], M[n], L[i]], kind: 'pavilion' })
-    faces.push({ pts: [M[i], M[n], C], kind: 'culet' })
+    faces.push({ pts: [L[i], L[n], C], kind: 'pavilion' })
   }
 
-  // Normales sortantes (le solide est quasi convexe, centre ~ (0, -0.3, 0))
-  const center = [0, -0.3 - CENTER_Y, 0]
+  const center = [0, -0.35 - CENTER_Y, 0]
   return faces.map((f, idx) => {
     const [p0, p1, p2] = f.pts
     let nrm = cross(
@@ -107,15 +111,105 @@ function buildFaces(depth) {
   })
 }
 
-const LIGHT = normalize([-0.45, 0.75, 0.55])
-const HALF = normalize([LIGHT[0], LIGHT[1], LIGHT[2] + 1])
+const LIGHT = normalize([0.32, 0.62, 0.72]) // couronne : lumière de face, légèrement à droite
+const LIGHT_P = normalize([0.55, -0.05, 0.85]) // pavillon : facette éclairée à droite du centre
+
+export function drawFrame(ctx, faces, o, time, reduce) {
+  const { size, mode, speed, amp, tilt, scale } = o
+  const ax = (tilt * Math.PI) / 180
+  const cx = Math.cos(ax)
+  const sx = Math.sin(ax)
+  const s = size * scale
+
+  const ay = mode === 'spin' ? time * speed : Math.sin(time * speed) * amp + 0.25
+  const cy = Math.cos(ay)
+  const sy = Math.sin(ay)
+
+  const rot = (v) => {
+    const x1 = v[0] * cy + v[2] * sy
+    const z1 = -v[0] * sy + v[2] * cy
+    const y2 = v[1] * cx - z1 * sx
+    const z2 = v[1] * sx + z1 * cx
+    return [x1, y2, z2]
+  }
+
+  ctx.clearRect(0, 0, size, size)
+  ctx.lineJoin = 'round'
+
+  const drawn = []
+  for (const f of faces) {
+    const n = rot(f.normal)
+    if (n[2] <= 0.015) continue
+    const pts = f.pts.map(rot)
+    const depthZ = pts.reduce((a, p) => a + p[2], 0) / pts.length
+    drawn.push({ f, n, pts, depthZ })
+  }
+  drawn.sort((a, b) => a.depthZ - b.depthZ)
+
+  for (const { f, n, pts } of drawn) {
+    let col
+    let lift
+
+    if (f.kind === 'pavilion') {
+      const d = Math.max(0, n[0] * LIGHT_P[0] + n[1] * LIGHT_P[1] + n[2] * LIGHT_P[2])
+      col = ramp(RAMP_PAVILION, Math.pow(d, 2.4))
+      lift = 26
+    } else {
+      const d = Math.max(0, n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2])
+      col = ramp(RAMP_CROWN, Math.pow(d, 1.9) * 1.08)
+      if (f.kind === 'girdle') col = [col[0] * 0.75 + 20, col[1] * 0.85 + 30, Math.min(255, col[2] * 0.95 + 30)]
+      lift = f.kind === 'table' ? 40 : 14
+    }
+
+    // Scintillement discret, différent par facette
+    const twinkle = reduce ? 0 : Math.pow(Math.max(0, Math.sin(time * 2.1 + f.idx * 2.399)), 14) * 0.2
+    const w = Math.min(1, twinkle)
+    const r = Math.round(col[0] + (255 - col[0]) * w)
+    const g = Math.round(col[1] + (255 - col[1]) * w)
+    const b = Math.round(col[2] + (255 - col[2]) * w)
+
+    const screenPts = pts.map((p) => [size / 2 + p[0] * s, size / 2 - p[1] * s])
+
+    ctx.beginPath()
+    screenPts.forEach(([px, py], i) => {
+      if (i === 0) ctx.moveTo(px, py)
+      else ctx.lineTo(px, py)
+    })
+    ctx.closePath()
+
+    const xs = screenPts.map((p) => p[0])
+    const ys = screenPts.map((p) => p[1])
+    const minX = Math.min(...xs)
+    const maxX = Math.max(...xs)
+    const minY = Math.min(...ys)
+    const maxY = Math.max(...ys)
+    const grad =
+      f.kind === 'pavilion'
+        ? ctx.createLinearGradient(0, minY, 0, maxY)
+        : ctx.createLinearGradient(minX, minY, maxX, maxY)
+    grad.addColorStop(
+      0,
+      `rgb(${Math.min(255, r + lift)},${Math.min(255, g + lift)},${Math.min(255, b + lift * 0.85)})`
+    )
+    grad.addColorStop(1, `rgb(${r},${g},${b})`)
+
+    ctx.fillStyle = grad
+    ctx.fill()
+    ctx.strokeStyle = `rgba(${r},${g},${b},0.9)`
+    ctx.lineWidth = 0.8
+    ctx.stroke()
+    ctx.strokeStyle = 'rgba(120,160,255,0.16)'
+    ctx.lineWidth = 0.6
+    ctx.stroke()
+  }
+}
 
 export default function Diamond3D({
   size = 300,
   mode = 'sway',
   speed = 0.5,
   amp = 0.5,
-  tilt = 12,
+  tilt = 6,
   depth = 1,
   scale = 0.36,
   glow = true,
@@ -136,10 +230,7 @@ export default function Diamond3D({
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
     const faces = buildFaces(depth)
-    const ax = (tilt * Math.PI) / 180
-    const cx = Math.cos(ax)
-    const sx = Math.sin(ax)
-    const s = size * scale
+    const opts = { size, mode, speed, amp, tilt, scale }
 
     const reduce =
       typeof window.matchMedia === 'function' &&
@@ -149,114 +240,13 @@ export default function Diamond3D({
     let visible = true
     const start = performance.now()
 
-    const draw = (time) => {
-      const ay = mode === 'spin' ? time * speed : Math.sin(time * speed) * amp + 0.25
-      const cy = Math.cos(ay)
-      const sy = Math.sin(ay)
-
-      const rot = (v) => {
-        const x1 = v[0] * cy + v[2] * sy
-        const z1 = -v[0] * sy + v[2] * cy
-        const y2 = v[1] * cx - z1 * sx
-        const z2 = v[1] * sx + z1 * cx
-        return [x1, y2, z2]
-      }
-
-      ctx.clearRect(0, 0, size, size)
-      ctx.lineJoin = 'round'
-
-      const drawn = []
-      for (const f of faces) {
-        const n = rot(f.normal)
-        if (n[2] <= 0.015) continue
-        const pts = f.pts.map(rot)
-        const depthZ = pts.reduce((a, p) => a + p[2], 0) / pts.length
-        drawn.push({ f, n, pts, depthZ })
-      }
-      drawn.sort((a, b) => a.depthZ - b.depthZ)
-
-      for (const { f, n, pts } of drawn) {
-        const diffuse = Math.max(0, n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2])
-        const spec = Math.pow(Math.max(0, n[0] * HALF[0] + n[1] * HALF[1] + n[2] * HALF[2]), 22)
-        let col = ramp(0.1 + 0.9 * diffuse)
-
-        // Facettes de couronne côté gauche : teinte violette (comme la maquette)
-        if (f.kind === 'crown' && n[0] < -0.18) {
-          const k = Math.min(1, -n[0] * 1.3) * 0.8
-          col = [
-            col[0] + (110 - col[0]) * k,
-            col[1] + (64 - col[1]) * k,
-            col[2] + (240 - col[2]) * k,
-          ]
-        }
-        // Table : plus claire
-        if (f.kind === 'culet') {
-          const k = 0.5 * Math.max(0, n[2]) * (0.6 + 0.4 * Math.max(0, n[1] + 0.6))
-          col = [
-            col[0] + (52 - col[0]) * k,
-            col[1] + (146 - col[1]) * k,
-            col[2] + (255 - col[2]) * k,
-          ]
-        }
-        if (f.kind === 'table') {
-          col = [
-            col[0] + (214 - col[0]) * 0.55,
-            col[1] + (232 - col[1]) * 0.55,
-            col[2] + (255 - col[2]) * 0.55,
-          ]
-        }
-
-        // Scintillement discret, différent par facette
-        const twinkle = reduce ? 0 : Math.pow(Math.max(0, Math.sin(time * 2.1 + f.idx * 2.399)), 12) * 0.32
-        const w = Math.min(1, spec * 0.9 + twinkle)
-        const r = Math.round(col[0] + (255 - col[0]) * w)
-        const g = Math.round(col[1] + (255 - col[1]) * w)
-        const b = Math.round(col[2] + (255 - col[2]) * w)
-
-        const screenPts = pts.map((p) => [size / 2 + p[0] * s, size / 2 - p[1] * s])
-
-        ctx.beginPath()
-        screenPts.forEach(([px, py], i) => {
-          if (i === 0) ctx.moveTo(px, py)
-          else ctx.lineTo(px, py)
-        })
-        ctx.closePath()
-
-        // Dégradé « verre poli » : plus clair du côté de la lumière (haut-gauche),
-        // plus profond de l'autre côté — c'est ce qui donne l'aspect brillant/glacé
-        // observé sur l'animation de référence, plutôt qu'un aplat de couleur.
-        const xs = screenPts.map((p) => p[0])
-        const ys = screenPts.map((p) => p[1])
-        const minX = Math.min(...xs)
-        const maxX = Math.max(...xs)
-        const minY = Math.min(...ys)
-        const maxY = Math.max(...ys)
-        const lift = f.kind === 'table' ? 70 : 34 + spec * 60
-        const lr = Math.min(255, r + lift)
-        const lg = Math.min(255, g + lift)
-        const lb = Math.min(255, b + lift * 0.85)
-        const grad = ctx.createLinearGradient(minX, minY, maxX, maxY)
-        grad.addColorStop(0, `rgb(${lr},${lg},${lb})`)
-        grad.addColorStop(1, `rgb(${r},${g},${b})`)
-
-        ctx.fillStyle = grad
-        ctx.fill()
-        ctx.strokeStyle = `rgb(${r},${g},${b})`
-        ctx.lineWidth = 0.8
-        ctx.stroke()
-        ctx.strokeStyle = 'rgba(255,255,255,0.16)'
-        ctx.lineWidth = 0.7
-        ctx.stroke()
-      }
-    }
-
     const loop = () => {
-      if (visible) draw((performance.now() - start) / 1000)
+      if (visible) drawFrame(ctx, faces, opts, (performance.now() - start) / 1000, reduce)
       raf = requestAnimationFrame(loop)
     }
 
     if (reduce) {
-      draw(0.6)
+      drawFrame(ctx, faces, opts, 0.6, true)
     } else {
       raf = requestAnimationFrame(loop)
     }
