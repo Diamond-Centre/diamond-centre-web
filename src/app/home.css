@@ -1,0 +1,203 @@
+/* ==========================================================================
+   Familles de polices (auto-hébergées via @fontsource, importées dans
+   app/layout.tsx). Plus aucune dépendance à fonts.googleapis.com au runtime.
+   ========================================================================== */
+:root {
+  --font-anton: 'Anton';
+  --font-barlow: 'Barlow Condensed';
+  --font-outfit: 'Outfit';
+  --font-cormorant: 'Cormorant Garamond';
+}
+
+/* ==========================================================================
+   Polices — classes définies ici (et non uniquement dans tailwind.config.js)
+   pour fonctionner que le projet utilise Tailwind v3 ou v4.
+   Les variables --font-* sont injectées par next/font dans app/layout.tsx.
+   ========================================================================== */
+.font-anton {
+  font-family: var(--font-anton), Impact, 'Haettenschweiler', 'Arial Narrow Bold', sans-serif;
+  font-weight: 400;
+}
+.font-barlow {
+  font-family: var(--font-barlow), 'Arial Narrow', sans-serif;
+}
+.font-outfit {
+  font-family: var(--font-outfit), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+.font-cormorant {
+  font-family: var(--font-cormorant), Georgia, serif;
+}
+
+/* ==========================================================================
+   DiCe — Refonte de la page d'accueil
+   Variables de taille (à ajuster ici si la police du Figma diffère)
+   Valeurs calibrées sur une capture à 1847 px de large.
+   ========================================================================== */
+:root {
+  --dice-hero-title: clamp(4.25rem, 9.8vw, 11.5rem);
+  --dice-panel-title: clamp(3.4rem, 12vw, 14rem);
+  --dice-cta-title: clamp(2.75rem, 5vw, 5.8rem);
+  --dice-h2-events: clamp(2.6rem, 3.9vw, 4.5rem);
+  --dice-h2-speakers: clamp(2.5rem, 3.5vw, 4rem);
+  --dice-h2-mission: clamp(2.4rem, 3.25vw, 3.75rem);
+}
+
+/* --------------------------------------------------------------------------
+   Sections claires : dégradé bleu très clair + grille de 72 px
+   -------------------------------------------------------------------------- */
+.dice-light {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(1100px 560px at 100% 0%, rgba(150, 200, 240, 0.32), transparent 62%),
+    linear-gradient(120deg, #f3fafe 0%, #e3f3fb 36%, #cfe8f7 72%, #c2e0f4 100%);
+}
+
+.dice-light::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(37, 99, 235, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37, 99, 235, 0.045) 1px, transparent 1px);
+  background-size: 72px 72px;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 14%, #000 86%, transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0%, #000 14%, #000 86%, transparent 100%);
+}
+
+.dice-light--alt {
+  background:
+    radial-gradient(900px 520px at 0% 0%, rgba(255, 255, 255, 0.85), transparent 60%),
+    linear-gradient(115deg, #f4fbfe 0%, #dff1fb 40%, #cbe6f8 100%);
+}
+
+/* --------------------------------------------------------------------------
+   Sections sombres : grille discrète
+   -------------------------------------------------------------------------- */
+.dice-dark-grid::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(59, 130, 246, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59, 130, 246, 0.05) 1px, transparent 1px);
+  background-size: 72px 72px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 45%, #000 20%, transparent 80%);
+  mask-image: radial-gradient(ellipse 70% 70% at 50% 45%, #000 20%, transparent 80%);
+}
+
+/* --------------------------------------------------------------------------
+   Titres
+   -------------------------------------------------------------------------- */
+.dice-title-white {
+  background: linear-gradient(180deg, #ffffff 0%, #ffffff 45%, #d9e4ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.dice-title-blue {
+  color: #2979ff;
+}
+
+.dice-glow-text {
+  text-shadow: 0 0 14px rgba(47, 109, 255, 0.7);
+}
+
+/* --------------------------------------------------------------------------
+   Animations
+   -------------------------------------------------------------------------- */
+@keyframes dice-ring {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(2.1);
+    opacity: 0;
+  }
+}
+
+.dice-node-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: dice-ring 2.6s ease-out infinite;
+}
+
+@keyframes dice-caret {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.dice-caret {
+  display: inline-block;
+  width: 1px;
+  height: 0.9em;
+  margin-left: 3px;
+  vertical-align: -0.1em;
+  background: #e8edf8;
+  animation: dice-caret 0.9s steps(1) infinite;
+}
+
+@keyframes dice-scroll-line {
+  0% {
+    transform: scaleY(0);
+    transform-origin: top;
+    opacity: 1;
+  }
+  55% {
+    transform: scaleY(1);
+    transform-origin: top;
+    opacity: 1;
+  }
+  56% {
+    transform: scaleY(1);
+    transform-origin: bottom;
+    opacity: 1;
+  }
+  100% {
+    transform: scaleY(0);
+    transform-origin: bottom;
+    opacity: 1;
+  }
+}
+
+.dice-scroll-line {
+  animation: dice-scroll-line 2.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+@keyframes dice-glow-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.12);
+  }
+}
+
+.dice-glow-breathe {
+  animation: dice-glow-breathe 5s ease-in-out infinite;
+}
+
+/* Accessibilité : réduit les animations continues */
+@media (prefers-reduced-motion: reduce) {
+  .dice-node-ring,
+  .dice-caret,
+  .dice-scroll-line,
+  .dice-glow-breathe {
+    animation: none !important;
+  }
+}

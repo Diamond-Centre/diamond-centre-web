@@ -5,6 +5,7 @@ import { FaTimes, FaCalendar, FaMapMarker, FaClock,
   FaEuroSign, FaUsers, FaTicketAlt, FaTag, FaLayerGroup, FaCoins, FaInfoCircle
 } from 'react-icons/fa'
 import { eventTimingLabel, eventTimingPhase, isEventEnded, timingOverlayClass } from '@/lib/eventTiming'
+import { toAbsoluteMediaUrl } from '@/lib/mediaUrl'
 
 export default function EventLightbox({
   isOpen,
@@ -77,7 +78,7 @@ export default function EventLightbox({
           <div className="relative w-full md:w-[42%] h-64 md:h-auto flex-shrink-0 overflow-hidden bg-slate-900">
             {event.image_url ? (
               <img
-                src={event.image_url}
+                src={toAbsoluteMediaUrl(event.image_url)}
                 alt={event.title}
                 className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
                 onError={(e) => {

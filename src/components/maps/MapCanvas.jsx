@@ -1,18 +1,11 @@
 'use client'
 
-import { useEffect, useMemo } from 'react'
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  useMap,
-  useMapEvents,
-} from 'react-leaflet'
+import { useEffect, useRef, useMemo, useState } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { DEFAULT_MAP_CENTER } from '@/lib/geo'
 
-// Fix default marker icons broken by Next/webpack asset hashing
+// Correction des icônes par défaut de Leaflet
 const markerIcon = L.icon({
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
   iconRetinaUrl:
@@ -24,25 +17,6 @@ const markerIcon = L.icon({
   shadowSize: [41, 41],
 })
 
-function MapClickHandler({ enabled, onPick }) {
-  useMapEvents({
-    click(e) {
-      if (!enabled || !onPick) return
-      onPick({ lat: e.latlng.lat, lng: e.latlng.lng })
-    },
-  })
-  return null
-}
-
-function Recenter({ lat, lng }) {
-  const map = useMap()
-  useEffect(() => {
-    if (lat == null || lng == null) return
-    map.setView([lat, lng], Math.max(map.getZoom(), 14), { animate: true })
-  }, [lat, lng, map])
-  return null
-}
-
 export default function MapCanvas({
   latitude,
   longitude,
@@ -51,39 +25,99 @@ export default function MapCanvas({
   onPick,
   className = '',
 }) {
+  const [mounted, setMounted] = useState(false)
+  const mapContainerRef = useRef(null)
+  const mapInstanceRef = useRef(null)
+  const markerRef = useRef(null)
+
+  // S'assure que le rendu s'effectue uniquement côté client
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   const hasPin = latitude != null && longitude != null
   const center = useMemo(() => {
     if (hasPin) return [latitude, longitude]
     return [DEFAULT_MAP_CENTER.lat, DEFAULT_MAP_CENTER.lng]
   }, [hasPin, latitude, longitude])
 
+  useEffect(() => {
+    if (!mounted || !mapContainerRef.current) return
+
+    // 1. Initialisation de la carte si elle n'existe pas encore
+    if (!mapInstanceRef.current) {
+      // Sécurité : supprime tout ID résiduel sur le conteneur DOM
+      if (mapContainerRef.current._leaflet_id) {
+        delete mapContainerRef.current._leaflet_id
+      }
+
+      const map = L.map(mapContainerRef.current, {
+        center,
+        zoom: hasPin ? 15 : 12,
+        scrollWheelZoom: interactive,
+        dragging: interactive,
+        doubleClickZoom: interactive,
+        zoomControl: interactive,
+      })
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      }).addTo(map)
+
+      if (hasPin) {
+        markerRef.current = L.marker([latitude, longitude], { icon: markerIcon }).addTo(map)
+      }
+
+      if (interactive && onPick) {
+        map.on('click', (e) => {
+          onPick({ lat: e.latlng.lat, lng: e.latlng.lng })
+        })
+      }
+
+      mapInstanceRef.current = map
+    } else {
+      // 2. Mise à jour de la vue et du marqueur en cas de changement de coordonnées
+      const map = mapInstanceRef.current
+      map.setView(center, hasPin ? 15 : map.getZoom(), { animate: true })
+
+      if (hasPin) {
+        if (markerRef.current) {
+          markerRef.current.setLatLng([latitude, longitude])
+        } else {
+          markerRef.current = L.marker([latitude, longitude], { icon: markerIcon }).addTo(map)
+        }
+      } else {
+        if (markerRef.current) {
+          markerRef.current.remove()
+          markerRef.current = null
+        }
+      }
+    }
+
+    // 3. Nettoyage impératif au démontage du composant (supprime l'instance et libère le DOM)
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove()
+        mapInstanceRef.current = null
+        markerRef.current = null
+      }
+    }
+  }, [mounted, center, latitude, longitude, hasPin, interactive, onPick])
+
+  if (!mounted) {
+    return (
+      <div
+        className={`overflow-hidden rounded-2xl border border-[#E8EEF5] bg-[#F8FAFC] ${className}`}
+        style={{ height }}
+      />
+    )
+  }
+
   return (
     <div
+      ref={mapContainerRef}
       className={`overflow-hidden rounded-2xl border border-[#E8EEF5] ${className}`}
-      style={{ height }}
-    >
-      <MapContainer
-        center={center}
-        zoom={hasPin ? 15 : 12}
-        scrollWheelZoom={interactive}
-        dragging={interactive}
-        doubleClickZoom={interactive}
-        zoomControl={interactive}
-        style={{ height: '100%', width: '100%' }}
-        attributionControl
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        {interactive && <MapClickHandler enabled onPick={onPick} />}
-        {hasPin && (
-          <>
-            <Marker position={[latitude, longitude]} icon={markerIcon} />
-            <Recenter lat={latitude} lng={longitude} />
-          </>
-        )}
-      </MapContainer>
-    </div>
+      style={{ height, width: '100%' }}
+    />
   )
 }

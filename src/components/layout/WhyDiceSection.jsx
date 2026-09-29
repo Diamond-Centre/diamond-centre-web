@@ -1,5 +1,11 @@
 /**
- * Pourquoi DiCe — Refonte Bento Grid Light avec Animations Avancées GSAP & Lenis
+ * « Notre mission » — refonte DiCe
+ * Animations : révélation de la photo par clip-path (arche → rectangle arrondi,
+ * pilotée par le scroll), texte en fondu/montée, compteurs animés.
+ *
+ * Compteurs : recommencent à 0 à CHAQUE apparition de la section (que l'on
+ * arrive en scrollant vers le bas, ou que l'on remonte puis redescende),
+ * et non plus une seule fois (`once: true` supprimé).
  */
 'use client'
 
@@ -7,144 +13,227 @@ import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { motion } from 'framer-motion'
-import { FaArrowRight, FaShieldAlt, FaUsers, FaChartLine } from 'react-icons/fa'
+import SafeImage from '@/components/home/SafeImage'
+import { HOME_IMAGES } from '@/lib/homeImages'
 
-gsap.registerPlugin(ScrollTrigger)
+if (typeof window !== 'undefined') {
+  gsap.registerPlugin(ScrollTrigger)
+}
 
-const pillars = [
-  {
-    num: '01',
-    title: 'Excellence',
-    text: 'Des programmes exigeants animés par des experts reconnus pour garantir un apprentissage de premier plan.',
-    icon: FaShieldAlt,
-    colSpan: 'md:col-span-1 lg:col-span-7',
-  },
-  {
-    num: '02',
-    title: 'Communauté',
-    text: 'Un réseau puissant de professionnels et d’apprenants engagés pour grandir ensemble.',
-    icon: FaUsers,
-    colSpan: 'md:col-span-1 lg:col-span-5',
-  },
-  {
-    num: '03',
-    title: 'Accompagnement',
-    text: 'Un suivi concret, personnalisé et orienté résultats pour propulser vos projets vers le sommet.',
-    icon: FaChartLine,
-    colSpan: 'md:col-span-2 lg:col-span-12',
-  },
+const STATS = [
+  { value: 10000, prefix: '+', suffix: '', label: 'personnes formées' },
+  { value: 150, prefix: '', suffix: '+', label: 'événements organisés' },
+  { value: 50, prefix: '', suffix: '+', label: 'experts internationaux' },
+  { value: 8, prefix: '', suffix: ' ans', label: "d'impact en Afrique" },
 ]
+
+const fmt = (n) => Math.round(n).toLocaleString('fr-FR')
 
 export default function WhyDiceSection() {
   const sectionRef = useRef(null)
-  const headerRef = useRef(null)
 
   useEffect(() => {
+    const section = sectionRef.current
+    if (!section) return undefined
+
+    const reduce =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    const counters = gsap.utils.toArray('[data-count]', section)
+
+    if (reduce) {
+      counters.forEach((el, i) => {
+        const s = STATS[i]
+        el.textContent = `${s.prefix}${fmt(s.value)}${s.suffix}`
+      })
+      return undefined
+    }
+
     const ctx = gsap.context(() => {
+      // Photo : arche -> rectangle arrondi, liée au scroll
       gsap.fromTo(
-        headerRef.current.children,
-        { y: 40, opacity: 0 },
+        '[data-photo]',
+        { clipPath: 'inset(22% 18% 0% 18% round 220px 220px 16px 16px)' },
         {
-          y: 0,
-          opacity: 1,
-          duration: 1,
-          stagger: 0.15,
-          ease: 'power3.out',
+          clipPath: 'inset(0% 0% 0% 0% round 16px 16px 16px 16px)',
+          ease: 'none',
           scrollTrigger: {
-            trigger: sectionRef.current,
-            start: 'top 75%',
+            trigger: '[data-photo]',
+            start: 'top 96%',
+            end: 'top 42%',
+            scrub: true,
+          },
+        }
+      )
+      gsap.fromTo(
+        '[data-photo-img]',
+        { scale: 1.25 },
+        {
+          scale: 1,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: '[data-photo]',
+            start: 'top 96%',
+            end: 'top 30%',
+            scrub: true,
           },
         }
       )
 
+      // Repères en L
       gsap.fromTo(
-        '.bento-card',
-        { y: 80, opacity: 0, scale: 0.95 },
+        '[data-bracket]',
+        { opacity: 0, scale: 0.6 },
+        {
+          opacity: 1,
+          scale: 1,
+          duration: 0.9,
+          stagger: 0.15,
+          ease: 'power3.out',
+          scrollTrigger: { trigger: '[data-photo]', start: 'top 70%' },
+        }
+      )
+
+      // Texte
+      gsap.fromTo(
+        '[data-reveal]',
+        { y: 36, opacity: 0 },
         {
           y: 0,
           opacity: 1,
-          scale: 1,
-          duration: 1.1,
-          stagger: 0.2,
-          ease: 'power4.out',
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: 'top 65%',
-          },
+          duration: 0.9,
+          stagger: 0.12,
+          ease: 'power3.out',
+          scrollTrigger: { trigger: '[data-reveal]', start: 'top 80%' },
         }
       )
-    }, sectionRef)
+
+      // ------------------------------------------------------------------
+      // Compteurs — relancés à ZÉRO à chaque entrée dans la section, dans
+      // les deux sens de scroll (onEnter = on arrive en descendant,
+      // onEnterBack = on revient en remontant puis redescend dessus).
+      // ------------------------------------------------------------------
+      counters.forEach((el, i) => {
+        const s = STATS[i]
+        const state = { v: 0 }
+        let tween
+
+        const restart = () => {
+          tween?.kill()
+          state.v = 0
+          el.textContent = `${s.prefix}0${s.suffix}`
+          tween = gsap.to(state, {
+            v: s.value,
+            duration: 2.4,
+            ease: 'power2.out',
+            onUpdate: () => {
+              el.textContent = `${s.prefix}${fmt(state.v)}${s.suffix}`
+            },
+          })
+        }
+
+        ScrollTrigger.create({
+          trigger: el,
+          start: 'top 88%',
+          end: 'bottom top',
+          onEnter: restart,
+          onEnterBack: restart,
+        })
+      })
+    }, section)
 
     return () => ctx.revert()
   }, [])
 
   return (
-    <section ref={sectionRef} className="relative overflow-hidden bg-[#F4F7FB] py-24 md:py-32 text-[#0B1220]">
-      <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[500px] rounded-full bg-[#0A89F2]/10 blur-[120px]" />
+    <section
+      id="mission"
+      ref={sectionRef}
+      className="dice-light dice-light--alt relative overflow-hidden py-[120px] font-outfit"
+    >
+      <div className="relative mx-auto grid w-full max-w-[1280px] grid-cols-1 items-start gap-16 px-6 lg:grid-cols-[584px_1fr] lg:gap-x-16">
+        {/* ------------------------------ Photo ------------------------------ */}
+        <div className="relative lg:mt-[20px]">
+          {/* Halo */}
+          <div className="pointer-events-none absolute -inset-[70px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.65),transparent_68%)]" />
 
-      <div className="relative mx-auto max-w-7xl px-6 sm:px-8">
+          {/* Repères en L */}
+          <span
+            data-bracket
+            className="pointer-events-none absolute -left-4 -top-4 h-20 w-20 border-l border-t border-[#2d6bff]"
+          />
+          <span
+            data-bracket
+            className="pointer-events-none absolute -bottom-4 -right-4 h-20 w-20 border-b border-r border-[#22d3ee]"
+          />
 
-        <div ref={headerRef} className="mb-16 flex flex-col md:flex-row md:items-end md:justify-between gap-8">
-          <div>
-            <div className="mb-4 inline-flex items-center gap-3 border-l-2 border-[#0A89F2] pl-3 text-xs font-mono uppercase tracking-widest text-[#0A89F2]">
-              Pourquoi DiCe
+          <div
+            data-photo
+            className="relative h-[420px] w-full overflow-hidden rounded-2xl bg-[linear-gradient(135deg,#0a1e52,#1d4ed8)] shadow-[0_40px_70px_-30px_rgba(10,60,140,0.45)] sm:h-[520px]"
+          >
+            <div data-photo-img className="h-full w-full">
+              <SafeImage
+                src={HOME_IMAGES.mission.src}
+                fallbackSrc={HOME_IMAGES.mission.fallback}
+                alt="Un intervenant DiCe face à son public"
+                className="h-full w-full object-cover"
+              />
             </div>
-            <h2 className="text-3xl font-black tracking-tight text-[#0B1220] sm:text-4xl md:text-5xl lg:leading-[1.1]">
-              L’excellence au service <br />
-              <span className="font-light italic text-[#0A89F2]">de vos ambitions</span>
-            </h2>
-          </div>
-
-          <div className="max-w-md">
-            <p className="text-base leading-relaxed text-[#667085]">
-              Depuis des années, Diamond Centre accompagne celles et ceux qui veulent grandir — avec des formats concrets, inspirants et accessibles.
-            </p>
-            <Link
-              href="/about"
-              className="group mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[#0A89F2] transition-all hover:gap-3"
-            >
-              <span>Notre histoire</span>
-              <FaArrowRight className="text-xs transition-transform duration-300 group-hover:translate-x-1" />
-            </Link>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6">
-          {pillars.map((item) => {
-            const Icon = item.icon
-            return (
-              <motion.div
-                key={item.num}
-                whileHover={{ y: -6, transition: { duration: 0.3 } }}
-                className={`bento-card group relative overflow-hidden rounded-2xl border border-[#E8EEF5] bg-white p-8 md:p-10 shadow-sm transition-colors duration-500 hover:border-[#0A89F2]/40 hover:shadow-md ${item.colSpan}`}
-              >
-                <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-[#0A89F2]/5 blur-3xl transition-all duration-500 group-hover:bg-[#0A89F2]/15" />
+        {/* ------------------------------ Texte ------------------------------ */}
+        <div className="relative">
+          <div data-reveal className="flex items-center gap-4">
+            <span className="h-px w-8 bg-[#2f6dff]" />
+            <span className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#2f6dff]">
+              Notre mission
+            </span>
+          </div>
 
-                <div className="relative z-10 flex flex-col justify-between h-full">
-                  <div className="flex items-center justify-between mb-8">
-                    <span className="text-xs font-mono font-bold text-[#0A89F2] px-3 py-1 rounded-full bg-[#0A89F2]/10 border border-[#0A89F2]/20">
-                      {item.num}
-                    </span>
-                    <motion.div whileHover={{ rotate: 15, scale: 1.1 }} transition={{ duration: 0.3 }}>
-                      <Icon className="text-2xl text-[#667085]/60 transition-colors duration-300 group-hover:text-[#0A89F2]" />
-                    </motion.div>
-                  </div>
+          <h2
+            data-reveal
+            className="mt-[26px] font-barlow font-bold leading-[0.95] text-[#0a1330]"
+            style={{ fontSize: 'var(--dice-h2-mission)' }}
+          >
+            L&apos;excellence au service
+            <br />
+            <span className="text-[#2979ff]">de vos ambitions.</span>
+          </h2>
 
-                  <div>
-                    <h3 className="text-2xl font-bold tracking-tight text-[#0B1220] mb-3">
-                      {item.title}
-                    </h3>
-                    <p className="text-sm md:text-base leading-relaxed text-[#667085] font-normal">
-                      {item.text}
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-            )
-          })}
+          <p data-reveal className="mt-6 max-w-[584px] text-[15.5px] leading-[26px] text-[#4a5a75]">
+            Diamond Centre est un écosystème d&apos;apprentissage et de croissance professionnelle
+            conçu pour les talents africains et les organisations qui souhaitent développer leur
+            capital humain. À travers des formations certifiantes, des conférences internationales
+            et des programmes de mentorat, nous accompagnons des milliers de professionnels vers
+            l&apos;excellence.
+          </p>
+
+          <div data-reveal className="mt-10 grid grid-cols-2 gap-y-6">
+            {STATS.map((s, i) => (
+              <div key={s.label} className="border-l-2 border-[#2b6bff] pl-[18px]">
+                <p
+                  data-count
+                  className="font-barlow text-[40px] font-bold leading-[1] text-[#2979ff]"
+                >
+                  {s.prefix}
+                  {fmt(s.value)}
+                  {s.suffix}
+                </p>
+                <p className="mt-2 text-[13px] text-[#5b6b85]">{s.label}</p>
+              </div>
+            ))}
+          </div>
+
+          <Link
+            data-reveal
+            href="/about"
+            className="mt-[50px] inline-block border-b border-[#0a1330] pb-[2px] text-[12.5px] font-medium uppercase tracking-[0.06em] text-[#0a1330] transition-colors hover:border-[#0a5cff] hover:text-[#0a5cff]"
+          >
+            Notre histoire →
+          </Link>
         </div>
-
       </div>
     </section>
   )

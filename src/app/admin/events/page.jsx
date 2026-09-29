@@ -16,6 +16,7 @@ import {
 import { api } from '@/lib/api'
 import { auth } from '@/lib/auth'
 import { eventTimingMeta, eventTimingPhase } from '@/lib/eventTiming'
+import { toAbsoluteMediaUrl } from '@/lib/mediaUrl'
 import EventLightbox from '@/components/events/EventLightbox'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import LoadError from '@/components/ui/LoadError'
@@ -40,8 +41,6 @@ const CATEGORY_FILTERS = [
   { id: 'atelier', label: 'Atelier' },
 ]
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
-
 function todayISO() {
   const d = new Date()
   const y = d.getFullYear()
@@ -64,35 +63,31 @@ function dateISO(value) {
 function getImageUrl(event) {
   if (!event) return null
 
-  let rawUrl =
+  const rawUrl =
     event.image_url ||
     event.imageUrl ||
     (typeof event.image === 'string' ? event.image : event.image?.url || event.image?.path) ||
     event.images?.[0]?.url ||
     event.images?.[0]
 
-  if (!rawUrl || typeof rawUrl !== 'string') return null
+  const resolvedUrl = toAbsoluteMediaUrl(typeof rawUrl === 'string' ? rawUrl : null)
+  if (!resolvedUrl) return null
 
   // data:/blob: URLs must stay untouched — appending ?v=… breaks them
-  if (rawUrl.startsWith('data:') || rawUrl.startsWith('blob:')) {
-    return rawUrl
-  }
-
-  if (!rawUrl.startsWith('http://') && !rawUrl.startsWith('https://')) {
-    const cleanPath = rawUrl.startsWith('/') ? rawUrl : `/${rawUrl}`
-    rawUrl = `${API_BASE_URL}${cleanPath}`
+  if (resolvedUrl.startsWith('data:') || resolvedUrl.startsWith('blob:')) {
+    return resolvedUrl
   }
 
   const updatedAt = event.updated_at || event.updatedAt
   if (updatedAt) {
     const time = new Date(updatedAt).getTime()
     if (!Number.isNaN(time)) {
-      const separator = rawUrl.includes('?') ? '&' : '?'
-      return `${rawUrl}${separator}v=${time}`
+      const separator = resolvedUrl.includes('?') ? '&' : '?'
+      return `${resolvedUrl}${separator}v=${time}`
     }
   }
 
-  return rawUrl
+  return resolvedUrl
 }
 
 function statusMeta(event) {

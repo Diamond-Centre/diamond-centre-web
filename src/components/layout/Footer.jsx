@@ -1,248 +1,159 @@
 /**
- * Pied de page DiCe — Intégration Logo Officiel & Design Éditorial
+ * Footer DiCe — refonte (fond sombre, 4 colonnes)
+ * Les liens « Ressources » n'ont pas encore de page : ils restent inertes (href="#").
  */
 'use client'
 
-import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { motion } from 'framer-motion'
-import {
-  FaFacebookF,
-  FaInstagram,
-  FaLinkedinIn,
-  FaTiktok,
-  FaXTwitter,
-  FaYoutube,
-  FaArrowUp,
-  FaArrowRight,
-} from 'react-icons/fa6'
-import gsap from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { FiMapPin } from 'react-icons/fi'
+import { FaFacebook, FaInstagram, FaLinkedin, FaXTwitter } from 'react-icons/fa6'
 
-gsap.registerPlugin(ScrollTrigger)
-
-const socialLinks = [
-  { name: 'Facebook', icon: FaFacebookF, url: 'https://facebook.com', color: '#1877F2' },
-  { name: 'X / Twitter', icon: FaXTwitter, url: 'https://x.com', color: '#FFFFFF' },
-  { name: 'Instagram', icon: FaInstagram, url: 'https://instagram.com', color: '#E4405F' },
-  { name: 'LinkedIn', icon: FaLinkedinIn, url: 'https://linkedin.com', color: '#0A66C2' },
-  { name: 'YouTube', icon: FaYoutube, url: 'https://youtube.com', color: '#FF0000' },
-  { name: 'TikTok', icon: FaTiktok, url: 'https://tiktok.com', color: '#00F2FE' },
+const SOCIALS = [
+  { name: 'LinkedIn', icon: FaLinkedin, url: 'https://linkedin.com' },
+  { name: 'X / Twitter', icon: FaXTwitter, url: 'https://x.com' },
+  { name: 'Facebook', icon: FaFacebook, url: 'https://facebook.com' },
+  { name: 'Instagram', icon: FaInstagram, url: 'https://instagram.com' },
 ]
 
-const quickLinks = [
-  { href: '/', label: 'Accueil' },
-  { href: '/events', label: 'Événements' },
-  { href: '/about', label: 'À propos' },
+const COLUMNS = [
+  {
+    title: 'Navigation',
+    links: [
+      { label: 'Accueil', href: '/' },
+      { label: 'Événements', href: '/events' },
+      { label: 'Formations', href: '/events?type=formation' },
+      { label: 'À propos', href: '/about' },
+      { label: 'Contact', href: '/about' },
+    ],
+  },
+  {
+    title: 'Programmes',
+    links: [
+      { label: 'Leadership', href: '/events' },
+      { label: 'Management', href: '/events' },
+      { label: 'Entrepreneuriat', href: '/events' },
+      { label: 'Communication', href: '/events' },
+      { label: 'Finance', href: '/events' },
+    ],
+  },
+  {
+    title: 'Ressources',
+    links: [
+      { label: 'Blog', href: '#' },
+      { label: 'Podcasts', href: '#' },
+      { label: 'Webinaires', href: '#' },
+      { label: 'Témoignages', href: '#' },
+      { label: 'Presse', href: '#' },
+    ],
+  },
 ]
 
-const serviceLinks = [
-  { href: '/events?type=conference', label: 'Conférences' },
-  { href: '/events?type=seminar', label: 'Séminaires' },
-  { href: '/events?type=formation', label: 'Formations' },
-  { href: '/events?type=workshop', label: 'Ateliers' },
+const LEGAL = [
+  { label: 'Confidentialité', href: '#' },
+  { label: 'Conditions', href: '#' },
+  { label: 'Cookies', href: '#' },
 ]
+
+function FooterLink({ href, children }) {
+  const cls =
+    'text-[14px] text-white/40 transition-colors duration-200 hover:text-white'
+  if (href === '#') {
+    return (
+      <a href="#" onClick={(e) => e.preventDefault()} className={cls}>
+        {children}
+      </a>
+    )
+  }
+  return (
+    <Link href={href} className={cls}>
+      {children}
+    </Link>
+  )
+}
 
 export default function Footer() {
-  const footerRef = useRef(null)
-  const watermarkRef = useRef(null)
-  const contentRef = useRef(null)
-  const currentYear = new Date().getFullYear()
-
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      if (contentRef.current) {
-        gsap.fromTo(
-          contentRef.current.children,
-          { y: 50, opacity: 0 },
-          {
-            y: 0,
-            opacity: 1,
-            duration: 1,
-            stagger: 0.12,
-            ease: 'power3.out',
-            scrollTrigger: {
-              trigger: footerRef.current,
-              start: 'top 80%',
-            },
-          }
-        )
-      }
-
-      if (watermarkRef.current) {
-        gsap.fromTo(
-          watermarkRef.current,
-          // Mouvement réduit pour ne pas faire sortir le texte de l'écran
-          { x: -20, opacity: 0.02 },
-          {
-            x: 20,
-            opacity: 0.06,
-            ease: 'none',
-            scrollTrigger: {
-              trigger: footerRef.current,
-              start: 'top bottom',
-              end: 'bottom bottom',
-              scrub: 1,
-            },
-          }
-        )
-      }
-    }, footerRef)
-
-    return () => ctx.revert()
-  }, [])
-
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
   return (
-    <footer
-      ref={footerRef}
-      className="relative overflow-hidden bg-[#03070C] pt-16 md:pt-24 pb-12 text-white border-t border-white/10"
-    >
-      <div className="pointer-events-none absolute -left-40 top-0 h-96 w-96 rounded-full bg-[#0A89F2]/10 blur-[140px]" />
-      <div className="pointer-events-none absolute right-0 bottom-0 h-96 w-96 rounded-full bg-[#0057C2]/15 blur-[150px]" />
+    <footer className="border-t border-white/[0.06] bg-[#030816] font-outfit text-white">
+      <div className="mx-auto w-full max-w-[1280px] px-6 pt-20">
+        <div className="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-[427px_282px_281px_1fr] lg:gap-0">
+          {/* Marque */}
+          <div>
+            <Link
+              href="/"
+              aria-label="DiCe — Diamond Centre"
+              className="inline-flex h-11 w-[84px] items-center justify-center bg-white"
+            >
+              <Image
+                src="/images/logo-dice.png"
+                alt="DiCe Diamond Centre"
+                width={220}
+                height={101}
+                className="h-11 w-[84px] object-contain"
+              />
+            </Link>
 
-      <div className="relative z-10 mx-auto max-w-7xl px-6 sm:px-8">
+            <p className="mt-[34px] max-w-[270px] text-[14px] leading-6 text-[#6b7488]">
+              Un écosystème d&apos;opportunités pour révéler votre plein potentiel. Formations,
+              conférences et ateliers pour les leaders d&apos;Afrique et du monde.
+            </p>
 
-        <div ref={contentRef} className="grid grid-cols-1 gap-8 md:gap-10 pb-12 md:pb-16 border-b border-white/10 sm:grid-cols-2 lg:grid-cols-12">
+            <p className="mt-6 flex max-w-[280px] items-start gap-3 text-[13px] leading-5 text-white/85">
+              <FiMapPin className="mt-[3px] shrink-0 text-[14px] text-[#9aa4ba]" />
+              <span>Yaoundé, Carrefour Emombo dernier étage immeuble Boulangerie Kelvis</span>
+            </p>
 
-          {/* 1. Colonne Marque & Description (4 cols) */}
-          <div className="lg:col-span-4 flex flex-col justify-between gap-6">
-            <div>
-              <Link href="/" className="group inline-block">
-                <Image
-                  src="/images/logo-dice.png"
-                  alt="DiCe - Diamond Centre"
-                  width={160}
-                  height={50}
-                  className="h-16 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
-                  priority={false}
-                />
-              </Link>
-              <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/60 font-normal">
-                Propulser les talents et les organisations vers leur plus haut niveau d’excellence grâce à des programmes d'apprentissage immersifs.
-              </p>
-            </div>
-
-            <div>
-              <p className="mb-3 text-[11px] font-mono font-semibold uppercase tracking-widest text-white/40">
-                Suivez l'aventure
-              </p>
-              <div className="flex flex-wrap gap-2.5">
-                {socialLinks.map((social) => {
-                  const Icon = social.icon
-                  return (
-                    <motion.a
-                      key={social.name}
-                      href={social.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={social.name}
-                      whileHover={{ y: -3, scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="group relative flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-white/70 backdrop-blur-md transition-colors duration-300 hover:border-white/30 hover:text-white"
-                    >
-                      <div
-                        className="absolute inset-0 rounded-xl opacity-0 blur-md transition-opacity duration-300 group-hover:opacity-40"
-                        style={{ backgroundColor: social.color }}
-                      />
-                      <Icon className="relative z-10 text-base transition-transform duration-300 group-hover:scale-110" />
-                    </motion.a>
-                  )
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* 2. Navigation (2 cols) */}
-          <div className="lg:col-span-2">
-            <h4 className="mb-5 text-xs font-mono font-bold uppercase tracking-[0.2em] text-[#0A89F2]">
-              Navigation
-            </h4>
-            <ul className="space-y-3 text-sm">
-              {quickLinks.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="group inline-flex items-center gap-2 text-white/70 transition-colors duration-300 hover:text-white"
-                  >
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#0A89F2] opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:scale-125" />
-                    <span className="transition-transform duration-300 group-hover:translate-x-1">
-                      {link.label}
-                    </span>
-                  </Link>
-                </li>
+            <div className="mt-6 flex items-center gap-3">
+              {SOCIALS.map(({ name, icon: Icon, url }) => (
+                <a
+                  key={name}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={name}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.04] text-[15px] text-[#8b93a5] transition-all duration-200 hover:border-[#2b6bff]/60 hover:bg-[#2b6bff]/10 hover:text-white"
+                >
+                  <Icon />
+                </a>
               ))}
-            </ul>
-          </div>
-
-          {/* 3. Programmes (3 cols) */}
-          <div className="lg:col-span-3">
-            <h4 className="mb-5 text-xs font-mono font-bold uppercase tracking-[0.2em] text-[#0A89F2]">
-              Nos Programmes
-            </h4>
-            <ul className="space-y-3 text-sm">
-              {serviceLinks.map((link) => (
-                <li key={link.label}>
-                  <Link
-                    href={link.href}
-                    className="group inline-flex items-center gap-2 text-white/70 transition-colors duration-300 hover:text-white"
-                  >
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#0A89F2] opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:scale-125" />
-                    <span className="transition-transform duration-300 group-hover:translate-x-1">
-                      {link.label}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* 4. Contact & Localisation (3 cols - Équilibre le coin droit) */}
-          <div className="lg:col-span-3">
-            <h4 className="mb-5 text-xs font-mono font-bold uppercase tracking-[0.2em] text-[#0A89F2]">
-              Localisation
-            </h4>
-            <div className="space-y-3 text-sm text-white/70 font-normal">
-              <p className="text-white font-medium">Diamond Centre</p>
-              <p>Yaoundé, Cameroun</p>
-              <p className="pt-2 text-xs text-white/40">
-                Carrefour Emmombo 2ème, dernier étage au dessus de la boulangerie Kelvis.
-              </p>
             </div>
           </div>
 
+          {/* Colonnes de liens */}
+          {COLUMNS.map((col) => (
+            <div key={col.title}>
+              <h4 className="font-barlow text-[13px] font-bold uppercase tracking-[0.2em] text-white">
+                {col.title}
+              </h4>
+              <ul className="mt-[22px] space-y-[14px]">
+                {col.links.map((l) => (
+                  <li key={l.label}>
+                    <FooterLink href={l.href}>{l.label}</FooterLink>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
 
-        {/* Pied de page Bottom Bar */}
-        <div className="pt-8 flex flex-col items-center justify-between gap-6 text-xs font-medium text-white/40 md:flex-row">
-
-          <p className="flex items-center gap-1">
-            <span className="text-2xl font-bold leading-none inline-block translate-y-[2px] text-white/80">©</span> {currentYear} Diamond Centre. Tous droits réservés.
+        {/* Bas de page */}
+        <div className="mt-[62px] flex flex-col items-start justify-between gap-4 border-t border-white/[0.07] pb-12 pt-8 sm:flex-row sm:items-center">
+          <p className="text-[12.5px] text-[#4c566c]">
+            © {new Date().getFullYear()} Diamond Centre — DiCe. Tous droits réservés.
           </p>
-
-          <motion.button
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={scrollToTop}
-            className="group inline-flex items-center gap-2.5 rounded-full border border-white/10 bg-white/[0.03] px-5 py-2.5 text-xs font-semibold text-white/80 transition-colors duration-300 hover:border-white/30 hover:bg-white/10 hover:text-white"
-          >
-            <span>Retour en haut</span>
-            <FaArrowUp className="text-xs transition-transform duration-300 group-hover:-translate-y-0.5" />
-          </motion.button>
-
+          <div className="flex items-center gap-6">
+            {LEGAL.map((l) => (
+              <a
+                key={l.label}
+                href={l.href}
+                onClick={(e) => e.preventDefault()}
+                className="text-[12.5px] text-[#4c566c] transition-colors hover:text-white"
+              >
+                {l.label}
+              </a>
+            ))}
+          </div>
         </div>
-
-      </div>
-
-      <div
-        ref={watermarkRef}
-        className="pointer-events-none absolute -bottom-4 w-full text-center select-none whitespace-nowrap text-[10vw] font-black leading-none tracking-tighter text-white opacity-5"
-      >
-        DIAMOND CENTRE
       </div>
     </footer>
   )

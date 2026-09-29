@@ -13,6 +13,7 @@ import {
 } from 'react-icons/fa'
 import { api } from '@/lib/api'
 import { auth } from '@/lib/auth'
+import { toAbsoluteMediaUrl } from '@/lib/mediaUrl'
 import toast from 'react-hot-toast'
 import LocationPicker from '@/components/maps/LocationPicker'
 
@@ -342,7 +343,10 @@ export default function EditEvent() {
   const categoryLabel =
     CATEGORIES.find((c) => c.id === form.category)?.label || form.category
 
-  const activeImage = imagePreview || currentImage
+  // `imagePreview` (blob local) est déjà utilisable tel quel ; `currentImage` vient
+  // de l'API et peut être un chemin relatif servi par le backend (/uploads/...) —
+  // il doit être résolu en URL absolue pour s'afficher correctement.
+  const activeImage = imagePreview || toAbsoluteMediaUrl(currentImage)
 
   if (loadingEvent) {
     return (

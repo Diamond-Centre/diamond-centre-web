@@ -1,159 +1,154 @@
 /**
- * CTA Final Accueil — Refonte Haute-Performance GSAP ScrollTrigger & Micro-Interactions
+ * CTA « Rejoignez la communauté » — refonte DiCe
+ * Mêmes destinations que l'ancienne version : inscription + programmes.
  */
 'use client'
 
 import { useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
-import { FaArrowRight } from 'react-icons/fa'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { FiArrowRight } from 'react-icons/fi'
+import SafeImage from '@/components/home/SafeImage'
+import { HOME_IMAGES } from '@/lib/homeImages'
 
-gsap.registerPlugin(ScrollTrigger)
+if (typeof window !== 'undefined') {
+  gsap.registerPlugin(ScrollTrigger)
+}
 
-const steps = [
-  { n: '01', label: 'Créez votre compte' },
-  { n: '02', label: 'Choisissez un événement' },
-  { n: '03', label: 'Réservez votre place' },
+const AVATARS = [
+  { src: HOME_IMAGES.speakers.kofi, bg: 'from-[#5a3a2a] to-[#1a1a1a]' },
+  { src: HOME_IMAGES.speakers.ngozi, bg: 'from-[#c2722a] to-[#3a2a1a]' },
+  { src: HOME_IMAGES.speakers.amina, bg: 'from-[#8a2a3a] to-[#2a0a14]' },
+  { src: HOME_IMAGES.speakers.jeanBaptiste, bg: 'from-[#8a8f99] to-[#2a3040]' },
 ]
 
 export default function CTASection() {
   const sectionRef = useRef(null)
-  const leftColRef = useRef(null)
-  const stepsRef = useRef(null)
-  const bgGlowRef = useRef(null)
 
   useEffect(() => {
+    const section = sectionRef.current
+    if (!section) return undefined
+
     const ctx = gsap.context(() => {
-      // 1. Apparition fluide de la colonne gauche (Textes & Boutons)
-      gsap.fromTo(
-        leftColRef.current ? leftColRef.current.children : [],
-        { y: 40, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          duration: 1,
-          stagger: 0.15,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: 'top 75%',
-          },
-        }
-      )
-
-      // 2. Cascade dynamique des étapes à droite
-      if (stepsRef.current) {
-        gsap.fromTo(
-          stepsRef.current.children,
-          { x: 40, opacity: 0 },
-          {
-            x: 0,
-            opacity: 1,
-            duration: 0.9,
-            stagger: 0.18,
-            ease: 'power4.out',
-            scrollTrigger: {
-              trigger: stepsRef.current,
-              start: 'top 80%',
-            },
-          }
-        )
-      }
-
-      // 3. Respiration continue de l'arrière-plan lumineux (Ambient Glow)
-      gsap.to(bgGlowRef.current, {
-        scale: 1.25,
-        opacity: 0.8,
-        duration: 4,
-        repeat: -1,
-        yoyo: true,
-        ease: 'sine.inOut',
+      const tl = gsap.timeline({
+        defaults: { ease: 'power4.out' },
+        scrollTrigger: { trigger: section, start: 'top 62%' },
       })
-    }, sectionRef)
+
+      tl.fromTo('[data-cta-rule]', { scaleX: 0 }, { scaleX: 1, duration: 0.9, stagger: 0 }, 0)
+        .fromTo('[data-cta-label]', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.7 }, 0.1)
+        .fromTo(
+          '[data-cta-line]',
+          { yPercent: 110 },
+          { yPercent: 0, duration: 1.1, stagger: 0.13 },
+          0.2
+        )
+        .fromTo(
+          '[data-cta-fade]',
+          { y: 26, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.9, stagger: 0.12, ease: 'power3.out' },
+          0.85
+        )
+        .fromTo(
+          '[data-cta-avatar]',
+          { scale: 0, opacity: 0 },
+          { scale: 1, opacity: 1, duration: 0.6, stagger: 0.09, ease: 'back.out(2)' },
+          1.3
+        )
+    }, section)
 
     return () => ctx.revert()
   }, [])
 
   return (
-    <section ref={sectionRef} className="relative overflow-hidden bg-[#0A89F2] py-20 text-white md:py-28">
-      {/* Halo d'ambiance avec animation de respiration continuous via GSAP */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(255,255,255,0.22),_transparent_60%)]" />
-      <div
-        ref={bgGlowRef}
-        className="pointer-events-none absolute -left-20 bottom-0 h-72 w-72 rounded-full bg-[#0057C2]/50 blur-3xl"
-      />
+    <section
+      id="communaute"
+      ref={sectionRef}
+      className="dice-dark-grid relative overflow-hidden bg-[#04091e] py-[130px] font-outfit text-white"
+    >
+      {/* Halo central */}
+      <div className="pointer-events-none absolute left-1/2 top-[42%] h-[520px] w-[820px] -translate-x-1/2 -translate-y-1/2">
+        <div className="dice-glow-breathe h-full w-full rounded-full bg-[radial-gradient(ellipse,rgba(29,78,216,0.28),transparent_68%)]" />
+      </div>
 
-      <div className="relative mx-auto flex max-w-7xl flex-col justify-between gap-12 px-6 sm:px-8 md:flex-row md:items-end md:gap-16">
-
-        {/* Colonne gauche — Contenu principal */}
-        <div ref={leftColRef} className="max-w-xl">
-          <div className="mb-5 flex items-center gap-3">
-            <span className="h-px w-8 bg-white/70" />
-            <p className="text-xs font-mono font-semibold uppercase tracking-[0.22em] text-white/90">
-              Rejoignez DiCe
-            </p>
-          </div>
-
-          <h2 className="text-3xl font-black leading-[1.08] tracking-tight text-white sm:text-4xl md:text-5xl">
-            Prêt à écrire <br />
-            <span className="font-light italic text-white/85">la suite ?</span>
-          </h2>
-
-          <p className="mt-5 max-w-md text-base leading-relaxed text-white/80 font-normal sm:text-lg">
-            Créez votre compte et réservez votre prochaine formation ou conférence en quelques minutes.
-          </p>
-
-          <div className="mt-9 flex flex-col sm:flex-row flex-wrap items-center gap-4">
-            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="w-full sm:w-auto">
-              <Link
-                href="/auth/register"
-                className="group flex w-full sm:w-auto justify-center items-center gap-3 rounded-full bg-white px-8 py-4 text-sm font-semibold text-[#0A89F2] shadow-[0_14px_32px_rgba(11,18,32,0.18)] transition-all duration-300 hover:bg-white/95"
-              >
-                <span>Commencer</span>
-                <FaArrowRight className="text-xs transition-transform duration-300 group-hover:translate-x-1" />
-              </Link>
-            </motion.div>
-
-            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="w-full sm:w-auto">
-              <Link
-                href="/events"
-                className="flex w-full sm:w-auto justify-center items-center gap-2 rounded-full border border-white/35 bg-white/10 px-8 py-4 text-sm font-semibold text-white backdrop-blur-md transition-all duration-300 hover:border-white hover:bg-white/20"
-              >
-                Voir le programme
-              </Link>
-            </motion.div>
-          </div>
+      <div className="relative mx-auto flex w-full max-w-[1280px] flex-col items-center px-6 text-center">
+        <div className="flex items-center gap-4">
+          <span data-cta-rule className="h-px w-8 origin-right bg-[#2f6dff]" />
+          <span
+            data-cta-label
+            className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#2f6dff]"
+          >
+            Communauté
+          </span>
+          <span data-cta-rule className="h-px w-8 origin-left bg-[#2f6dff]" />
         </div>
 
-        {/* Colonne droite — Étapes interactives */}
-        <ol
-          ref={stepsRef}
-          className="w-full max-w-xs space-y-0 border-l border-white/25 md:mb-2"
+        <h2
+          className="mt-[34px] font-barlow font-extrabold uppercase leading-[0.88] tracking-[0.005em]"
+          style={{ fontSize: 'var(--dice-cta-title)' }}
         >
-          {steps.map((step, i) => (
-            <motion.li
-              key={step.n}
-              whileHover={{ x: 6 }}
-              transition={{ duration: 0.2 }}
-              className="group cursor-default flex items-start gap-4 py-5 pl-6 transition-colors duration-300 first:pt-0 last:pb-0"
-            >
-              <span className="pt-0.5 text-xs font-mono font-bold tabular-nums text-white/90 group-hover:text-white">
-                {step.n}
-              </span>
-              <div>
-                <p className="text-base font-semibold text-white/90 transition-colors duration-300 group-hover:text-white">
-                  {step.label}
-                </p>
-                {i < steps.length - 1 ? (
-                  <span className="mt-4 block h-px w-16 bg-white/20 transition-all duration-300 group-hover:w-24 group-hover:bg-white/40" />
-                ) : null}
-              </div>
-            </motion.li>
-          ))}
-        </ol>
+          <span className="block overflow-hidden pb-[0.04em]">
+            <span data-cta-line className="dice-title-white block">
+              Rejoignez
+            </span>
+          </span>
+          <span className="block overflow-hidden pb-[0.04em]">
+            <span data-cta-line className="dice-title-blue block">
+              La communauté
+            </span>
+          </span>
+          <span className="block overflow-hidden pb-[0.04em]">
+            <span data-cta-line className="dice-title-white block">
+              Diamond Centre
+            </span>
+          </span>
+        </h2>
 
+        <p
+          data-cta-fade
+          className="mt-[38px] max-w-[500px] text-[16px] leading-[27px] text-[#7d88a3]"
+        >
+          Plus de 10 000 professionnels africains ont déjà rejoint un écosystème d&apos;opportunités,
+          de mentorat et d&apos;excellence. Le prochain, c&apos;est vous.
+        </p>
+
+        <div data-cta-fade className="mt-[52px] flex flex-wrap items-center justify-center gap-4">
+          <Link
+            href="/auth/register"
+            className="group inline-flex h-[49px] items-center gap-3 rounded-[3px] bg-gradient-to-r from-[#0a5cff] to-[#2a7bff] px-8 text-[13px] font-semibold uppercase tracking-[0.04em] text-white shadow-[0_12px_32px_-10px_rgba(10,92,255,0.8)] transition-all duration-300 hover:shadow-[0_16px_40px_-8px_rgba(10,92,255,1)]"
+          >
+            S&apos;inscrire gratuitement
+            <FiArrowRight className="text-[15px] transition-transform duration-300 group-hover:translate-x-1" />
+          </Link>
+          <Link
+            href="/events"
+            className="inline-flex h-[50px] items-center rounded-[3px] border border-white/15 px-8 text-[13px] font-medium uppercase tracking-[0.04em] text-[#c7d0e6] transition-all duration-300 hover:border-white/45 hover:bg-white/[0.04] hover:text-white"
+          >
+            Explorer les programmes
+          </Link>
+        </div>
+
+        <div data-cta-fade className="mt-[58px] flex items-center gap-4">
+          <div className="flex -space-x-2">
+            {AVATARS.map((a, i) => (
+              <span
+                key={i}
+                data-cta-avatar
+                className={`relative block h-7 w-7 overflow-hidden rounded-full border-2 border-[#04091e] bg-gradient-to-br ${a.bg}`}
+              >
+                <SafeImage
+                  src={a.src}
+                  alt=""
+                  className="h-full w-full object-cover object-top"
+                />
+              </span>
+            ))}
+          </div>
+          <span className="text-[13px] text-[#5b6785]">
+            +10 000 professionnels nous ont déjà rejoints
+          </span>
+        </div>
       </div>
     </section>
   )
