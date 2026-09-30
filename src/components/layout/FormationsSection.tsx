@@ -1,17 +1,6 @@
-/**
- * Événements à venir — refonte DiCe
- * Mêmes props / mêmes données que l'ancienne version (events, loading, onReserve).
- * Carte blanche par défaut, bleu foncé uniquement au survol (souris ou focus clavier),
- * pagination par points, entrée animée GSAP ScrollTrigger.
- */
-'use client'
-
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { FaSpinner } from 'react-icons/fa'
-import { FiArrowRight, FiClock, FiMapPin, FiUsers } from 'react-icons/fi'
-import gsap from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { format, isValid, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import toast from 'react-hot-toast'
@@ -19,21 +8,12 @@ import { useAuth } from '@/hooks/useAuth'
 import { isEventEnded } from '@/lib/eventTiming'
 import { toAbsoluteMediaUrl } from '@/lib/mediaUrl'
 import { HOME_IMAGES } from '@/lib/homeImages'
-import SafeImage from '@/components/home/SafeImage'
-
-if (typeof window !== 'undefined') {
-  gsap.registerPlugin(ScrollTrigger)
-}
 
 export interface FormationsSectionProps {
   events?: any[]
   loading?: boolean
   onReserve?: (event: any) => void
 }
-
-/* ------------------------------------------------------------------ */
-/* Helpers (mêmes règles que EventCard)                               */
-/* ------------------------------------------------------------------ */
 
 function parseDate(value: any) {
   if (!value) return null
@@ -79,118 +59,132 @@ const strip = (s: any) =>
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
 
-type Tone = 'blue' | 'cyan' | 'violet'
-
-function categoryMeta(category: any): { label: string; tone: Tone; fallback: string } {
+function categoryMeta(category: any) {
   const k = strip(category)
-  if (k.startsWith('conf'))
-    return { label: 'CONFÉRENCE', tone: 'blue', fallback: HOME_IMAGES.eventFallbacks.conference }
-  if (k.startsWith('form'))
-    return { label: 'FORMATION', tone: 'cyan', fallback: HOME_IMAGES.eventFallbacks.formation }
-  if (k.startsWith('ateli') || k.startsWith('work'))
-    return { label: 'ATELIER', tone: 'violet', fallback: HOME_IMAGES.eventFallbacks.atelier }
-  if (k.startsWith('semin'))
-    return { label: 'SÉMINAIRE', tone: 'cyan', fallback: HOME_IMAGES.eventFallbacks.default }
-  return {
-    label: category ? String(category).toUpperCase() : 'ÉVÉNEMENT',
-    tone: 'blue',
-    fallback: HOME_IMAGES.eventFallbacks.default,
-  }
+  if (k.startsWith('conf')) return { label: 'CONFÉRENCE', fallback: HOME_IMAGES.eventFallbacks.conference }
+  if (k.startsWith('form')) return { label: 'FORMATION', fallback: HOME_IMAGES.eventFallbacks.formation }
+  if (k.startsWith('ateli') || k.startsWith('work')) return { label: 'ATELIER', fallback: HOME_IMAGES.eventFallbacks.atelier }
+  if (k.startsWith('semin')) return { label: 'SÉMINAIRE', fallback: HOME_IMAGES.eventFallbacks.default }
+  return { label: category ? String(category).toUpperCase() : 'ÉVÉNEMENT', fallback: HOME_IMAGES.eventFallbacks.default }
 }
 
-const TONE_CLASSES: Record<Tone, string> = {
-  blue: 'border-[#2f6dff]/70 bg-[#2f6dff]/10 text-[#4f8dff]',
-  cyan: 'border-[#22d3ee]/70 bg-[#22d3ee]/10 text-[#22d3ee]',
-  violet: 'border-[#8b5cf6]/70 bg-[#8b5cf6]/10 text-[#8b5cf6]',
+const COLORS = ['#0057FF', '#00C8FF', '#8844FF']
+
+export default function FormationsSection({ events = [], loading = false, onReserve }: FormationsSectionProps) {
+  const [active, setActive] = useState(0)
+  const list = Array.isArray(events) ? events.slice(0, 3) : []
+
+  return (
+    <section id="evenements" className="premium-light-section" style={{ padding: '100px 0 120px', position: 'relative', overflow: 'hidden' }}>
+      <div className="max-w-7xl mx-auto px-6">
+        {/* Section header */}
+        <div className="mb-16">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="glow-line glow-line-d2" style={{ width: '32px', height: '1px', background: '#2979FF' }} />
+            <span className="glow-label glow-label-d2" style={{ fontFamily: 'Outfit', fontSize: '11px', letterSpacing: '0.22em', color: '#2979FF', textTransform: 'uppercase' }}>
+              ÉVÉNEMENTS
+            </span>
+          </div>
+          <h2 style={{ fontFamily: 'Barlow Condensed', fontWeight: 800, fontSize: 'clamp(40px, 6vw, 72px)', color: '#061631', lineHeight: 0.95, marginBottom: '16px' }}>
+            Des opportunités pour<br />
+            <span style={{ color: '#2979FF' }}>grandir ensemble.</span>
+          </h2>
+          <p style={{ fontFamily: 'Outfit', fontSize: '15px', color: 'rgba(6,22,49,0.62)', maxWidth: '480px', lineHeight: 1.65 }}>
+            Réservez votre place aux prochaines conférences, formations et ateliers DiCe.
+          </p>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-24">
+            <FaSpinner className="animate-spin text-4xl text-[#2979FF]" />
+          </div>
+        ) : list.length === 0 ? (
+          <div style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(23,107,255,0.2)', borderRadius: '28px', padding: '60px 20px', textAlign: 'center' }}>
+            <p style={{ fontFamily: 'Barlow Condensed', fontSize: '24px', fontWeight: 700, color: '#061631' }}>
+              Aucun événement à venir pour le moment
+            </p>
+            <p style={{ fontFamily: 'Outfit', fontSize: '15px', color: 'rgba(6,22,49,0.62)', maxWidth: '400px', margin: '10px auto 0' }}>
+              Revenez bientôt : de nouvelles conférences, formations et ateliers seront annoncés.
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+              {list.map((event, i) => (
+                <EventCard key={event.id ?? i} event={event} index={i} active={active === i} onHover={() => setActive(i)} onReserve={onReserve} />
+              ))}
+            </div>
+
+            {/* Carousel dots + CTA */}
+            <div className="flex items-center justify-between">
+              <div className="flex gap-2">
+                {list.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setActive(i)}
+                    aria-label={`Aller à l'événement ${i + 1}`}
+                    style={{
+                      width: i === active ? '28px' : '8px',
+                      height: '8px',
+                      borderRadius: '4px',
+                      background: i === active ? '#0057FF' : 'rgba(0,65,145,0.18)',
+                      transition: 'all 0.3s ease',
+                      border: 'none',
+                      cursor: 'pointer',
+                    }}
+                  />
+                ))}
+              </div>
+
+              <Link href="/events" className="inline-flex items-center gap-2 text-sm font-medium transition-all duration-200" style={{ fontFamily: 'Outfit', color: 'rgba(6,22,49,0.62)', textDecoration: 'none', letterSpacing: '0.04em' }}>
+                <span onMouseEnter={(e) => (e.currentTarget.style.color = '#2979FF')} onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(6,22,49,0.62)')} className="flex items-center gap-2">
+                  Voir tous les événements
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+                </span>
+              </Link>
+            </div>
+          </>
+        )}
+      </div>
+    </section>
+  )
 }
 
-/* ------------------------------------------------------------------ */
-/* Carte                                                              */
-/* ------------------------------------------------------------------ */
-
-function HomeEventCard({
-  event,
-  active,
-  onHover,
-  onLeave,
-  onReserve,
-}: {
-  event: any
-  active: boolean
-  onHover: () => void
-  onLeave: () => void
-  onReserve?: (event: any) => void
-}) {
+function EventCard({ event, index, active, onHover, onReserve }: { event: any, index: number, active: boolean, onHover: () => void, onReserve?: (event: any) => void }) {
   const { isAuthenticated } = useAuth()
-
-  const {
-    id,
-    title,
-    description,
-    image_url,
-    price = 0,
-    currency = 'XAF',
-    start_date,
-    end_date,
-    start_time,
-    end_time,
-    location,
-    category,
-    capacity,
-    available_tickets,
-    promotion,
-  } = event || {}
+  const { id, title, description, image_url, price = 0, currency = 'XAF', start_date, end_date, start_time, end_time, location, category, capacity, available_tickets, promotion } = event || {}
 
   const meta = categoryMeta(category)
+  const color = COLORS[index % COLORS.length]
 
-  const placesRestantes =
-    available_tickets != null
-      ? Number(available_tickets)
-      : Math.max(0, Number(capacity || 0) - Number(event?.nb_inscrits || 0))
+  const placesRestantes = available_tickets != null ? Number(available_tickets) : Math.max(0, Number(capacity || 0) - Number(event?.nb_inscrits || 0))
   const isFull = placesRestantes <= 0
   const isPast = isEventEnded(event)
   const canReserve = !isPast && !isFull
 
   const promoPct = Number(promotion?.pourcentage) || 0
-  const hasPromoPrice =
-    promotion?.prix_promo !== null &&
-    promotion?.prix_promo !== undefined &&
-    Number.isFinite(Number(promotion.prix_promo)) &&
-    Number(promotion.prix_promo) < Number(price)
+  const hasPromoPrice = promotion?.prix_promo !== null && promotion?.prix_promo !== undefined && Number.isFinite(Number(promotion.prix_promo)) && Number(promotion.prix_promo) < Number(price)
   const hasPromotion = Boolean(promotion && (promoPct > 0 || hasPromoPrice))
-  const finalPrice = hasPromotion
-    ? hasPromoPrice
-      ? Number(promotion.prix_promo)
-      : Math.round(Number(price) - (Number(price) * promoPct) / 100)
-    : Number(price)
+  const finalPrice = hasPromotion ? (hasPromoPrice ? Number(promotion.prix_promo) : Math.round(Number(price) - (Number(price) * promoPct) / 100)) : Number(price)
 
-  // Badge (haut droite) : promo > complet > dernières places
-  let badge: { text: string; className: string } | null = null
+  let badge = null
   if (hasPromotion && promoPct > 0) {
     const endRaw = promotion?.date_fin || promotion?.end_date || promotion?.valid_until
     const endD = parseDate(endRaw)
-    const suffix = endD
-      ? ` avant le ${format(endD, 'd MMM', { locale: fr }).replace(/\./g, '')}`
-      : ''
-    badge = {
-      text: `-${promoPct}%${suffix}`,
-      className: 'border-[#22e07a]/60 bg-[#0d3b26]/70 text-[#22e07a]',
-    }
+    const suffix = endD ? ` avant le ${format(endD, 'd MMM', { locale: fr }).replace(/\./g, '')}` : ''
+    badge = `-${promoPct}%${suffix}`
   } else if (isFull) {
-    badge = { text: 'Complet', className: 'border-[#ff5a5a]/60 bg-[#3b1418]/60 text-[#ff6b6b]' }
-  } else if (
-    !isPast &&
-    (placesRestantes <= 15 || (Number(capacity) > 0 && placesRestantes / Number(capacity) <= 0.2))
-  ) {
-    badge = {
-      text: 'Dernières places',
-      className: 'border-[#ff5a5a]/60 bg-[#3b1418]/40 text-[#ff6b6b]',
-    }
+    badge = 'Complet'
+  } else if (!isPast && (placesRestantes <= 15 || (Number(capacity) > 0 && placesRestantes / Number(capacity) <= 0.2))) {
+    badge = 'Dernières places'
   }
 
   const startT = toHourLabel(normalizeTime(start_time, start_date))
   const endT = toHourLabel(normalizeTime(end_time, end_date || start_date))
   const timeLabel = startT && endT ? `${startT} — ${endT}` : startT || 'Horaire à confirmer'
+  const priceText = Number(price) === 0 ? 'Gratuit' : `${formatAmount(finalPrice)} ${currencyLabel(currency)}`
+  const fallbackImg = meta.fallback
 
   const handleReserve = (e: any) => {
     e.preventDefault()
@@ -206,292 +200,88 @@ function HomeEventCard({
     window.location.href = `/events/${id}`
   }
 
-  const priceText = Number(price) === 0 ? 'Gratuit' : `${formatAmount(finalPrice)} ${currencyLabel(currency)}`
-
   return (
-    <article
+    <div
+      className={`event-premium-card ${active ? 'is-active' : ''}`}
       onMouseEnter={onHover}
-      onMouseLeave={onLeave}
-      onFocus={onHover}
-      onBlur={onLeave}
-      className={`relative flex min-h-[551px] flex-col overflow-hidden rounded-[22px] border-[1.5px] transition-all duration-500 ease-out ${
-        active
-          ? 'border-[#176bff] bg-[linear-gradient(180deg,#0b2255_0%,#0e2861_100%)] shadow-[0_0_0_1px_rgba(23,107,255,0.25),0_30px_70px_-22px_rgba(23,107,255,0.6)]'
-          : 'border-[#88b4fe] bg-[linear-gradient(180deg,#f3f9fe_0%,#e9f4fc_100%)] shadow-[0_24px_50px_-34px_rgba(20,80,160,0.35)]'
-      }`}
+      style={{
+        background: active ? 'linear-gradient(145deg,#071B46,#102C68)' : 'linear-gradient(180deg, rgba(255,255,255,.88), rgba(242,249,255,.76))',
+        backdropFilter: 'blur(12px)',
+        border: active ? '2px solid #176BFF' : '2px solid rgba(23,107,255,0.48)',
+        borderRadius: '28px',
+        overflow: 'hidden',
+        transition: 'all .55s cubic-bezier(.2,.8,.2,1)',
+        transform: active ? 'translateY(-10px) scale(1.018)' : 'translateY(0) scale(1)',
+        boxShadow: active ? '0 28px 60px rgba(23,107,255,.24), 0 0 28px rgba(23,107,255,.20)' : '0 14px 36px rgba(17,77,145,.10)',
+        cursor: 'pointer',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
     >
       {/* Image */}
-      <div className="relative h-[210px] w-full shrink-0 overflow-hidden bg-[linear-gradient(135deg,#0a1e52,#123a8f)]">
-        <SafeImage
-          src={toAbsoluteMediaUrl(image_url) ?? undefined}
-          fallbackSrc={meta.fallback}
+      <div style={{ position: 'relative', height: '210px', overflow: 'hidden' }}>
+        <img
+          src={toAbsoluteMediaUrl(image_url) ?? fallbackImg}
           alt={title || ''}
-          className={`h-full w-full object-cover transition-transform duration-700 ${
-            active ? 'scale-105' : 'scale-100'
-          }`}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s ease', transform: active ? 'scale(1.04)' : 'scale(1)' }}
         />
-        <div
-          className={`absolute inset-0 transition-opacity duration-500 ${
-            active
-              ? 'bg-[linear-gradient(180deg,rgba(6,26,69,0.35),rgba(6,26,69,0.55))] opacity-100'
-              : 'opacity-0'
-          }`}
-        />
-        <span
-          className={`absolute left-3 top-3 rounded-[3px] border px-[10px] py-[5px] text-[10.5px] font-semibold uppercase tracking-[0.2em] backdrop-blur-[2px] ${TONE_CLASSES[meta.tone]}`}
-        >
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 40%, rgba(5,23,58,0.78) 100%)' }} />
+        {/* Event type badge */}
+        <div style={{ position: 'absolute', top: '12px', left: '12px', padding: '4px 10px', borderRadius: '3px', background: `${color}22`, border: `1px solid ${color}80`, fontFamily: 'Outfit', fontSize: '10px', fontWeight: 600, letterSpacing: '0.16em', color: color === '#0057FF' ? '#7AADFF' : color, boxShadow: `0 0 6px ${color}50, 0 0 14px ${color}22`, textShadow: `0 0 6px ${color}90` }}>
           {meta.label}
-        </span>
+        </div>
+        {/* Promo badge */}
         {badge && (
-          <span
-            className={`absolute right-3 top-3 rounded-[3px] border px-[10px] py-[5px] text-[10.5px] font-semibold tracking-[0.02em] ${badge.className}`}
-          >
-            {badge.text}
-          </span>
+          <div style={{ position: 'absolute', top: '12px', right: '12px', padding: '4px 10px', borderRadius: '3px', background: badge === 'Dernières places' || badge === 'Complet' ? 'rgba(255,80,80,0.15)' : 'rgba(0,200,80,0.15)', border: `1px solid ${badge === 'Dernières places' || badge === 'Complet' ? 'rgba(255,80,80,0.4)' : 'rgba(0,200,80,0.4)'}`, fontFamily: 'Outfit', fontSize: '10px', fontWeight: 600, color: badge === 'Dernières places' || badge === 'Complet' ? '#FF8080' : '#44FF99' }}>
+            {badge}
+          </div>
         )}
       </div>
 
-      {/* Corps */}
-      <div className="flex flex-1 flex-col px-[21px] pb-[26px] pt-[20px]">
-        <p
-          className={`text-[11px] font-medium uppercase tracking-[0.16em] transition-colors duration-500 ${
-            active ? 'text-[#5f7fc0]/70' : 'text-[#8a94a6]'
-          }`}
-        >
+      {/* Content */}
+      <div style={{ padding: '20px 20px 24px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ fontFamily: 'Outfit', fontSize: '11px', letterSpacing: '0.14em', color: 'rgba(6,22,49,0.45)', marginBottom: '8px' }}>
           {formatDay(start_date)}
-        </p>
-
-        <h3
-          className={`mt-[10px] font-barlow text-[22px] font-bold leading-[25px] transition-colors duration-500 ${
-            active ? 'text-white' : 'text-[#0a1330]'
-          }`}
-        >
-          {id ? (
-            <Link href={`/events/${id}`} className="hover:underline decoration-1 underline-offset-4">
-              {title}
-            </Link>
-          ) : (
-            title
-          )}
+        </div>
+        <h3 style={{ fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: '22px', color: active ? '#FFFFFF' : '#061631', lineHeight: 1.15, marginBottom: '10px' }}>
+          {title}
         </h3>
-
-        <p
-          className={`mt-[10px] line-clamp-2 min-h-[42px] text-[13px] leading-[21px] transition-colors duration-500 ${
-            active ? 'text-white/70' : 'text-[#667085]'
-          }`}
-        >
+        <p className="line-clamp-3" style={{ fontFamily: 'Outfit', fontSize: '13px', color: active ? 'rgba(255,255,255,.82)' : 'rgba(6,22,49,0.60)', lineHeight: 1.6, marginBottom: '16px', flex: 1 }}>
           {description}
         </p>
 
-        <div className="flex-1" />
+        {/* Meta info */}
+        <div className="flex flex-col gap-2 mb-5" style={{ borderTop: '1px solid rgba(0,72,170,0.10)', paddingTop: '14px' }}>
+          <MetaRow kind="pin" label={location || 'Lieu à confirmer'} active={active} />
+          <MetaRow kind="clock" label={timeLabel} active={active} />
+          <MetaRow kind="people" label={isFull ? 'Complet' : `${placesRestantes} places disponibles`} active={active} />
+        </div>
 
-        <ul
-          className={`mt-5 space-y-[9px] border-t pt-[18px] text-[12.5px] transition-colors duration-500 ${
-            active ? 'border-white/15 text-[#cfdcff]' : 'border-[#0a1330]/10 text-[#4a5a75]'
-          }`}
-        >
-          <li className="flex items-center gap-3">
-            <FiMapPin className={`shrink-0 text-[14px] ${active ? 'text-[#7ea6ff]' : 'text-[#0b3a8f]'}`} />
-            <span className="line-clamp-1">{location || 'Lieu à confirmer'}</span>
-          </li>
-          <li className="flex items-center gap-3">
-            <FiClock className={`shrink-0 text-[14px] ${active ? 'text-[#7ea6ff]' : 'text-[#0b3a8f]'}`} />
-            <span>{timeLabel}</span>
-          </li>
-          <li className="flex items-center gap-3">
-            <FiUsers className={`shrink-0 text-[14px] ${active ? 'text-[#7ea6ff]' : 'text-[#0b3a8f]'}`} />
-            <span>
-              {isFull ? 'Complet' : `${placesRestantes} place${placesRestantes > 1 ? 's' : ''} disponible${placesRestantes > 1 ? 's' : ''}`}
-            </span>
-          </li>
-        </ul>
-
-        <div className="mt-6 flex items-end justify-between gap-3">
+        {/* Price + CTA */}
+        <div className="flex items-center justify-between">
           <div>
-            <p
-              className={`text-[10px] font-medium uppercase tracking-[0.16em] ${
-                active ? 'text-[#5f7fc0]/70' : 'text-[#8a94a6]'
-              }`}
-            >
-              À partir de
-            </p>
-            <p
-              className={`mt-1 font-barlow text-[21px] font-bold leading-none transition-colors duration-500 ${
-                active ? 'text-white' : 'text-[#0a1330]'
-              }`}
-            >
+            <div style={{ fontFamily: 'Outfit', fontSize: '10px', letterSpacing: '0.1em', color: 'rgba(6,22,49,0.42)', marginBottom: '2px' }}>
+              À PARTIR DE
+            </div>
+            <div style={{ fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: '20px', color: active ? '#FFFFFF' : '#061631', transition: 'color .3s ease' }}>
               {priceText}
-            </p>
+            </div>
           </div>
-
-          <button
-            type="button"
-            onClick={handleReserve}
-            disabled={!canReserve}
-            className={`h-[38px] rounded-[4px] px-[18px] text-[13px] font-semibold tracking-[0.02em] transition-all duration-300 disabled:cursor-not-allowed ${
-              active
-                ? 'bg-[linear-gradient(90deg,#2d65ff,#7352ff)] text-white shadow-[0_10px_24px_-10px_rgba(80,90,255,0.9)] hover:brightness-110 disabled:opacity-50'
-                : 'bg-white/60 text-[#0a1330] hover:bg-white disabled:opacity-50'
-            }`}
-          >
+          <button onClick={handleReserve} disabled={!canReserve} style={{ fontFamily: 'Outfit', fontSize: '12px', fontWeight: 600, letterSpacing: '0.08em', padding: '10px 18px', borderRadius: '3px', background: active ? 'linear-gradient(135deg, #176BFF, #8A4DFF)' : 'rgba(255,255,255,0.06)', color: active ? '#FFFFFF' : '#061631', border: 'none', cursor: canReserve ? 'pointer' : 'not-allowed', transition: 'all 0.3s ease', opacity: canReserve ? 1 : 0.5 }}>
             {isPast ? 'Passé' : isFull ? 'Complet' : 'Réserver'}
           </button>
         </div>
       </div>
-    </article>
+    </div>
   )
 }
 
-/* ------------------------------------------------------------------ */
-/* Section                                                            */
-/* ------------------------------------------------------------------ */
-
-export default function FormationsSection({
-  events = [],
-  loading = false,
-  onReserve,
-}: FormationsSectionProps) {
-  const sectionRef = useRef<HTMLElement | null>(null)
-  const headerRef = useRef<HTMLDivElement | null>(null)
-  const gridRef = useRef<HTMLDivElement | null>(null)
-
-  const list = useMemo(() => (Array.isArray(events) ? events.slice(0, 3) : []), [events])
-
-  // Aucune carte n'est "active" (bleu foncé) au chargement : toutes restent
-  // dans leur état blanc par défaut. Seul le survol (ou le focus clavier)
-  // d'une carte la fait passer en bleu foncé.
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
-
-  // Entrées animées (identiques dans l'esprit à l'ancienne version)
-  useEffect(() => {
-    if (loading) return undefined
-
-    const ctx = gsap.context(() => {
-      if (headerRef.current) {
-        gsap.fromTo(
-          headerRef.current.children,
-          { y: 35, opacity: 0 },
-          {
-            y: 0,
-            opacity: 1,
-            duration: 0.9,
-            stagger: 0.12,
-            ease: 'power3.out',
-            scrollTrigger: { trigger: sectionRef.current, start: 'top 75%' },
-          }
-        )
-      }
-      if (gridRef.current && list.length > 0) {
-        gsap.fromTo(
-          gridRef.current.children,
-          { y: 70, opacity: 0 },
-          {
-            y: 0,
-            opacity: 1,
-            duration: 1,
-            stagger: 0.16,
-            ease: 'power4.out',
-            scrollTrigger: { trigger: gridRef.current, start: 'top 82%' },
-          }
-        )
-      }
-    }, sectionRef)
-
-    return () => ctx.revert()
-  }, [loading, list.length])
-
+function MetaRow({ kind, label, active }: { kind: 'pin'|'clock'|'people'; label: string; active: boolean }) {
+  const paths = kind === 'pin' ? <><path d="M12 21s6-5.2 6-11a6 6 0 1 0-12 0c0 5.8 6 11 6 11Z"/><circle cx="12" cy="10" r="2"/></> : kind === 'clock' ? <><circle cx="12" cy="12" r="8"/><path d="M12 8v5l3 2"/></> : <><circle cx="9" cy="9" r="3"/><circle cx="16" cy="10" r="2.4"/><path d="M3.5 19c.7-3.3 2.8-5 5.5-5s4.8 1.7 5.5 5M14 15c2.7-.4 4.8.9 5.5 3.5"/></>
   return (
-    <section
-      id="evenements"
-      ref={sectionRef}
-      className="dice-light relative overflow-hidden py-[104px] font-outfit md:pb-[120px]"
-    >
-      <div className="relative mx-auto w-full max-w-[1280px] px-6">
-        {/* En-tête */}
-        <div ref={headerRef}>
-          <div className="flex items-center gap-4">
-            <span className="h-px w-8 bg-[#2f6dff]" />
-            <span className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#2f6dff]">
-              Événements
-            </span>
-          </div>
-
-          <h2
-            className="mt-[26px] font-barlow font-bold leading-[0.95] tracking-[-0.005em] text-[#0a1330]"
-            style={{ fontSize: 'var(--dice-h2-events)' }}
-          >
-            Des opportunités pour
-            <br />
-            <span className="text-[#2979ff]">grandir ensemble.</span>
-          </h2>
-
-          <p className="mt-5 max-w-[500px] text-[15px] leading-[25px] text-[#5b6b85]">
-            Réservez votre place aux prochaines conférences, formations et ateliers DiCe.
-          </p>
-        </div>
-
-        {/* Contenu */}
-        <div className="mt-16">
-          {loading ? (
-            <div className="flex items-center justify-center py-24">
-              <FaSpinner className="animate-spin text-4xl text-[#2f6dff]" />
-            </div>
-          ) : list.length === 0 ? (
-            <div className="rounded-[22px] border-[1.5px] border-[#88b4fe] bg-white/60 px-6 py-20 text-center backdrop-blur">
-              <p className="font-barlow text-2xl font-bold text-[#0a1330]">
-                Aucun événement à venir pour le moment
-              </p>
-              <p className="mx-auto mt-2 max-w-md text-[14px] text-[#5b6b85]">
-                Revenez bientôt : de nouvelles conférences, formations et ateliers seront annoncés.
-              </p>
-            </div>
-          ) : (
-            <>
-              <div ref={gridRef} className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                {list.map((event: any, i: number) => (
-                  <HomeEventCard
-                    key={event.id ?? i}
-                    event={event}
-                    active={i === hoveredIndex}
-                    onHover={() => setHoveredIndex(i)}
-                    onLeave={() => setHoveredIndex((prev) => (prev === i ? null : prev))}
-                    onReserve={onReserve}
-                  />
-                ))}
-              </div>
-
-              <div className="mt-[43px] flex items-center justify-between">
-                <div className="flex items-center gap-2" role="tablist" aria-label="Événements">
-                  {list.map((event: any, i: number) => (
-                    <button
-                      key={event.id ?? i}
-                      type="button"
-                      role="tab"
-                      aria-selected={i === hoveredIndex}
-                      aria-label={`Événement ${i + 1}`}
-                      onMouseEnter={() => setHoveredIndex(i)}
-                      onMouseLeave={() => setHoveredIndex((prev) => (prev === i ? null : prev))}
-                      onFocus={() => setHoveredIndex(i)}
-                      onBlur={() => setHoveredIndex((prev) => (prev === i ? null : prev))}
-                      className={`h-2 rounded-full transition-all duration-500 ${
-                        i === hoveredIndex ? 'w-7 bg-[#0a5cff]' : 'w-2 bg-[#a9c3e8] hover:bg-[#7ea6ff]'
-                      }`}
-                    />
-                  ))}
-                </div>
-
-                <Link
-                  href="/events"
-                  className="group inline-flex items-center gap-2 text-[14px] font-medium text-[#3b4a66] transition-colors hover:text-[#0a5cff]"
-                >
-                  Voir tous les événements
-                  <FiArrowRight className="transition-transform duration-300 group-hover:translate-x-1" />
-                </Link>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    </section>
+    <div className="flex items-center gap-2">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={active ? '#8FC8FF' : '#083B82'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{paths}</svg>
+      <span className="line-clamp-1" style={{ fontFamily: 'Outfit', fontSize: '12px', color: active ? 'rgba(255,255,255,.78)' : 'rgba(6,22,49,.62)', transition: 'color .3s ease' }}>{label}</span>
+    </div>
   )
 }

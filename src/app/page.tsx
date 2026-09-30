@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
+// @ts-ignore
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useEvents } from '@/hooks/useEvents'
 import { useAuth } from '@/hooks/useAuth'
@@ -11,7 +12,8 @@ import FormationsSection from '@/components/layout/FormationsSection'
 import WhyDiceSection from '@/components/layout/WhyDiceSection'
 import SpeakersSection from '@/components/home/SpeakersSection'
 import CTASection from '@/components/layout/CTASection'
-import FloatingDiamond from '@/components/home/FloatingDiamond'
+import DiamondJourney from '@/components/home/DiamondJourney'
+import IntroSection from '@/components/home/IntroSection'
 import ReservationModal from '@/components/events/ReservationModal'
 import toast from 'react-hot-toast'
 
@@ -21,9 +23,56 @@ export default function Home() {
   const [selectedEvent, setSelectedEvent] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
+  // -- Intro & Scroll logic from DICE Refonte --
+  const [scrollY, setScrollY] = useState(0)
+  const [introAnimComplete, setIntroAnimComplete] = useState(false)
+  const ticking = useRef(false)
+
+  useEffect(() => {
+    // Only access sessionStorage on the client
+    setIntroAnimComplete(sessionStorage.getItem('dice-intro-complete') === '1')
+  }, [])
+
   useEffect(() => {
     fetchPublicEvents?.()
   }, [fetchPublicEvents])
+
+  useEffect(() => {
+    const onScroll = () => {
+      if (!ticking.current) {
+        ticking.current = true
+        requestAnimationFrame(() => {
+          setScrollY(window.scrollY)
+          ticking.current = false
+        })
+      }
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  useEffect(() => {
+    if (!introAnimComplete) {
+      document.documentElement.style.overflow = 'hidden'
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.documentElement.style.overflow = ''
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.documentElement.style.overflow = ''
+      document.body.style.overflow = ''
+    }
+  }, [introAnimComplete])
+
+  const introProgress = introAnimComplete ? 1 : 0
+  const scrollComplete = introAnimComplete
+  const heroScrollY = Math.max(0, scrollY)
+
+  const handleAutoIntroComplete = useCallback(() => {
+    sessionStorage.setItem('dice-intro-complete', '1')
+    setIntroAnimComplete(true)
+  }, [])
 
   // Recalcule les positions ScrollTrigger une fois polices / images chargées
   useEffect(() => {
@@ -56,8 +105,15 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-[#020817] font-outfit">
-      <HeroSection />
+    <div style={{ background: '#030816', minHeight: '100vh', overflow: 'hidden' }} className="font-outfit">
+      {!introAnimComplete && <IntroSection
+        scrollProgress={introProgress}
+        scrollComplete={scrollComplete}
+        onAutoIntroComplete={handleAutoIntroComplete}
+      />}
+
+      <HeroSection introProgress={introProgress} heroScrollY={heroScrollY} />
+      <DiamondJourney />
       <PanelsSection />
       <FormationsSection
         events={upcomingEvents}
@@ -67,8 +123,6 @@ export default function Home() {
       <WhyDiceSection />
       <SpeakersSection />
       <CTASection />
-
-      <FloatingDiamond />
 
       <ReservationModal
         isOpen={isModalOpen}
