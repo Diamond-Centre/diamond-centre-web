@@ -12,7 +12,7 @@ import FormationsSection from '@/components/layout/FormationsSection'
 import WhyDiceSection from '@/components/layout/WhyDiceSection'
 import SpeakersSection from '@/components/home/SpeakersSection'
 import CTASection from '@/components/layout/CTASection'
-import DiamondJourney from '@/components/home/DiamondJourney'
+import FloatingDiamond from '@/components/home/FloatingDiamond'
 import IntroSection from '@/components/home/IntroSection'
 import ReservationModal from '@/components/events/ReservationModal'
 import toast from 'react-hot-toast'
@@ -113,7 +113,7 @@ export default function Home() {
       />}
 
       <HeroSection introProgress={introProgress} heroScrollY={heroScrollY} />
-      <DiamondJourney />
+      <FloatingDiamond />
       <PanelsSection />
       <FormationsSection
         events={upcomingEvents}
