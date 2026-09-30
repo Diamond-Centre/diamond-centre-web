@@ -1,156 +1,213 @@
 /**
- * Diamant flottant (image réelle, public/images/home/diamond.png)
+ * Diamant flottant 3D (facettes dessinées sur <canvas>, aucune image).
  *
- * Comportement calé sur la maquette Figma (vidéo + captures de référence) :
+ * Le diamant est le même maillage 3D que `Diamond3D.jsx` (couronne + pavillon
+ * à 8 facettes, éclairage par facette) : il TOURNE VRAIMENT sur son axe
+ * vertical, au lieu d'une image aplatie qui se retourne.
  *
- *  1. Il apparaît (fondu) dès que le titre « Des opportunités pour grandir
- *     ensemble » entre à l'écran, déjà à sa position quasi définitive.
- *  2. Il reste QUASI IMMOBILE, épinglé en haut à droite de l'écran
- *     (~89% largeur / ~77% hauteur), pendant tout le défilement des 3
- *     cartes événements. Seule sa bascule change.
- *  3. Une fois les cartes passées, il glisse en diagonale vers le bas/la
- *     gauche (jusqu'à ~43% largeur / ~93% hauteur) en un mouvement assez
- *     bref, puis s'efface complètement AVANT que la photo et les
- *     statistiques de « Notre mission » ne soient pleinement visibles —
- *     il ne « se pose » donc pas sur la photo, il disparaît juste avant.
+ * Trajectoire relevée image par image sur la vidéo de référence (Figma) et
+ * recoupée avec les captures d'écran de la page :
  *
- * Point important, vérifié sur la vidéo de référence : la bascule
- * (l'effet « pièce qui tourne », c-à-d l'aplatissement en largeur qui fait
- * alterner le diamant entre sa vue pleine et un fin trait vertical lumineux)
- * n'est PAS liée à la vitesse de scroll. Sur la maquette, deux captures
- * prises quasiment à la même position de page montrent le diamant dans deux
- * phases de rotation différentes : la bascule tourne donc en continu, en
- * temps réel (comme une pièce qui tourne sur elle-même), indépendamment du
- * scroll. Scroller vite ou lentement, ou même ne pas scroller du tout,
- * ne change pas son rythme de rotation.
+ *   1. Il apparaît quand la section « Événements » entre dans l'écran et reste
+ *      ÉPINGLÉ à droite des cartes (≈ 88,5 % de la largeur, 77 % de la hauteur)
+ *      pendant tout le défilement des cartes.
+ *   2. Quand la section « Notre mission » monte dans l'écran, il quitte son
+ *      épingle, descend en diagonale vers la gauche, passe sur la fin de
+ *      « ...de vos ambitions. » puis sur le début du paragraphe.
+ *   3. Il CHUTE dans la photo (celle des statistiques), au centre-bas de la
+ *      photo (≈ 34 % de la largeur, 88 % de la hauteur), puis s'efface.
  *
- * On sépare donc clairement les deux animations :
- *  - Position / opacité / échelle : pilotées par le scroll (scrub), via un
- *    timeline GSAP/ScrollTrigger classique -> réversible, cohérent.
- *  - Bascule (spin) : une boucle temps réel indépendante (gsap.ticker),
- *    qui tourne en continu tant que le composant est monté, quelle que
- *    soit la position de scroll.
+ * La position dépend UNIQUEMENT du scroll (aucun retard) : on lit en direct
+ * le haut de la section « Mission » par rapport à la fenêtre.
+ *
+ * Aucune dépendance (ni gsap, ni three.js) : canvas 2D + requestAnimationFrame.
+ * Nécessite seulement `./Diamond3D.jsx` (déjà dans ce dossier).
  */
 'use client'
 
 import { useEffect, useRef } from 'react'
-import gsap from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { buildFaces, drawFrame } from './Diamond3D'
 
-if (typeof window !== 'undefined') {
-  gsap.registerPlugin(ScrollTrigger)
+// --- Rendu 3D --------------------------------------------------------------
+const CANVAS_LOGICAL = 300 // taille du dessin (px logiques), affiché à l'échelle
+const GEM_SCALE = 0.36 // même valeur par défaut que Diamond3D (gemme = 72 % du canvas)
+const GEM_TILT = 6 // inclinaison (°) : on voit un peu la table du dessus
+// Vitesse de rotation (rad/s) : 1.1 ≈ un tour en 5,7 s. Monte pour tourner plus vite.
+const SPIN_SPEED = 1.1
+
+// Largeur visible de la gemme : ≈ 8,4 % de la largeur de la fenêtre
+// (156 px sur 1852 px), bornée pour les petits / très grands écrans.
+const GEM_VW = 0.084
+const GEM_MIN = 110
+const GEM_MAX = 190
+
+// Largeur minimale de la fenêtre pour afficher l'animation.
+const MIN_VIEWPORT = 900
+
+// --- POSE:START -----------------------------------------------------------
+// Toutes les valeurs sont des FRACTIONS de la fenêtre (0 = haut/gauche,
+// 1 = bas/droite).
+//   e = haut de la section #evenements / hauteur fenêtre
+//   m = haut de la section Mission     / hauteur fenêtre
+
+// Épingle (pendant les cartes) et point de chute (dans la photo).
+const PIN_X = 0.885
+const END_X = 0.338
+
+// Le trajet commence quand m = 0.70 et finit quand m = 0.40.
+const TRAVEL_START = 0.7
+const TRAVEL_SPAN = 0.3
+
+// y(p), échelle(p) — points relevés, p = avancement du trajet (0 → 1).
+const Y_TABLE = [
+  [0, 0.77],
+  [0.143, 0.784], // m = 0.657
+  [0.28, 0.822], //  m = 0.616
+  [0.397, 0.858], // m = 0.581  (sur « ...ambitions. »)
+  [0.607, 0.919], // m = 0.518  (sur le paragraphe)
+  [0.737, 0.918],
+  [0.847, 0.91],
+  [0.913, 0.895],
+  [0.95, 0.884], //  m = 0.415  (dans la photo)
+  [1, 0.862],
+]
+const SCALE_TABLE = [
+  [0, 1],
+  [0.3, 1],
+  [0.6, 1.06],
+  [0.85, 1.08],
+  [1, 1.02],
+]
+
+const clamp01 = (v) => Math.min(1, Math.max(0, v))
+
+// Interpolation linéaire dans une table [[p, valeur], ...]
+function lerpTable(table, p) {
+  if (p <= table[0][0]) return table[0][1]
+  for (let i = 1; i < table.length; i += 1) {
+    if (p <= table[i][0]) {
+      const [p0, v0] = table[i - 1]
+      const [p1, v1] = table[i]
+      return v0 + ((v1 - v0) * (p - p0)) / (p1 - p0)
+    }
+  }
+  return table[table.length - 1][1]
 }
 
-// Dimensions natives de l'image détourée (public/images/home/diamond.png)
-const IMG_W = 1255
-const IMG_H = 956
-const BASE_W = 128 // largeur d'affichage de référence (px) — taille quasi
-// constante observée sur la maquette (~105-110px avec le halo, sur un écran
-// de référence ~1850px de large), avant les légers ajustements d'échelle.
+// Accélère puis ralentit (comme le rendu de référence sur l'axe horizontal).
+const easeInOut = (p) => (p < 0.5 ? 2 * p * p : 1 - ((-2 * p + 2) ** 2) / 2)
 
-// Durée (en secondes) d'un tour complet de bascule. Indépendant du scroll :
-// tourne en continu, en temps réel, tant que le diamant est monté.
-const SPIN_PERIOD = 6.5
-// Largeur minimale (fraction de la largeur pleine) au moment le plus fin
-// du basculement : jamais totalement à 0 pour rester visible/lisible.
-const MIN_SCALE_X = 0.08
+// Pose du diamant pour un état de scroll donné.
+//   e, m : voir plus haut   |   retourne x, y (fractions), scale, opacity
+function diamondPose(e, m) {
+  const p = clamp01((TRAVEL_START - m) / TRAVEL_SPAN)
+
+  const x = PIN_X + (END_X - PIN_X) * easeInOut(p)
+  const y = lerpTable(Y_TABLE, p)
+  const scale = lerpTable(SCALE_TABLE, p)
+
+  // Apparition quand la section Événements entre (e de 0.80 à 0.70)
+  const appear = clamp01((0.8 - e) / 0.1)
+  // Fondu de sortie dans la photo (m de 0.43 à 0.39)
+  const fade = m >= 0.43 ? 1 : m <= 0.39 ? 0 : ((m - 0.39) / 0.04) ** 1.3
+
+  return { x, y, scale, opacity: appear * fade }
+}
+// --- POSE:END -------------------------------------------------------------
 
 export default function FloatingDiamond() {
   const wrapRef = useRef(null)
-  const flipRef = useRef(null)
+  const canvasRef = useRef(null)
 
   useEffect(() => {
     const el = wrapRef.current
-    const flip = flipRef.current
-    if (!el || !flip) return undefined
+    const canvas = canvasRef.current
+    if (!el || !canvas) return undefined
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return undefined
 
-    const mq = window.matchMedia('(min-width: 900px)')
-    if (!mq.matches) return undefined
+    // Canvas net sur écrans haute densité
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    canvas.width = Math.round(CANVAS_LOGICAL * dpr)
+    canvas.height = Math.round(CANVAS_LOGICAL * dpr)
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
-    const W = () => window.innerWidth
-    const H = () => window.innerHeight
+    const faces = buildFaces(1)
+    const opts = {
+      size: CANVAS_LOGICAL,
+      mode: 'spin',
+      speed: SPIN_SPEED,
+      amp: 0,
+      tilt: GEM_TILT,
+      scale: GEM_SCALE,
+    }
+    const reduce =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-    const ctx = gsap.context(() => {
-      gsap.set(el, {
-        xPercent: -50,
-        yPercent: -50,
-        opacity: 0,
-      })
+    let startEl = null // #evenements
+    let endEl = null // section Mission (#mission, sinon #why)
+    let raf = 0
+    let dirty = true
+    let shown = false
+    let disposed = false
+    const t0 = performance.now()
 
-      // ------------------------------------------------------------------
-      // 1) Position / opacité / échelle — pilotées par le scroll (scrub)
-      // ------------------------------------------------------------------
-      // Trajet complet entre la fin de la section Événements et l'entrée de
-      // la section Mission. Démarre tôt (dès que le titre « Des
-      // opportunités... » approche) et se termine tôt aussi (le diamant a
-      // disparu bien avant que la photo/les stats ne soient pleinement
-      // visibles), conformément à la maquette.
-      const scrollConfig = {
-        trigger: '#evenements',
-        start: 'top 75%',
-        endTrigger: '#mission',
-        end: 'top 55%',
+    const onScroll = () => {
+      dirty = true
+    }
+
+    const render = (now) => {
+      if (disposed) return
+      raf = requestAnimationFrame(render)
+
+      // Les sections peuvent ne pas être encore montées (dev / Strict Mode)
+      if (!startEl) startEl = document.getElementById('evenements')
+      if (!endEl) endEl = document.getElementById('mission') || document.getElementById('why')
+
+      // --- Position, pilotée par le scroll ----------------------------
+      if (dirty) {
+        dirty = false
+        const vw = window.innerWidth
+        const vh = window.innerHeight
+
+        if (!startEl || !endEl || vw < MIN_VIEWPORT) {
+          shown = false
+          el.style.opacity = '0'
+        } else {
+          const e = startEl.getBoundingClientRect().top / vh
+          const m = endEl.getBoundingClientRect().top / vh
+          const pose = diamondPose(e, m)
+
+          // Le canvas est carré ; la gemme en occupe 2 × GEM_SCALE de la largeur.
+          const gemW = Math.min(GEM_MAX, Math.max(GEM_MIN, vw * GEM_VW))
+          const box = gemW / (2 * GEM_SCALE)
+          el.style.width = `${box}px`
+          el.style.height = `${box}px`
+          el.style.opacity = String(pose.opacity)
+          el.style.transform =
+            `translate3d(${pose.x * vw}px, ${pose.y * vh}px, 0) ` +
+            `translate(-50%, -50%) scale(${pose.scale})`
+          shown = pose.opacity > 0.01
+        }
       }
 
-      const tl = gsap.timeline({
-        defaults: { ease: 'none' },
-        scrollTrigger: { ...scrollConfig, scrub: 0.5 },
-      })
-
-      // Position « épinglée » en haut à droite, pratiquement constante
-      // pendant tout le défilement des 3 cartes événements.
-      const PIN_X = () => W() * 0.885
-      const PIN_Y = () => H() * 0.775
-
-      tl
-        // Étape 0 — apparition, déjà proche de sa position définitive
-        .fromTo(
-          el,
-          { x: () => W() * 0.9, y: () => H() * 0.83, scale: 0.9, opacity: 0 },
-          { x: PIN_X, y: PIN_Y, scale: 1, opacity: 1, duration: 0.06 },
-          0
-        )
-        // Étape 1 — maintien : le diamant reste épinglé, immobile, pendant
-        // tout le défilement des 3 cartes (seule la bascule continue de
-        // tourner en arrière-plan, indépendamment de cette timeline).
-        .to(el, { x: PIN_X, y: PIN_Y, scale: 1, duration: 0.49 })
-        // Étape 2 — les cartes sont passées : glissement diagonal, assez
-        // bref, vers le bas/la gauche (positions relevées sur la maquette).
-        .to(el, { x: () => W() * 0.865, y: () => H() * 0.793, scale: 0.97, duration: 0.09 })
-        .to(el, { x: () => W() * 0.768, y: () => H() * 0.839, scale: 0.93, duration: 0.08 })
-        .to(el, { x: () => W() * 0.613, y: () => H() * 0.888, scale: 0.88, duration: 0.1 })
-        .to(el, { x: () => W() * 0.479, y: () => H() * 0.925, scale: 0.82, duration: 0.09 })
-        // Étape 3 — fondu de sortie : il s'efface avant que la photo et les
-        // statistiques ne soient pleinement révélées (il ne se pose jamais
-        // dessus).
-        .to(el, {
-          x: () => W() * 0.429,
-          y: () => H() * 0.927,
-          scale: 0.7,
-          opacity: 0,
-          duration: 0.06,
-        })
-        // Étape 4 — reste invisible jusqu'à la fin du trajet.
-        .to(el, { opacity: 0, duration: 0.03 })
-    })
-
-    // ------------------------------------------------------------------
-    // 2) Bascule (spin) — boucle temps réel, indépendante du scroll
-    // ------------------------------------------------------------------
-    // On aplatit la largeur du diamant en cosinus pour simuler une
-    // rotation 3D sur un visuel 2D à plat. `time` vient de gsap.ticker et
-    // avance en secondes réelles, jamais en fonction du scroll : le
-    // diamant continue donc de tourner même si on arrête de scroller.
-    const spin = (time) => {
-      const angle = (time / SPIN_PERIOD) * Math.PI * 2
-      const scaleX = Math.max(MIN_SCALE_X, Math.abs(Math.cos(angle)))
-      gsap.set(flip, { scaleX })
+      // --- Rotation 3D en temps réel (seulement si visible) -----------
+      if (shown) {
+        const t = reduce ? 0.6 : (now - t0) / 1000
+        drawFrame(ctx, faces, opts, t, reduce)
+      }
     }
-    gsap.ticker.add(spin)
+
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+    raf = requestAnimationFrame(render)
 
     return () => {
-      gsap.ticker.remove(spin)
-      ctx.revert()
+      disposed = true
+      cancelAnimationFrame(raf)
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
     }
   }, [])
 
@@ -159,22 +216,16 @@ export default function FloatingDiamond() {
       ref={wrapRef}
       aria-hidden="true"
       className="pointer-events-none fixed left-0 top-0 z-40 hidden opacity-0 will-change-transform md:block"
-      style={{ width: BASE_W, height: (BASE_W * IMG_H) / IMG_W }}
+      style={{ width: 216, height: 216 }}
     >
-      <div ref={flipRef} className="h-full w-full" style={{ transformOrigin: '50% 50%' }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/images/home/diamond.png"
-          alt=""
-          width={IMG_W}
-          height={IMG_H}
-          className="h-full w-full object-contain"
-          style={{
-            filter:
-              'drop-shadow(0 0 22px rgba(37,99,235,0.75)) drop-shadow(0 0 60px rgba(37,99,235,0.4))',
-          }}
-        />
-      </div>
+      <canvas
+        ref={canvasRef}
+        className="h-full w-full"
+        style={{
+          filter:
+            'drop-shadow(0 0 22px rgba(37,99,235,0.75)) drop-shadow(0 0 60px rgba(37,99,235,0.4))',
+        }}
+      />
     </div>
   )
 }
