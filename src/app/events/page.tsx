@@ -1,20 +1,16 @@
-/**
- * Page publique des événements — grille + réservation
- */
 'use client'
 
 import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { FaSearch, FaTicketAlt } from 'react-icons/fa'
 import { useEvents } from '@/hooks/useEvents'
 import { useAuth } from '@/hooks/useAuth'
-import Container from '@/components/ui/Container'
-import Button from '@/components/ui/Button'
 import Spinner from '@/components/ui/Spinner'
 import LoadError from '@/components/ui/LoadError'
 import EventCard from '@/components/events/EventCard'
 import ReservationModal from '@/components/events/ReservationModal'
 import toast from 'react-hot-toast'
+
+import './events.css'
 
 const categories = [
   { id: 'all', label: 'Tous' },
@@ -184,57 +180,54 @@ function EventsPageContent() {
   }
 
   return (
-    <>
-      <div className="min-h-screen bg-[#F4F7FB] pt-24">
-        <Container>
-          <div className="py-8">
-            <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-[#0B1220] md:text-4xl">
-              Nos événements
-            </h1>
-            <p className="mt-2 max-w-xl text-[#667085]">
-              Formations, conférences et ateliers DiCe — réservez votre place en
-              quelques secondes.
-            </p>
+    <div className="events-page">
+      <main>
+        <section className="events-page-hero">
+          <div className="events-page-glow" />
+          <div className="events-page-copy">
+            <span className="events-page-eyebrow">DIAMOND CENTRE · EXPÉRIENCES</span>
+            <h1>Nos<br /><em>événements.</em></h1>
+            <p>Formations, conférences et ateliers conçus pour provoquer des rencontres, développer les compétences et faire émerger de nouvelles ambitions.</p>
+          </div>
+          <div className="events-bento" aria-label="Aperçu des événements">
+            <figure className="bento-main">
+              <img src="https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=1000&h=900&fit=crop&auto=format" alt="Conférence Diamond Centre" />
+              <span>CONFÉRENCES</span>
+            </figure>
+            <figure>
+              <img src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800&h=800&fit=crop&auto=format" alt="Formation Diamond Centre" />
+              <span>FORMATIONS</span>
+            </figure>
+            <figure>
+              <img src="https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=800&h=800&fit=crop&auto=format" alt="Réseautage Diamond Centre" />
+              <span>RÉSEAUTAGE</span>
+            </figure>
+          </div>
+        </section>
+
+        <section className="events-catalog">
+          <div className="catalog-head">
+            <div>
+              <span>PROGRAMME</span>
+              <h2>Trouvez votre prochaine expérience.</h2>
+            </div>
+            <p>{sortedEvents.length} événement{sortedEvents.length !== 1 ? 's' : ''}</p>
           </div>
 
-          <div className="mb-8">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center">
-
-              {/* CHAMP DE RECHERCHE */}
-              <div className="relative flex-1 flex items-center">
-                <FaSearch className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#98A2B3]" />
-                <input
-                  type="text"
-                  placeholder="Rechercher un événement…"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="h-12 w-full rounded-2xl border border-[#E8EEF5] bg-white pl-11 pr-4 text-sm outline-none transition focus:border-[#0A89F2]/40 focus:ring-2 focus:ring-[#0A89F2]/15"
-                />
-              </div>
-
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="h-12 min-w-[160px] rounded-2xl border border-[#E8EEF5] bg-white px-4 text-sm outline-none focus:border-[#0A89F2]/40 focus:ring-2 focus:ring-[#0A89F2]/15"
-              >
-                {sortOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+          <div className="events-toolbar">
+            <div className="event-search">
+              ⌕ <input
+                placeholder="Rechercher un événement..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
-
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="event-filters">
               {categories.map((cat: any) => (
                 <button
                   key={cat.id}
-                  type="button"
                   onClick={() => handleCategoryChange(cat.id)}
-                  className={`rounded-full px-4 py-2 text-sm font-medium transition ${selectedCategory === cat.id
-                    ? 'bg-[#0A89F2] text-white shadow-[0_8px_20px_rgba(10,137,242,0.28)]'
-                    : 'border border-[#E8EEF5] bg-white text-[#667085] hover:border-[#0A89F2]/35 hover:text-[#0A89F2]'
-                    }`}
+                  className={selectedCategory === cat.id ? 'active' : ''}
                 >
                   {cat.label}
                 </button>
@@ -242,41 +235,23 @@ function EventsPageContent() {
             </div>
           </div>
 
-          <div className="mb-5 flex items-center justify-between gap-3">
-            <p className="text-sm text-[#667085]">
-              {sortedEvents.length} événement
-              {sortedEvents.length !== 1 ? 's' : ''}
-            </p>
-            <p className="text-xs text-[#98A2B3]">
-              Tri : <span className="font-medium text-[#667085]">{getSortLabel()}</span>
-            </p>
-          </div>
-
           {sortedEvents.length === 0 ? (
-            <div className="rounded-[28px] border border-dashed border-[#E8EEF5] bg-white px-6 py-16 text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E8F3FE] text-[#0A89F2]">
-                <FaTicketAlt className="text-xl" />
-              </div>
-              <h3 className="text-xl font-bold text-[#0B1220]">
-                Aucun événement trouvé
-              </h3>
-              <p className="mt-2 text-sm text-[#667085]">
-                Essayez de modifier vos filtres ou votre recherche.
-              </p>
-              <Button
-                variant="outline"
-                className="mt-5"
+            <div style={{ textAlign: 'center', padding: '60px 20px', color: 'rgba(255,255,255,0.6)' }}>
+              <h3>Aucun événement trouvé</h3>
+              <p>Essayez de modifier vos filtres ou votre recherche.</p>
+              <button
                 onClick={() => {
                   setSearchTerm('')
                   handleCategoryChange('all')
                   fetchPublicEvents()
                 }}
+                style={{ marginTop: 20, padding: '10px 20px', borderRadius: 999, background: 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', cursor: 'pointer' }}
               >
                 Réinitialiser
-              </Button>
+              </button>
             </div>
           ) : (
-            <div className="grid gap-6 pb-12 md:grid-cols-2 lg:grid-cols-3">
+            <div className="events-list">
               {sortedEvents.map((event, index) => (
                 <EventCard
                   key={event.id}
@@ -287,8 +262,8 @@ function EventsPageContent() {
               ))}
             </div>
           )}
-        </Container>
-      </div>
+        </section>
+      </main>
 
       <ReservationModal
         isOpen={isModalOpen}
@@ -305,6 +280,6 @@ function EventsPageContent() {
           fetchPublicEvents()
         }}
       />
-    </>
+    </div>
   )
 }

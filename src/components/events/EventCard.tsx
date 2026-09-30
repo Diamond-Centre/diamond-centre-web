@@ -325,6 +325,7 @@ export default function EventCard({
   const { isAuthenticated } = useAuth()
   const [imgError, setImgError] = useState(false)
   const [promoOpen, setPromoOpen] = useState(false)
+  const [currentImg, setCurrentImg] = useState(0)
 
   const {
     id,
@@ -374,6 +375,16 @@ export default function EventCard({
       : Math.round(Number(price) - (Number(price) * promoPct) / 100)
     : Number(price)
 
+  const images = [image_url, image_url, image_url].filter(Boolean)
+
+  useEffect(() => {
+    if (images.length <= 1) return
+    const timer = setInterval(() => {
+      setCurrentImg((prev) => (prev + 1) % images.length)
+    }, 4000)
+    return () => clearInterval(timer)
+  }, [images.length])
+
   const startT = normalizeTime(start_time, start_date)
   const endT = normalizeTime(end_time, end_date || start_date)
 
@@ -414,174 +425,70 @@ export default function EventCard({
 
   return (
     <>
-      <motion.article
-        {...({
-          className: cn(
-            'group flex h-full flex-col overflow-hidden rounded-[22px] border border-[#E8EEF5] bg-white shadow-[0_8px_24px_rgba(11,18,32,0.045)] transition-shadow duration-300 hover:border-[#0A89F2]/30 hover:shadow-[0_14px_32px_rgba(10,137,242,0.12)]',
-            className
-          ),
-        } as any)}
-        initial={{ opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{
-          duration: 0.35,
-          delay: Math.min(index * 0.04, 0.2),
-          ease: [0.22, 1, 0.36, 1],
-        }}
-        whileHover={{ y: -3 }}
-      >
-        {/* Media — shorter */}
-        <div className="relative h-40 shrink-0 overflow-hidden bg-[#0B1220]">
-          {image_url && !imgError ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={toAbsoluteMediaUrl(image_url) ?? undefined}
-              alt={title || 'Événement DiCe'}
-              className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-              onError={() => setImgError(true)}
-            />
-          ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-[#0A89F2] via-[#0870cc] to-[#003f8a]">
-              <div className="absolute inset-0 opacity-25 [background-image:radial-gradient(circle_at_20%_20%,white_1px,transparent_1px)] [background-size:20px_20px]" />
+      <article className="event-listing-card" style={{ animationDelay: `${index * 0.12}s` }}>
+        <div className="listing-media">
+          <div className="listing-media-slider" style={{ transform: `translateX(-${currentImg * 100}%)` }}>
+            {images.length > 0 && !imgError ? (
+              images.map((imgUrl, i) => (
+                <div key={i} className="listing-media-slide">
+                  <img
+                    src={toAbsoluteMediaUrl(imgUrl) ?? undefined}
+                    alt={title || 'Événement DiCe'}
+                    onError={() => setImgError(true)}
+                  />
+                </div>
+              ))
+            ) : (
+              <div className="listing-media-slide" style={{ background: 'linear-gradient(to bottom right, rgba(10,137,242,0.2), #080E1E)' }} />
+            )}
+          </div>
+          <span className="listing-type">{category || 'Événement'}</span>
+          {hasPromotion && promoPct > 0 && <span className="listing-promo">−{promoPct}%</span>}
+          
+          {images.length > 1 && !imgError && (
+            <div className="listing-dots">
+              {images.map((_, i) => (
+                <i key={i} className={currentImg === i ? 'active' : ''} />
+              ))}
             </div>
           )}
-
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-
-          <div className="absolute bottom-2.5 left-2.5 flex h-11 w-11 flex-col items-center justify-center rounded-xl bg-white text-[#0A89F2] shadow-md">
-            <span className="text-base font-extrabold leading-none">{dayNum}</span>
-            <span className="text-[9px] font-semibold uppercase text-[#667085]">
-              {monthLabel}
-            </span>
-          </div>
-
-          <div className="absolute left-2.5 top-2.5">
-            <span className="rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-semibold capitalize text-[#0B1220] shadow-sm">
-              {category || 'Événement'}
-            </span>
-          </div>
-
-          <div className="absolute right-2.5 top-2.5 flex flex-col items-end gap-1.5">
-            {hasPromotion && promoPct > 0 ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-[#FFB020] px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
-                <FaTag className="text-[8px]" />−{promoPct}%
-              </span>
-            ) : null}
-            <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold text-white ${timingOverlayClass(timingPhase)}`}>
-              {timingLabel}
-            </span>
-            {!isPast && isFull ? (
-              <span className="rounded-full bg-red-500/90 px-2 py-0.5 text-[10px] font-semibold text-white">
-                Complet
-              </span>
-            ) : null}
-          </div>
         </div>
-
-        {/* Body — compact */}
-        <div className="flex flex-1 flex-col gap-2.5 p-4">
-          <h3 className="line-clamp-2 text-[0.95rem] font-bold leading-snug text-[#0B1220] transition-colors group-hover:text-[#0A89F2]">
-            {title || 'Événement DiCe'}
-          </h3>
-
-          {description ? (
-            <p className="line-clamp-1 text-sm text-[#667085]">{description}</p>
-          ) : null}
-
-          <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-[#667085]">
-            {location ? (
-              <span className="inline-flex max-w-full items-center gap-1 truncate">
-                <FaMapMarkerAlt className="shrink-0 text-[10px] text-[#0A89F2]" />
-                <span className="truncate">{location}</span>
-              </span>
-            ) : null}
-
-            {/* Date de fin — affichée uniquement si différente de la date de début */}
-            {!sameDay ? (
-              <span className="inline-flex items-center gap-1">
-                <FaCalendarAlt className="text-[10px] text-[#0A89F2]" />
-                Fin : {formatDay(end_date)}
-              </span>
-            ) : null}
-
-            {/* Heure de début / heure de fin */}
-            {startT || endT ? (
-              <span className="inline-flex items-center gap-1">
-                <FaClock className="text-[10px] text-[#0A89F2]" />
-                {startT && endT ? `${startT} – ${endT}` : startT || endT}
-              </span>
-            ) : null}
-
-            <span className="inline-flex items-center gap-1">
-              <FaUsers className="text-[10px] text-[#0A89F2]" />
-              {isFull ? 'Complet' : `${placesRestantes} pl.`}
-            </span>
+        
+        <div className="listing-body">
+          <div className="listing-date">
+             {dayNum} {monthLabel} {dayStart ? format(dayStart, 'yyyy') : ''}
           </div>
-
-          {hasPromotion ? (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                setPromoOpen(true)
-              }}
-              className="inline-flex w-fit items-center gap-1.5 rounded-full border border-[#FFE2A8] bg-[#FFF8EB] px-3 py-1.5 text-xs font-semibold text-[#B78103] transition hover:bg-[#FFEFCC]"
-            >
-              <FaTag className="text-[10px]" />
-              Détails de la promotion
-              <FaArrowRight className="text-[9px]" />
-            </button>
-          ) : null}
-
-          <div className="mt-auto border-t border-[#F0F2F5] pt-3">
-            <div className="mb-2.5">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#98A2B3]">
-                Tarif
-              </p>
-              {hasPromotion ? (
-                <div className="mt-0.5 flex flex-wrap items-baseline gap-1.5">
-                  <span className="text-lg font-extrabold tabular-nums text-[#0A89F2]">
-                    {formatPrice(promoPrice, currency)}
-                  </span>
-                  <span className="text-xs text-[#98A2B3] line-through">
-                    {formatPrice(price, currency)}
-                  </span>
-                </div>
-              ) : (
-                <p className="mt-0.5 text-lg font-extrabold tabular-nums text-[#0A89F2]">
-                  {Number(price) === 0 ? 'Gratuit' : formatPrice(price, currency)}
-                </p>
-              )}
+          <h3>{title || 'Événement DiCe'}</h3>
+          <p>{description || 'Découvrez notre prochain événement exceptionnel.'}</p>
+          
+          <div className="listing-meta">
+            {location && (
+              <span>⌖ <b>{location}</b></span>
+            )}
+            {(startT || endT) && (
+              <span>◷ <b>{startT && endT ? `${startT} — ${endT}` : startT || endT}</b></span>
+            )}
+            <span>♙ <b>{isFull ? 'Complet' : `${placesRestantes} places`}</b></span>
+          </div>
+          
+          <div className="listing-bottom">
+            <div>
+              <small>À PARTIR DE</small>
+              <strong>{hasPromotion ? formatPrice(promoPrice, currency) : (Number(price) === 0 ? 'Gratuit' : formatPrice(price, currency))}</strong>
             </div>
-
+            
             {showReserveButton ? (
-              <button
-                type="button"
-                onClick={handleReserve}
-                disabled={!canReserve}
-                className={cn(
-                  'inline-flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition',
-                  canReserve
-                    ? 'bg-[#0A89F2] text-white shadow-[0_8px_20px_rgba(10,137,242,0.25)] hover:bg-[#0770cc]'
-                    : 'cursor-not-allowed bg-[#F3F6FA] text-[#98A2B3]'
-                )}
-              >
-                {isPast ? 'Passé' : isFull ? 'Complet' : 'Réserver'}
-                {canReserve ? <FaTicketAlt className="text-xs" /> : null}
+              <button onClick={handleReserve} disabled={!canReserve}>
+                {isPast ? 'Passé' : isFull ? 'Complet' : 'Réserver'} <span>→</span>
               </button>
             ) : (
-              <Link
-                href={`/events/${id}`}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#E8EEF5] py-2.5 text-sm font-semibold text-[#0B1220] transition hover:border-[#0A89F2]/40 hover:text-[#0A89F2]"
-              >
-                Voir l'événement
-                <FaArrowRight className="text-xs" />
-              </Link>
+              <button onClick={() => window.location.href = `/events/${id}`}>
+                Voir <span>→</span>
+              </button>
             )}
           </div>
         </div>
-      </motion.article>
+      </article>
 
       <PromotionModal
         open={promoOpen}
