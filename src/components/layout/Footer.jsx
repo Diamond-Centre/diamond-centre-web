@@ -82,7 +82,7 @@ export default function Footer() {
             <Link
               href="/"
               aria-label="DiCe — Diamond Centre"
-              className="inline-flex h-11 w-[84px] items-center justify-center bg-white"
+              className="inline-flex h-11 w-[84px] items-center justify-center"
             >
               <Image
                 src="/images/logo-dice.png"

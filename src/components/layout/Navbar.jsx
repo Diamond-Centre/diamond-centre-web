@@ -61,7 +61,7 @@ export default function Navbar() {
           {/* Logo (fond blanc conservé comme sur la maquette) */}
           <Link
             href="/"
-            className="flex h-10 w-[77px] shrink-0 items-center justify-center bg-white"
+            className="flex h-10 w-[77px] shrink-0 items-center justify-center"
             aria-label="DiCe — Diamond Centre"
           >
             <Image
@@ -80,11 +80,10 @@ export default function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`inline-flex h-10 items-center rounded-full px-[14px] text-[13px] font-medium uppercase tracking-[0.08em] transition-all duration-300 ${
-                  isActive(link.href)
+                className={`inline-flex h-10 items-center rounded-full px-[14px] text-[13px] font-medium uppercase tracking-[0.08em] transition-all duration-300 ${isActive(link.href)
                     ? 'bg-[#054fde] text-white shadow-[0_0_26px_rgba(5,79,222,0.55)]'
                     : 'text-[#b6bfd1] hover:text-white'
-                }`}
+                  }`}
               >
                 {link.label}
               </Link>
@@ -176,11 +175,10 @@ export default function Navbar() {
                     <Link
                       href={link.href}
                       onClick={() => setIsOpen(false)}
-                      className={`flex items-center justify-between rounded-xl px-4 py-3.5 text-[13px] font-medium uppercase tracking-[0.08em] transition ${
-                        isActive(link.href)
+                      className={`flex items-center justify-between rounded-xl px-4 py-3.5 text-[13px] font-medium uppercase tracking-[0.08em] transition ${isActive(link.href)
                           ? 'bg-white/[0.06] text-white'
                           : 'text-[#b6bfd1] hover:bg-white/[0.04] hover:text-white'
-                      }`}
+                        }`}
                     >
                       {link.label}
                       {isActive(link.href) ? (
