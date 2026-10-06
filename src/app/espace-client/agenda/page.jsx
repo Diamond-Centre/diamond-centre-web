@@ -1,20 +1,9 @@
-/**
- * Agenda client — inspiré de l’app mobile DICE (agenda_page.dart)
- * Hero prochain RDV + calendrier mensuel + liste filtrée par jour
- */
 'use client'
 
 import { useMemo, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import {
-  FaChevronLeft,
-  FaChevronRight,
-  FaMapMarkerAlt,
-  FaTicketAlt,
-  FaTimes,
-  FaClock,
-} from 'react-icons/fa'
+import { FaTimes } from 'react-icons/fa'
 import { api } from '@/lib/api'
 import { auth } from '@/lib/auth'
 import { eventTimingLabel, eventTimingPhase } from '@/lib/eventTiming'
@@ -25,11 +14,6 @@ const WEEKDAYS = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
 const MONTHS = [
   'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
   'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
-]
-
-const MONTHS_SHORT = [
-  'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun',
-  'Jul', 'Aou', 'Sep', 'Oct', 'Nov', 'Déc',
 ]
 
 function toDateKey(d) {
@@ -125,10 +109,11 @@ function buildMonthGrid(focusedMonth) {
   const year = focusedMonth.getFullYear()
   const month = focusedMonth.getMonth()
   const first = new Date(year, month, 1)
-  let mondayOffset = first.getDay() === 0 ? 6 : first.getDay() - 1
+  const mondayOffset = first.getDay() === 0 ? 6 : first.getDay() - 1
   const start = new Date(year, month, 1 - mondayOffset)
   const cells = []
-  for (let i = 0; i < 42; i++) {
+  const weeks = Math.ceil((mondayOffset + new Date(year, month + 1, 0).getDate()) / 7)
+  for (let i = 0; i < weeks * 7; i++) {
     const date = new Date(start)
     date.setDate(start.getDate() + i)
     cells.push({
@@ -151,27 +136,25 @@ function bookingPhase(booking) {
   return eventTimingPhase(bookingEvent(booking))
 }
 
+
+const COUNT_WORDS = ['Aucune', 'Une', 'Deux', 'Trois', 'Quatre', 'Cinq', 'Six', 'Sept', 'Huit', 'Neuf']
+
 function StatusChip({ status }) {
-  const confirmed = status === 'confirmed'
-  return (
-    <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
-        confirmed
-          ? 'bg-emerald-50 text-[#0B9B6B]'
-          : 'bg-[#FFF4DE] text-[#B78103]'
-      }`}
-    >
-      {confirmed ? 'Confirmé' : 'En attente'}
-    </span>
+  return status === 'confirmed' ? (
+    <span className="ec-pill ec-pill--ok">Confirmé</span>
+  ) : (
+    <span className="ec-pill ec-pill--wait">En attente</span>
   )
 }
 
+function phasePill(phase) {
+  if (phase === 'ended') return 'ec-pill--past'
+  if (phase === 'upcoming') return 'ec-pill--blue'
+  return 'ec-pill--ok'
+}
+
 function BookingCard({ booking, onOpen }) {
-  const day = parseKey(booking.date)
-  const dayNum = day.getDate()
-  const mon = MONTHS_SHORT[day.getMonth()]
   const phase = bookingPhase(booking)
-  const past = phase === 'ended'
 
   return (
     <motion.button
@@ -180,61 +163,22 @@ function BookingCard({ booking, onOpen }) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       onClick={() => onOpen(booking)}
-      className={`w-full text-left flex overflow-hidden rounded-[20px] border border-[#E8EEF5] bg-white shadow-[0_8px_24px_rgba(11,18,32,0.04)] hover:shadow-[0_12px_28px_rgba(10,137,242,0.12)] transition-shadow ${
-        past ? 'opacity-75' : ''
-      }`}
+      className="ec-item ec-item--lg"
+      style={{ opacity: phase === 'ended' ? 0.85 : undefined }}
     >
-      {/* Time rail — mobile style */}
-      <div
-        className={`w-[88px] shrink-0 flex flex-col items-center justify-center py-4 px-2 ${
-          past ? 'bg-slate-100' : 'bg-[#E8F3FE]'
-        }`}
-      >
-        <span className={`text-sm font-bold ${past ? 'text-slate-500' : 'text-[#0A89F2]'}`}>
-          {booking.start}
-        </span>
-        <span className="text-[10px] text-[#98A2B3] mt-0.5">
-          {dayNum} {mon}
-        </span>
-        <div className="my-2 flex flex-col items-center gap-1">
-          <span className={`w-1.5 h-1.5 rounded-full ${past ? 'bg-slate-400' : 'bg-[#0A89F2]'}`} />
-          <span className={`w-px h-6 ${past ? 'bg-slate-300' : 'bg-[#0A89F2]/40'}`} />
-          <span className={`w-1.5 h-1.5 rounded-full ${past ? 'bg-slate-400' : 'bg-[#0A89F2]'}`} />
-        </div>
-        <span className={`text-sm font-bold ${past ? 'text-slate-500' : 'text-[#0A89F2]'}`}>
-          {booking.end}
-        </span>
-        <span className="text-[10px] text-[#98A2B3] mt-0.5">
-          {dayNum} {mon}
-        </span>
+      <div className="ec-date">
+        <b style={{ fontSize: 15 }}>{booking.start}</b>
       </div>
-
-      <div className="flex-1 p-4 min-w-0 flex flex-col justify-center gap-1.5">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 flex-wrap">
-            <StatusChip status={booking.status} />
-            <span className={`text-[11px] font-semibold ${
-              phase === 'ended' ? 'text-[#98A2B3]' : phase === 'upcoming' ? 'text-[#0A89F2]' : 'text-[#0B9B6B]'
-            }`}>
-              {eventTimingLabel(bookingEvent(booking))}
-            </span>
-          </div>
-          <span className="text-xs text-[#98A2B3] font-medium">
-            {durationLabel(booking.start, booking.end)}
-          </span>
-        </div>
-        <h3 className="font-semibold text-[#0B1220] text-[15px] leading-snug line-clamp-2">
-          {booking.title}
-        </h3>
-        <p className="text-sm text-[#667085] flex items-center gap-1.5 truncate">
-          <FaMapMarkerAlt className="text-[#0A89F2] text-xs shrink-0" />
-          {booking.location}
+      <div className="ec-item-body">
+        <span className={`ec-pill ${phasePill(phase)}`}>
+          {eventTimingLabel(bookingEvent(booking))}
+        </span>
+        <p className="ec-item-title" style={{ marginTop: 8 }}>{booking.title}</p>
+        <p className="ec-item-meta">
+          <span aria-hidden="true">⌖</span> {booking.location}
         </p>
       </div>
-
-      <div className="pr-4 flex items-center text-[#98A2B3]">
-        <span className="text-xl leading-none">›</span>
-      </div>
+      <span className="ec-item-arrow" aria-hidden="true">→</span>
     </motion.button>
   )
 }
@@ -245,89 +189,67 @@ function DetailModal({ booking, onClose }) {
   const day = parseKey(booking.date)
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm">
+    <div className="ec-modal" onClick={onClose} role="presentation">
       <motion.div
+        role="dialog"
+        aria-modal="true"
         initial={{ y: 40, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 40, opacity: 0 }}
-        className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden"
+        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+        onClick={(e) => e.stopPropagation()}
+        className="ec-modal-panel"
       >
-        <div className="bg-gradient-to-br from-[#0A89F2] to-[#0057C2] px-6 pt-5 pb-6 text-white">
-          <div className="flex justify-between items-start gap-3">
-            <div>
-              <p className="text-white/80 text-xs font-medium mb-1">Détail de la réservation</p>
-              <h3 className="text-lg font-bold leading-snug">{booking.title}</h3>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-2 rounded-full bg-white/15 hover:bg-white/25 transition-colors"
-              aria-label="Fermer"
-            >
-              <FaTimes />
-            </button>
-          </div>
-        </div>
-
-        <div className="p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div className="rounded-2xl bg-[#F3F6FA] p-3">
-              <p className="text-[#98A2B3] text-xs mb-1">Début</p>
-              <p className="font-semibold text-[#0B1220] flex items-center gap-1.5">
-                <FaClock className="text-[#0A89F2] text-xs" />
-                {booking.start}
-              </p>
-              <p className="text-xs text-[#667085] mt-0.5 capitalize">{formatFullDate(day)}</p>
-            </div>
-            <div className="rounded-2xl bg-[#F3F6FA] p-3">
-              <p className="text-[#98A2B3] text-xs mb-1">Fin</p>
-              <p className="font-semibold text-[#0B1220] flex items-center gap-1.5">
-                <FaClock className="text-[#0A89F2] text-xs" />
-                {booking.end}
-              </p>
-              <p className="text-xs text-[#667085] mt-0.5">
-                Durée {durationLabel(booking.start, booking.end)}
-              </p>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-[#E8EEF5] p-4 space-y-2 text-sm">
-            <p className="flex items-start gap-2 text-[#667085]">
-              <FaMapMarkerAlt className="text-[#0A89F2] mt-0.5 shrink-0" />
-              <span>
-                <span className="block text-xs text-[#98A2B3]">Lieu</span>
-                <span className="text-[#0B1220] font-medium">{booking.location}</span>
-              </span>
-            </p>
-            <p className="flex items-start gap-2 text-[#667085]">
-              <FaTicketAlt className="text-[#0A89F2] mt-0.5 shrink-0" />
-              <span>
-                <span className="block text-xs text-[#98A2B3]">N° billet</span>
-                <span className="text-[#0B1220] font-medium font-mono">{booking.ticketCode}</span>
-              </span>
-            </p>
-            <div>
+        <div className="ec-modal-head">
+          <div>
+            <p className="ec-eyebrow">Détail de la réservation</p>
+            <h3>{booking.title}</h3>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
               <StatusChip status={booking.status} />
-              <span className={`ml-2 text-xs font-medium ${
-                phase === 'ended' ? 'text-[#98A2B3]' : phase === 'upcoming' ? 'text-[#0A89F2]' : 'text-[#0B9B6B]'
-              }`}>
+              <span className={`ec-pill ${phasePill(phase)}`}>
                 {eventTimingLabel(bookingEvent(booking))}
               </span>
             </div>
           </div>
+          <button type="button" onClick={onClose} className="ec-modal-close" aria-label="Fermer">
+            <FaTimes />
+          </button>
+        </div>
 
-          <div className="flex gap-3 pt-1">
+        <div className="ec-modal-body">
+          <div className="ec-tiles2">
+            <div className="ec-tile">
+              <p className="ec-tile-label">Début</p>
+              <p className="ec-tile-value">{booking.start}</p>
+              <p className="ec-tile-text" style={{ textTransform: 'capitalize' }}>{formatFullDate(day)}</p>
+            </div>
+            <div className="ec-tile">
+              <p className="ec-tile-label">Fin</p>
+              <p className="ec-tile-value">{booking.end}</p>
+              <p className="ec-tile-text">Durée {durationLabel(booking.start, booking.end)}</p>
+            </div>
+          </div>
+
+          <div className="ec-tile">
+            <p className="ec-tile-label">Lieu</p>
+            <p className="ec-tile-value">{booking.location}</p>
+          </div>
+          <div className="ec-tile">
+            <p className="ec-tile-label">N° billet</p>
+            <p className="ec-tile-value" style={{ fontFamily: 'ui-monospace, monospace' }}>
+              {booking.ticketCode}
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: 12 }}>
             <Link
               href="/espace-client/tickets"
-              className="flex-1 text-center py-3 rounded-2xl bg-[#0A89F2] text-white font-semibold text-sm hover:bg-[#0770cc] transition-colors"
+              className="ec-btn ec-btn--sky"
+              style={{ flex: 1 }}
             >
-              Voir le billet
+              Voir le billet →
             </Link>
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-3 rounded-2xl border border-[#E8EEF5] text-[#667085] font-medium text-sm hover:bg-[#F3F6FA] transition-colors"
-            >
+            <button type="button" onClick={onClose} className="ec-btn ec-btn--dark" style={{ height: 50, borderRadius: 14 }}>
               Fermer
             </button>
           </div>
@@ -396,7 +318,6 @@ export default function AgendaPage() {
   }, [loading, nearestUpcoming, syncedOnce])
 
   const eventKeys = useMemo(() => new Set(bookings.map((b) => b.date)), [bookings])
-  const nearestKey = nearestUpcoming?.date
 
   const cells = useMemo(() => buildMonthGrid(focusedMonth), [focusedMonth])
 
@@ -427,216 +348,132 @@ export default function AgendaPage() {
     }
   }
 
-  const listTitle = selectedDay
-    ? formatFullDate(selectedDay)
-    : 'Toutes les réservations'
+  const monthName = MONTHS[focusedMonth.getMonth()]
+  const monthCount = bookings.filter((b) => {
+    const d = parseKey(b.date)
+    return (
+      d.getMonth() === focusedMonth.getMonth() &&
+      d.getFullYear() === focusedMonth.getFullYear()
+    )
+  }).length
+
+  let planningLine = 'Aucune réservation enregistrée ce mois-ci.'
+  if (monthCount === 1) planningLine = 'Une réservation est actuellement enregistrée.'
+  else if (monthCount > 1) {
+    const word = COUNT_WORDS[monthCount] || String(monthCount)
+    planningLine = `${word} réservations sont actuellement enregistrées.`
+  }
+
+  let listTitle = 'Toutes les réservations'
+  if (selectedDay) {
+    const dayNum = selectedDay.getDate()
+    const monthLabel = `${MONTHS[selectedDay.getMonth()]} ${selectedDay.getFullYear()}`
+    const weekday = selectedDay.toLocaleDateString('fr-FR', { weekday: 'long' })
+    listTitle =
+      filtered.length > 0
+        ? `${weekday.charAt(0).toUpperCase() + weekday.slice(1)} ${dayNum} ${monthLabel}`
+        : `Jour ${dayNum} · ${monthLabel}`
+  }
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
-      {/* Title */}
-      <div>
-        <h2 className="text-[28px] font-extrabold text-[#0B1220] tracking-tight">Agenda</h2>
-        <p className="text-[#667085] text-sm mt-1">
-          Calendrier de vos réservations synchronisées avec le serveur DICE.
+    <div>
+      <header>
+        <h1 className="ec-h1" style={{ marginTop: 0 }}>Agenda</h1>
+        <p className="ec-lead" style={{ marginTop: 6 }}>
+          Calendrier de vos réservations synchronisées avec DiCe.
         </p>
-      </div>
+      </header>
 
       {loading ? (
-        <div className="rounded-[24px] border border-[#E8EEF5] bg-white p-10 text-center text-[#667085]">
+        <div className="ec-card ec-loading" style={{ marginTop: 24 }}>
           Chargement de l’agenda…
         </div>
       ) : error ? (
-        <LoadError onRetry={() => window.location.reload()} />
+        <div style={{ marginTop: 24 }}>
+          <LoadError onRetry={() => window.location.reload()} />
+        </div>
       ) : (
         <>
-      {/* Hero — prochain événement */}
-      <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-[#0A89F2] to-[#0057C2] text-white shadow-[0_16px_40px_rgba(10,137,242,0.28)]">
-        <div className="absolute -right-8 -top-8 w-40 h-40 rounded-full bg-white/10" />
-        <div className="absolute -left-6 bottom-0 w-28 h-28 rounded-full bg-white/5" />
-        <div className="relative p-5 sm:p-6">
-          <p className="text-white/80 text-xs font-semibold uppercase tracking-wide mb-2">
-            {nearestUpcoming ? 'Prochain événement' : 'Planning DiCe'}
-          </p>
-          {nearestUpcoming ? (
-            <>
-              <h3 className="text-xl font-bold leading-snug mb-3 max-w-md">
-                {nearestUpcoming.title}
-              </h3>
-              <div className="flex flex-wrap gap-3 text-sm text-white/90 mb-4">
-                <span className="inline-flex items-center gap-1.5 bg-white/15 rounded-full px-3 py-1">
-                  <FaClock className="text-xs" />
-                  {nearestUpcoming.start} – {nearestUpcoming.end}
-                </span>
-                <span className="inline-flex items-center gap-1.5 bg-white/15 rounded-full px-3 py-1">
-                  <FaMapMarkerAlt className="text-xs" />
-                  {nearestUpcoming.location}
-                </span>
+          <section className="ec-card ec-planning" style={{ marginTop: 24 }}>
+            <small>Planning DiCe</small>
+            <h2>Vos expériences de {monthName.toLowerCase()}</h2>
+            <p>{planningLine}</p>
+          </section>
+
+          <section className="ec-card ec-cal">
+            <div className="ec-cal-head">
+              <div className="ec-cal-nav">
+                <button type="button" onClick={() => goMonth(-1)} aria-label="Mois précédent">‹</button>
+                <h3>{monthName} {focusedMonth.getFullYear()}</h3>
+                <button type="button" onClick={() => goMonth(1)} aria-label="Mois suivant">›</button>
               </div>
               <button
                 type="button"
-                onClick={() => setDetail(nearestUpcoming)}
-                className="inline-flex items-center gap-2 bg-white text-[#0A89F2] font-semibold text-sm px-4 py-2.5 rounded-2xl hover:bg-white/95 transition-colors"
+                className="ec-cal-all"
+                aria-pressed={selectedDay === null}
+                onClick={() => setSelectedDay(null)}
               >
-                Voir les détails
+                Tout
               </button>
-            </>
-          ) : (
-            <>
-              <h3 className="text-xl font-bold mb-2">Aucune réservation à venir</h3>
-              <p className="text-white/80 text-sm mb-4">
-                Explorez les événements et réservez votre place.
-              </p>
-              <Link
-                href="/events"
-                className="inline-flex bg-white text-[#0A89F2] font-semibold text-sm px-4 py-2.5 rounded-2xl"
-              >
-                Voir les événements
-              </Link>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Calendar card */}
-      <div className="rounded-[24px] bg-white border border-[#E8EEF5] shadow-[0_8px_30px_rgba(11,18,32,0.05)] p-4 sm:p-5">
-        <div className="flex items-center justify-between mb-4 gap-2">
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => goMonth(-1)}
-              className="p-2.5 rounded-xl hover:bg-[#E8F3FE] text-[#667085] transition-colors"
-              aria-label="Mois précédent"
-            >
-              <FaChevronLeft />
-            </button>
-            <h3 className="text-base sm:text-lg font-bold text-[#0B1220] min-w-[140px] text-center capitalize">
-              {MONTHS[focusedMonth.getMonth()]} {focusedMonth.getFullYear()}
-            </h3>
-            <button
-              type="button"
-              onClick={() => goMonth(1)}
-              className="p-2.5 rounded-xl hover:bg-[#E8F3FE] text-[#667085] transition-colors"
-              aria-label="Mois suivant"
-            >
-              <FaChevronRight />
-            </button>
-          </div>
-          <button
-            type="button"
-            onClick={() => setSelectedDay(null)}
-            className={`px-3.5 py-2 rounded-full text-xs font-semibold transition-colors ${
-              selectedDay === null
-                ? 'bg-[#0A89F2] text-white'
-                : 'bg-[#E8F3FE] text-[#0A89F2] hover:bg-[#d6ebfc]'
-            }`}
-          >
-            Tout
-          </button>
-        </div>
-
-        <p className="text-[11px] text-[#98A2B3] mb-3">
-          Cercle ambre = prochain événement — touchez un jour pour filtrer.
-        </p>
-
-        <div className="grid grid-cols-7 gap-1 mb-1">
-          {WEEKDAYS.map((d, i) => (
-            <div
-              key={`${d}-${i}`}
-              className="text-center text-[11px] font-semibold text-[#98A2B3] py-1"
-            >
-              {d}
             </div>
-          ))}
-        </div>
 
-        <div className="grid grid-cols-7 gap-1">
-          {cells.map(({ date, inMonth, key }) => {
-            const hasEvent = eventKeys.has(key)
-            const isNearest = key === nearestKey
-            const isSelected = selectedDay && sameDay(date, selectedDay)
-            const isTod = sameDay(date, today)
+            <div className="ec-cal-week">
+              {WEEKDAYS.map((d, i) => (
+                <span key={`${d}-${i}`}>{d}</span>
+              ))}
+            </div>
 
-            return (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setSelectedDay(date)}
-                className={`
-                  relative aspect-square rounded-2xl flex flex-col items-center justify-center
-                  transition-all text-sm font-semibold
-                  ${!inMonth ? 'text-[#CBD5E1]' : 'text-[#0B1220]'}
-                  ${isSelected ? 'bg-[#0A89F2] text-white shadow-md shadow-blue-500/25' : ''}
-                  ${!isSelected && isTod ? 'bg-[#E8F3FE] text-[#0A89F2]' : ''}
-                  ${!isSelected && !isTod && inMonth ? 'hover:bg-[#F3F6FA]' : ''}
-                `}
-              >
-                <span
-                  className={`
-                    w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full
-                    ${isNearest && !isSelected ? 'ring-2 ring-[#FFB020] ring-offset-1' : ''}
-                  `}
-                >
-                  {date.getDate()}
-                </span>
-                {hasEvent && !isSelected && (
-                  <span
-                    className={`absolute bottom-1 w-1 h-1 rounded-full ${
-                      isNearest ? 'bg-[#FFB020]' : 'bg-[#0A89F2]'
-                    }`}
-                  />
-                )}
-              </button>
-            )
-          })}
-        </div>
-      </div>
+            <div className="ec-cal-grid">
+              {cells.map(({ date, key }) => {
+                const hasEvent = eventKeys.has(key)
+                const isSelected = Boolean(selectedDay && sameDay(date, selectedDay))
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    className="ec-cal-day"
+                    aria-pressed={isSelected}
+                    data-today={sameDay(date, today)}
+                    onClick={() => setSelectedDay(date)}
+                  >
+                    {date.getDate()}
+                    {hasEvent && !isSelected ? <span className="ec-cal-dot" /> : null}
+                  </button>
+                )
+              })}
+            </div>
+          </section>
 
-      {/* List header */}
-      <div className="flex items-center justify-between gap-3">
-        <h3 className="text-base font-bold text-[#0B1220] capitalize truncate">
-          {listTitle}
-        </h3>
-        <span className="shrink-0 inline-flex items-center px-2.5 py-1 rounded-full bg-[#E8F3FE] text-[#0A89F2] text-xs font-bold">
-          {filtered.length} réservation{filtered.length !== 1 ? 's' : ''}
-        </span>
-      </div>
+          <div className="ec-day-head">
+            <h3>{listTitle}</h3>
+            <span>
+              {filtered.length} réservation{filtered.length > 1 ? 's' : ''}
+            </span>
+          </div>
 
-      {/* Event list */}
-      <div className="space-y-3">
-        <AnimatePresence mode="popLayout">
           {filtered.length === 0 ? (
-            <motion.div
-              key="empty"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center py-12 rounded-[24px] border border-dashed border-[#E8EEF5] bg-white"
-            >
-              <p className="text-[#667085] mb-4">Rien ce jour-là</p>
-              <Link
-                href="/events"
-                className="inline-flex px-4 py-2.5 rounded-2xl bg-[#0A89F2] text-white text-sm font-semibold"
-              >
-                Voir les événements
+            <div className="ec-empty">
+              <div className="ec-empty-ico" aria-hidden="true">▣</div>
+              <h3>Rien ce jour-là</h3>
+              <p>Vos billets apparaîtront ici au bon moment.</p>
+              <Link href="/events" className="ec-btn ec-btn--sky">
+                Voir les événements →
               </Link>
-            </motion.div>
+            </div>
           ) : (
-            filtered.map((b) => (
-              <BookingCard
-                key={b.id}
-                booking={b}
-                onOpen={setDetail}
-              />
-            ))
+            <div className="ec-list ec-list--loose">
+              <AnimatePresence mode="popLayout">
+                {filtered.map((b) => (
+                  <BookingCard key={b.id} booking={b} onOpen={setDetail} />
+                ))}
+              </AnimatePresence>
+            </div>
           )}
-        </AnimatePresence>
-      </div>
         </>
       )}
 
       <AnimatePresence>
-        {detail && (
-          <DetailModal booking={detail} onClose={() => setDetail(null)} />
-        )}
+        {detail && <DetailModal booking={detail} onClose={() => setDetail(null)} />}
       </AnimatePresence>
     </div>
   )

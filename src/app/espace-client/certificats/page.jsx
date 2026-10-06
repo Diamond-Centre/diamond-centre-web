@@ -3,17 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { AnimatePresence, motion } from 'framer-motion'
-import {
-  FaArrowRight,
-  FaCalendarAlt,
-  FaCertificate,
-  FaDownload,
-  FaEye,
-  FaMapMarkerAlt,
-  FaSearch,
-  FaSpinner,
-  FaTimes,
-} from 'react-icons/fa'
+import { FaDownload, FaEye, FaSpinner, FaTimes } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 import { api } from '@/lib/api'
 import { auth } from '@/lib/auth'
@@ -30,6 +20,7 @@ function formatDate(value) {
   })
 }
 
+
 function CertificateDetail({
   cert,
   onClose,
@@ -41,11 +32,7 @@ function CertificateDetail({
   if (!cert) return null
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-4"
-      onClick={onClose}
-      role="presentation"
-    >
+    <div className="ec-modal" onClick={onClose} role="presentation">
       <motion.div
         role="dialog"
         aria-modal="true"
@@ -54,97 +41,71 @@ function CertificateDetail({
         exit={{ y: 40, opacity: 0 }}
         transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
         onClick={(e) => e.stopPropagation()}
-        className="max-h-[92vh] w-full overflow-y-auto rounded-t-3xl bg-white shadow-2xl sm:max-w-md sm:rounded-3xl"
+        className="ec-modal-panel"
       >
-        <div className="relative overflow-hidden bg-gradient-to-br from-[#0A89F2] to-[#0057C2] px-6 pb-7 pt-5 text-white">
-          <div className="mb-3 flex items-start justify-between gap-3">
-            <div>
-              <p className="text-xs font-medium text-white/75">
-                {cert.template?.title || 'Certificat de formation'}
-              </p>
-              <h3 className="mt-1 text-lg font-bold leading-snug">
-                {cert.formation_title || 'Formation DiCe'}
-              </h3>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-full bg-white/15 p-2 transition hover:bg-white/25"
-              aria-label="Fermer"
-            >
-              <FaTimes />
-            </button>
+        <div className="ec-modal-head">
+          <div>
+            <p className="ec-eyebrow">{cert.template?.title || 'Certificat de formation'}</p>
+            <h3>{cert.formation_title || 'Formation DiCe'}</h3>
+            <p className="ec-tile-text" style={{ fontFamily: 'ui-monospace, monospace', marginTop: 10 }}>
+              {cert.code}
+            </p>
           </div>
-          <p className="font-mono text-xs text-white/80">{cert.code}</p>
+          <button type="button" onClick={onClose} className="ec-modal-close" aria-label="Fermer">
+            <FaTimes />
+          </button>
         </div>
 
-        <div className="space-y-3 px-6 py-6 text-sm">
-          <div className="rounded-2xl border border-[#E8EEF5] p-4">
-            <p className="text-[11px] text-[#98A2B3]">Participant</p>
-            <p className="mt-0.5 font-semibold text-[#0B1220]">
-              {cert.recipient_name || '—'}
-            </p>
-            <p className="text-xs text-[#667085]">{cert.recipient_email}</p>
+        <div className="ec-modal-body">
+          <div className="ec-tile">
+            <p className="ec-tile-label">Participant</p>
+            <p className="ec-tile-value">{cert.recipient_name || '—'}</p>
+            <p className="ec-tile-text">{cert.recipient_email}</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-2xl bg-[#F3F6FA] p-3">
-              <p className="text-[11px] text-[#98A2B3]">Début</p>
-              <p className="mt-0.5 font-semibold text-[#0B1220]">
-                {formatDate(cert.start_date)}
-              </p>
+          <div className="ec-tiles2">
+            <div className="ec-tile">
+              <p className="ec-tile-label">Début</p>
+              <p className="ec-tile-value">{formatDate(cert.start_date)}</p>
             </div>
-            <div className="rounded-2xl bg-[#F3F6FA] p-3">
-              <p className="text-[11px] text-[#98A2B3]">Fin</p>
-              <p className="mt-0.5 font-semibold text-[#0B1220]">
-                {formatDate(cert.end_date)}
-              </p>
+            <div className="ec-tile">
+              <p className="ec-tile-label">Fin</p>
+              <p className="ec-tile-value">{formatDate(cert.end_date)}</p>
             </div>
           </div>
 
           {cert.location ? (
-            <p className="flex items-start gap-2 text-[#667085]">
-              <FaMapMarkerAlt className="mt-0.5 shrink-0 text-[#0A89F2]" />
-              <span>
-                <span className="block text-[11px] text-[#98A2B3]">Lieu</span>
-                <span className="font-medium text-[#0B1220]">{cert.location}</span>
-              </span>
-            </p>
+            <div className="ec-tile">
+              <p className="ec-tile-label">Lieu</p>
+              <p className="ec-tile-value">{cert.location}</p>
+            </div>
           ) : null}
 
-          <p className="text-xs text-[#98A2B3]">
+          <p className="ec-modal-note">
             Délivré le {formatDate(cert.issued_at)}
             {cert.issuer_name ? ` · ${cert.issuer_name}` : ''}
           </p>
 
-          <div className="flex flex-col gap-2 pt-1">
-            <button
-              type="button"
-              disabled={previewing}
-              onClick={() => onPreview(cert)}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#0A89F2] py-3.5 text-sm font-semibold text-white transition hover:bg-[#0770cc] disabled:opacity-60"
-            >
-              {previewing ? (
-                <FaSpinner className="animate-spin" />
-              ) : (
-                <FaEye />
-              )}
-              Voir le certificat
-            </button>
-            <button
-              type="button"
-              disabled={downloading}
-              onClick={() => onDownload(cert)}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-[#E8EEF5] py-3.5 text-sm font-semibold text-[#0B1220] transition hover:border-[#0A89F2]/40 hover:text-[#0A89F2] disabled:opacity-60"
-            >
-              {downloading ? (
-                <FaSpinner className="animate-spin" />
-              ) : (
-                <FaDownload />
-              )}
-              Télécharger le PDF
-            </button>
-          </div>
+          <button
+            type="button"
+            disabled={previewing}
+            onClick={() => onPreview(cert)}
+            className="ec-btn ec-btn--sky"
+            style={{ width: '100%' }}
+          >
+            {previewing ? <FaSpinner className="animate-spin" /> : <FaEye />}
+            Voir le certificat
+          </button>
+          <button
+            type="button"
+            disabled={downloading}
+            onClick={() => onDownload(cert)}
+            className="ec-btn ec-btn--dark"
+            style={{ width: '100%', height: 50, borderRadius: 14 }}
+          >
+            {downloading ? <FaSpinner className="animate-spin" /> : <FaDownload />}
+            Télécharger le PDF
+          </button>
         </div>
       </motion.div>
     </div>
@@ -319,131 +280,100 @@ export default function CertificatesPage() {
   }
 
   return (
-    <div className="space-y-7">
-      <motion.header
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
+    <div>
+      <section
+        className="ec-card ec-card--pad"
       >
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0A89F2]">
-            Formations
-          </p>
-          <h1 className="mt-1 text-[2rem] font-extrabold tracking-tight text-[#0B1220]">
-            Mes certificats
-          </h1>
-          <p className="mt-1 max-w-md text-[#667085]">
-            Attestations délivrées pour vos formations DiCe réussies.
-          </p>
+        {/* image en verre : défile en continu dans la zone qui lui est réservée */}
+        <div className="ec-folder" aria-hidden="true">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/espace-client/glass-folder.jpg" alt="" draggable={false} />
         </div>
-        {!loading && !error ? (
-          <div className="rounded-[18px] border border-[#E8EEF5] bg-white px-4 py-3 text-right shadow-[0_6px_20px_rgba(11,18,32,0.04)]">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#98A2B3]">
-              Total
-            </p>
-            <p className="text-2xl font-extrabold tabular-nums text-[#0B1220]">
-              {certificates.length}
+
+        <div className="ec-card-head">
+          <div>
+            <p className="ec-eyebrow">Formations</p>
+            <h1 className="ec-card-title">Mes certificats</h1>
+            <p className="ec-card-sub">
+              Attestations délivrées pour vos formations DiCe réussies.
             </p>
           </div>
-        ) : null}
-      </motion.header>
-
-      {!loading && certificates.length > 0 ? (
-        <div className="relative">
-          <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-[#98A2B3]" />
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Rechercher par formation ou code…"
-            className="w-full rounded-2xl border border-[#E8EEF5] bg-white py-3 pl-11 pr-4 text-sm outline-none transition focus:border-[#0A89F2]/40 focus:ring-2 focus:ring-[#0A89F2]/15"
-          />
-        </div>
-      ) : null}
-
-      {loading ? (
-        <div className="flex h-48 items-center justify-center rounded-[28px] border border-[#E8EEF5] bg-white text-[#667085]">
-          <FaSpinner className="mr-2 h-4 w-4 animate-spin" />
-          Chargement des certificats…
-        </div>
-      ) : error ? (
-        <LoadError onRetry={() => window.location.reload()} />
-      ) : filtered.length === 0 ? (
-        <div className="relative overflow-hidden rounded-[28px] border border-[#E8EEF5] bg-white">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(10,137,242,0.1),_transparent_55%)]" />
-          <div className="relative px-6 py-14 text-center sm:py-16">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E8F3FE] text-[#0A89F2]">
-              <FaCertificate className="text-xl" />
+          {!loading && !error ? (
+            <div className="ec-stat ec-stat--total">
+              <small>Total</small>
+              <strong>{certificates.length}</strong>
             </div>
-            <h2 className="text-xl font-extrabold text-[#0B1220]">
-              {search ? 'Aucun résultat' : 'Aucun certificat'}
-            </h2>
-            <p className="mx-auto mt-2 max-w-sm text-sm text-[#667085]">
+          ) : null}
+        </div>
+
+        {!loading && certificates.length > 0 ? (
+          <label className="ec-search">
+            <span aria-hidden="true">⌕</span>
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Rechercher par formation ou code…"
+            />
+          </label>
+        ) : (
+          <div style={{ height: 40 }} />
+        )}
+
+        {loading ? (
+          <div className="ec-loading">
+            <FaSpinner className="animate-spin" />
+            Chargement des certificats…
+          </div>
+        ) : error ? (
+          <LoadError onRetry={() => window.location.reload()} />
+        ) : filtered.length === 0 ? (
+          <div className="ec-empty">
+            <div className="ec-empty-ico" aria-hidden="true">✦</div>
+            <h3>{search ? 'Aucun résultat' : 'Aucun certificat'}</h3>
+            <p>
               {search
                 ? 'Essayez un autre terme de recherche.'
                 : 'Vos certificats apparaîtront ici après validation d’une formation.'}
             </p>
             {!search ? (
-              <Link
-                href="/events"
-                className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-[#0A89F2] px-5 py-3 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(10,137,242,0.28)] transition hover:bg-[#0770cc]"
-              >
-                Voir les formations
-                <FaArrowRight className="text-xs" />
+              <Link href="/events" className="ec-btn ec-btn--sky">
+                Voir les formations →
               </Link>
             ) : null}
           </div>
-        </div>
-      ) : (
-        <ul className="space-y-3">
-          {filtered.map((cert, i) => (
-            <motion.li
-              key={cert.id || cert.code}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: Math.min(i * 0.04, 0.2) }}
-            >
-              <button
-                type="button"
-                onClick={() => setSelected(cert)}
-                className="group flex w-full overflow-hidden rounded-[22px] border border-[#E8EEF5] bg-white text-left shadow-[0_8px_24px_rgba(11,18,32,0.04)] transition hover:border-[#0A89F2]/30 hover:shadow-[0_14px_32px_rgba(10,137,242,0.1)]"
-              >
-                <div className="flex w-[72px] shrink-0 flex-col items-center justify-center bg-[#E8F3FE] text-[#0A89F2]">
-                  <FaCertificate className="text-xl" />
-                </div>
-                <div className="flex min-w-0 flex-1 flex-col justify-center gap-1.5 p-4 sm:p-5">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-[#E8F8F1] px-2.5 py-0.5 text-[11px] font-semibold text-[#0B9B6B]">
-                      Validé
+        ) : (
+          <ul className="ec-list ec-list--loose">
+            {filtered.map((cert) => (
+              <li key={cert.id || cert.code}>
+                <button
+                  type="button"
+                  onClick={() => setSelected(cert)}
+                  className="ec-item ec-cert"
+                >
+                  <span className="ec-item-icon" aria-hidden="true">✦</span>
+                  <span className="ec-item-body">
+                    <span className="ec-cert-top">
+                      <span className="ec-pill ec-pill--ok">Validé</span>
+                      <span>{cert.code}</span>
                     </span>
-                    <span className="font-mono text-[11px] text-[#98A2B3]">
-                      {cert.code}
+                    <span className="ec-item-title">
+                      {cert.formation_title || 'Formation'}
                     </span>
-                  </div>
-                  <h2 className="truncate text-[15px] font-semibold text-[#0B1220] group-hover:text-[#0A89F2]">
-                    {cert.formation_title || 'Formation'}
-                  </h2>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#667085]">
-                    <span className="inline-flex items-center gap-1.5">
-                      <FaCalendarAlt className="text-[10px] text-[#0A89F2]" />
-                      {formatDate(cert.issued_at)}
+                    <span className="ec-item-meta" style={{ margin: 0, display: 'flex', flexWrap: 'wrap', columnGap: 18 }}>
+                      <span><span aria-hidden="true">▦</span> {formatDate(cert.issued_at)}</span>
+                      {cert.location ? (
+                        <span><span aria-hidden="true">⌖</span> {cert.location}</span>
+                      ) : null}
                     </span>
-                    {cert.location ? (
-                      <span className="inline-flex max-w-full items-center gap-1.5 truncate">
-                        <FaMapMarkerAlt className="shrink-0 text-[10px] text-[#0A89F2]" />
-                        <span className="truncate">{cert.location}</span>
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
-                <div className="hidden items-center pr-4 text-[#CBD5E1] transition group-hover:text-[#0A89F2] sm:flex">
-                  <FaArrowRight className="text-xs" />
-                </div>
-              </button>
-            </motion.li>
-          ))}
-        </ul>
-      )}
+                  </span>
+                  <span className="ec-item-arrow" aria-hidden="true">→</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <AnimatePresence>
         {selected ? (

@@ -3,21 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import {
-  FaEnvelope,
-  FaPhone,
-  FaUser,
-  FaVenusMars,
-  FaLock,
-  FaShieldAlt,
-  FaChevronRight,
-  FaKey,
-  FaMobileAlt,
-  FaDesktop,
-  FaTrashAlt,
-  FaExclamationTriangle,
-  FaCamera,
-} from 'react-icons/fa'
+import { FaCamera } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 import { auth } from '@/lib/auth'
 import { api } from '@/lib/api'
@@ -354,418 +340,292 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-dice-blue border-t-transparent" />
+      <div className="ec-loading" style={{ minHeight: 320 }}>
+        <div className="ec-spinner" />
       </div>
     )
   }
 
+  const otherSessions = sessions.filter((s) => !s.current).length
+
   return (
-    <div className="mx-auto max-w-6xl space-y-8 px-4 py-8">
+    <div>
+      <section className="ec-card ec-card--pad" style={{ padding: 41 }}>
+        <h1 className="ec-card-title" style={{ margin: 0 }}>Paramètres du compte</h1>
+        <p className="ec-card-sub">
+          Gérez vos informations personnelles et la sécurité de vos accès.
+        </p>
 
-      {/* En-tête de la page */}
-      <div className="flex items-center gap-4 border-b border-gray-100 pb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight md:text-4xl">
-            Paramètres du compte
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Gérez vos informations personnelles et la sécurité de vos accès.
-          </p>
-        </div>
-      </div>
-
-      {/* Grid Principal avec Sidebar Navigation */}
-      <div className="grid lg:grid-cols-12 gap-8 items-start">
-
-        {/* Navigation Latérale */}
-        <aside className="lg:col-span-3">
-          <nav className="flex lg:flex-col gap-2 p-2 bg-gray-50 rounded-2xl border border-gray-200/80">
+        <div className="ec-account">
+          <nav className="ec-side" aria-label="Paramètres">
             <button
               type="button"
+              aria-pressed={activeTab === 'profil'}
               onClick={() => setActiveTab('profil')}
-              className={`flex items-center justify-between px-4 py-3.5 text-base font-medium rounded-xl transition-all ${activeTab === 'profil'
-                ? 'bg-white text-dice-blue shadow-sm font-semibold'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
-                }`}
             >
-              <div className="flex items-center gap-3">
-                <FaUser className="text-sm" />
-                <span>Mon profil</span>
-              </div>
-              {activeTab === 'profil' && <FaChevronRight className="text-sm opacity-50" />}
+              <span aria-hidden="true">●</span> Mon profil →
             </button>
-
             <button
               type="button"
+              aria-pressed={activeTab === 'security'}
               onClick={() => setActiveTab('security')}
-              className={`flex items-center justify-between px-4 py-3.5 text-base font-medium rounded-xl transition-all ${activeTab === 'security'
-                ? 'bg-white text-dice-blue shadow-sm font-semibold'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
-                }`}
             >
-              <div className="flex items-center gap-3">
-                <FaShieldAlt className="text-sm" />
-                <span>Sécurité</span>
-              </div>
-              {activeTab === 'security' && <FaChevronRight className="text-sm opacity-50" />}
+              <span aria-hidden="true">◈</span> Sécurité →
             </button>
           </nav>
-        </aside>
 
-        {/* Zone de Contenu Principal */}
-        <main className="lg:col-span-9 space-y-6">
-
-          {/* En-tête d'Identité avec Avatar */}
-          <div className="bg-white rounded-2xl p-6 border border-gray-200/80 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-5">
-              <div className="relative">
+          <div>
+            {/* Identité */}
+            <div className="ec-box ec-id">
+              <div className="ec-avatar">
                 {formData.picture && !photoBroken ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={formData.picture}
                     alt={formData.name || 'Photo de profil'}
-                    className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover bg-gray-100 shadow-md shadow-dice-blue/20"
                     onError={() => setPhotoBroken(true)}
                   />
                 ) : (
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-dice-blue to-indigo-600 text-white font-bold text-xl sm:text-2xl flex items-center justify-center shadow-md shadow-dice-blue/20">
-                    {getInitials(formData.name)}
-                  </div>
+                  getInitials(formData.name)
                 )}
                 <button
                   type="button"
+                  className="ec-avatar-btn"
                   onClick={() => photoInputRef.current?.click()}
                   disabled={photoUploading || photoRemoving}
-                  className="absolute -bottom-1 -right-1 bg-dice-blue text-white p-1.5 rounded-full border-2 border-white text-xs hover:bg-dice-blue/90 disabled:opacity-60"
                   title="Changer la photo"
+                  aria-label="Changer la photo"
                 >
-                  {photoUploading ? (
-                    <span className="block h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  ) : (
-                    <FaCamera />
-                  )}
+                  <FaCamera />
                 </button>
                 <input
                   ref={photoInputRef}
                   type="file"
                   accept="image/*"
                   onChange={handlePhotoChange}
-                  className="hidden"
+                  style={{ display: 'none' }}
                 />
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-bold text-gray-900">{formData.name || 'Utilisateur'}</h2>
-                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-dice-blue border border-blue-100">
+                <div className="ec-id-name">
+                  {formData.name || 'Utilisateur'}
+                  <span className="ec-pill ec-pill--blue" style={{ height: 26, fontWeight: 400, fontSize: 11 }}>
                     Compte Client
                   </span>
                 </div>
-                <p className="text-sm text-gray-500 mt-1">{formData.email}</p>
+                <p className="ec-id-mail">{formData.email}</p>
                 {formData.picture ? (
                   <button
                     type="button"
+                    className="ec-linkbtn"
                     onClick={handlePhotoRemove}
                     disabled={photoUploading || photoRemoving}
-                    className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-red-600 hover:text-red-700 disabled:opacity-60"
                   >
-                    {photoRemoving ? (
-                      <span className="h-3 w-3 animate-spin rounded-full border-2 border-red-500 border-t-transparent" />
-                    ) : (
-                      <FaTrashAlt className="text-xs" />
-                    )}
-                    Supprimer la photo
+                    {photoRemoving ? 'Suppression…' : 'Supprimer la photo'}
                   </button>
                 ) : null}
               </div>
             </div>
-          </div>
 
-          {/* ONGLET 1 : PROFIL */}
-          {activeTab === 'profil' && (
-            <>
+            {/* ONGLET PROFIL */}
+            {activeTab === 'profil' && (
+              <form onSubmit={handleSubmit} className="ec-box ec-form">
+                <h3>Informations personnelles</h3>
+                <p className="ec-form-sub">Mettez à jour vos coordonnées.</p>
 
-              <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-200/80 shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-gray-100">
-                  <h3 className="text-lg font-semibold text-gray-900">Informations personnelles</h3>
-                  <p className="text-sm text-gray-500 mt-0.5">Mettez à jour vos coordonnées. Les changements sont enregistrés dans votre compte.</p>
-                </div>
-
-                <div className="p-6 space-y-6">
-                  <div className="grid sm:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">
-                        Nom complet
-                      </label>
-                      <div className="relative">
-                        <FaUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
-                        <input
-                          type="text"
-                          name="name"
-                          value={formData.name}
-                          onChange={handleChange}
-                          className="w-full rounded-xl border border-gray-200 py-3 pl-11 pr-4 text-base outline-none focus:border-dice-blue focus:ring-2 focus:ring-dice-blue/20 transition-all text-gray-900"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">
-                        Téléphone
-                      </label>
-                      <div className="relative">
-                        <FaPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
-                        <input
-                          type="tel"
-                          name="telephone"
-                          value={formData.telephone}
-                          onChange={handleChange}
-                          placeholder="+237 …"
-                          className="w-full rounded-xl border border-gray-200 py-3 pl-11 pr-4 text-base outline-none focus:border-dice-blue focus:ring-2 focus:ring-dice-blue/20 transition-all text-gray-900"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">
-                      Adresse e-mail
-                    </label>
-                    <div className="relative">
-                      <FaEnvelope className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
-                      <input
-                        type="email"
-                        value={formData.email}
-                        disabled
-                        className="w-full cursor-not-allowed rounded-xl border border-gray-200 bg-gray-50 py-3 pl-11 pr-11 text-base text-gray-500"
-                      />
-                      <FaLock className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
-                    </div>
-                    <p className="text-xs text-gray-400 mt-1.5">L'adresse e-mail est liée à votre compte d'authentification.</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">
-                      Sexe
-                    </label>
-                    <div className="relative">
-                      <FaVenusMars className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none" />
-                      <select
-                        name="sexe"
-                        value={formData.sexe}
-                        onChange={handleChange}
-                        className="w-full rounded-xl border border-gray-200 bg-white py-3 pl-11 pr-4 text-base outline-none focus:border-dice-blue focus:ring-2 focus:ring-dice-blue/20 transition-all text-gray-900"
-                      >
-                        <option value="homme">Homme</option>
-                        <option value="femme">Femme</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="px-6 py-4 bg-gray-50/80 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <span className="text-xs sm:text-sm text-gray-500">Les modifications sont enregistrées dans la base de données.</span>
-                  <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-                    <Link
-                      href="/espace-client"
-                      className="rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
-                    >
-                      Retour
-                    </Link>
-                    <button
-                      type="submit"
-                      disabled={saving}
-                      className="rounded-xl bg-dice-blue px-6 py-2.5 text-sm font-semibold text-white hover:bg-dice-blue-dark transition-all shadow-sm disabled:opacity-50"
-                    >
-                      {saving ? 'Enregistrement…' : 'Enregistrer'}
-                    </button>
-                  </div>
-                </div>
-              </form>
-            </>
-          )}
-
-          {/* ONGLET 2 : SÉCURITÉ */}
-          {activeTab === 'security' && (
-            <div className="space-y-6">
-
-              {/* 1. Modification du mot de passe */}
-              <form onSubmit={handlePasswordSubmit} className="bg-white rounded-2xl border border-gray-200/80 shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-gray-100">
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                    <FaKey className="text-dice-blue text-base" />
-                    Modification du mot de passe
-                  </h3>
-                  <p className="text-sm text-gray-500 mt-0.5">Mettez à jour votre mot de passe pour sécuriser l'accès à votre compte.</p>
-                </div>
-
-                <div className="p-6 space-y-5">
-                  {!hasLocalPassword ? (
-                    <p className="text-sm text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
-                      Ce compte a été créé avec Google ou Facebook. Il n’a pas de mot de passe à modifier ici.
-                    </p>
-                  ) : null}
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">
-                      Mot de passe actuel
-                    </label>
+                <div className="ec-fields">
+                  <div className="ec-field">
+                    <label htmlFor="ec-name">Nom complet</label>
                     <input
-                      type="password"
-                      name="currentPassword"
-                      value={passwordData.currentPassword}
-                      onChange={handlePasswordChange}
-                      placeholder="••••••••"
-                      disabled={!hasLocalPassword}
-                      className="w-full rounded-xl border border-gray-200 py-3 px-4 text-base outline-none focus:border-dice-blue focus:ring-2 focus:ring-dice-blue/20 transition-all text-gray-900 disabled:bg-gray-50 disabled:text-gray-400"
-                      required={hasLocalPassword}
+                      id="ec-name"
+                      className="ec-input"
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      required
                     />
                   </div>
+                  <div className="ec-field">
+                    <label htmlFor="ec-tel">Téléphone</label>
+                    <input
+                      id="ec-tel"
+                      className="ec-input"
+                      type="tel"
+                      name="telephone"
+                      value={formData.telephone}
+                      onChange={handleChange}
+                      placeholder="+237 …"
+                    />
+                  </div>
+                  <div className="ec-field ec-field--full">
+                    <label htmlFor="ec-mail">Adresse e-mail</label>
+                    <input
+                      id="ec-mail"
+                      className="ec-input"
+                      type="email"
+                      value={formData.email}
+                      disabled
+                    />
+                  </div>
+                  <div className="ec-field ec-field--full">
+                    <label htmlFor="ec-sexe">Sexe</label>
+                    <select
+                      id="ec-sexe"
+                      className="ec-input"
+                      name="sexe"
+                      value={formData.sexe}
+                      onChange={handleChange}
+                    >
+                      <option value="homme">Homme</option>
+                      <option value="femme">Femme</option>
+                    </select>
+                  </div>
+                </div>
 
-                  <div className="grid sm:grid-cols-2 gap-5">
-                    <div>
-                      <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">
-                        Nouveau mot de passe
-                      </label>
+                <div className="ec-actions">
+                  <Link href="/espace-client" className="ec-btn ec-btn--dark">
+                    Retour
+                  </Link>
+                  <button type="submit" disabled={saving} className="ec-btn ec-btn--sky">
+                    {saving ? 'Enregistrement…' : 'Enregistrer'}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* ONGLET SÉCURITÉ */}
+            {activeTab === 'security' && (
+              <>
+                <form onSubmit={handlePasswordSubmit} className="ec-box ec-form">
+                  <h3>🔑 Modification du mot de passe</h3>
+
+                  <div className="ec-fields">
+                    {!hasLocalPassword ? (
+                      <p className="ec-alert">
+                        Ce compte a été créé avec Google ou Facebook. Il n’a pas de mot de passe à modifier ici.
+                      </p>
+                    ) : null}
+                    <div className="ec-field ec-field--full">
+                      <label htmlFor="ec-cur">Mot de passe actuel</label>
                       <input
+                        id="ec-cur"
+                        className="ec-input"
+                        type="password"
+                        name="currentPassword"
+                        value={passwordData.currentPassword}
+                        onChange={handlePasswordChange}
+                        disabled={!hasLocalPassword}
+                        required={hasLocalPassword}
+                        autoComplete="current-password"
+                      />
+                    </div>
+                    <div className="ec-field">
+                      <label htmlFor="ec-new">Nouveau mot de passe</label>
+                      <input
+                        id="ec-new"
+                        className="ec-input"
                         type="password"
                         name="newPassword"
                         value={passwordData.newPassword}
                         onChange={handlePasswordChange}
-                        placeholder="••••••••"
-                        className="w-full rounded-xl border border-gray-200 py-3 px-4 text-base outline-none focus:border-dice-blue focus:ring-2 focus:ring-dice-blue/20 transition-all text-gray-900"
                         required
+                        autoComplete="new-password"
                       />
                     </div>
-                    <div>
-                      <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">
-                        Confirmer le mot de passe
-                      </label>
+                    <div className="ec-field">
+                      <label htmlFor="ec-conf">Confirmer le mot de passe</label>
                       <input
+                        id="ec-conf"
+                        className="ec-input"
                         type="password"
                         name="confirmPassword"
                         value={passwordData.confirmPassword}
                         onChange={handlePasswordChange}
-                        placeholder="••••••••"
-                        className="w-full rounded-xl border border-gray-200 py-3 px-4 text-base outline-none focus:border-dice-blue focus:ring-2 focus:ring-dice-blue/20 transition-all text-gray-900"
                         required
+                        autoComplete="new-password"
                       />
                     </div>
                   </div>
-                </div>
 
-                <div className="px-6 py-4 bg-gray-50/80 border-t border-gray-100 flex justify-end">
-                  <button
-                    type="submit"
-                    disabled={passwordSaving || !hasLocalPassword}
-                    className="rounded-xl bg-dice-blue px-6 py-2.5 text-sm font-semibold text-white hover:bg-dice-blue-dark transition-all shadow-sm disabled:opacity-50"
-                  >
-                    {passwordSaving ? 'Mise à jour…' : 'Changer le mot de passe'}
-                  </button>
-                </div>
-              </form>
+                  <div className="ec-actions">
+                    <button
+                      type="submit"
+                      disabled={passwordSaving || !hasLocalPassword}
+                      className="ec-btn ec-btn--sky"
+                    >
+                      {passwordSaving ? 'Mise à jour…' : 'Changer le mot de passe'}
+                    </button>
+                  </div>
+                </form>
 
-              {/* 2. Sessions & Appareils connectés */}
-              <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-gray-100">
-                  <h3 className="text-lg font-semibold text-gray-900">Sessions & Appareils connectés</h3>
-                </div>
+                <div className="ec-box ec-form">
+                  <h3>Sessions &amp; Appareils connectés</h3>
 
-                <div className="p-6 space-y-4">
                   {sessionsLoading ? (
-                    <div className="flex justify-center py-6">
-                      <div className="h-8 w-8 animate-spin rounded-full border-2 border-dice-blue border-t-transparent" />
+                    <div className="ec-loading" style={{ minHeight: 90 }}>
+                      <div className="ec-spinner" style={{ width: 28, height: 28 }} />
                     </div>
                   ) : sessions.length === 0 ? (
-                    <p className="text-sm text-gray-500">
+                    <p className="ec-form-sub" style={{ marginTop: 14 }}>
                       Cet appareil est connecté. Déconnectez-vous puis reconnectez-vous pour voir la liste complète des appareils.
                     </p>
                   ) : (
                     sessions.map((session) => {
                       const mobile = session.device_type === 'mobile' || session.device_type === 'tablet'
                       return (
-                        <div
-                          key={session.id}
-                          className={`flex items-center justify-between p-4 rounded-xl border ${
-                            session.current
-                              ? 'bg-gray-50/80 border-gray-100'
-                              : 'border-gray-100'
-                          }`}
-                        >
-                          <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-lg bg-white border border-gray-200 text-gray-700 shadow-sm">
-                              {mobile ? <FaMobileAlt className="text-base" /> : <FaDesktop className="text-base" />}
-                            </div>
+                        <div key={session.id} className="ec-session">
+                          <div className="ec-session-main">
+                            <span aria-hidden="true">{mobile ? '▯' : '▣'}</span>
                             <div>
-                              <div className="flex items-center gap-2">
-                                <p className="text-sm font-bold text-gray-900">
-                                  {session.device_label || 'Navigateur'}
-                                </p>
-                                {session.current ? (
-                                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" title="En ligne" />
-                                ) : null}
-                              </div>
-                              <p className="text-xs text-gray-500 mt-0.5">
+                              <b>{session.device_label || 'Navigateur'}</b>
+                              <small>
+                                <span aria-hidden="true">● </span>
                                 {formatLastSeen(session.last_seen_at)}
-                                {session.ip ? ` • ${session.ip}` : ''}
-                              </p>
+                                {session.current ? ' · Cet appareil' : ''}
+                                {session.ip ? ` · ${session.ip}` : ''}
+                              </small>
                             </div>
                           </div>
-                          {session.current ? (
-                            <span className="text-xs font-semibold text-dice-blue bg-blue-50 px-3 py-1 rounded-lg">
-                              Cet appareil
-                            </span>
-                          ) : (
-                            <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">
-                              En ligne
-                            </span>
-                          )}
+                          {!session.current ? <span className="ec-tagline">En ligne</span> : null}
                         </div>
                       )
                     })
                   )}
+
+                  {otherSessions > 0 ? (
+                    <div className="ec-actions">
+                      <button
+                        type="button"
+                        onClick={handleLogoutOtherSessions}
+                        disabled={revokingSessions}
+                        className="ec-btn ec-btn--dark"
+                      >
+                        {revokingSessions ? 'Déconnexion…' : 'Se déconnecter des autres appareils'}
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
 
-                <div className="px-6 py-4 bg-gray-50/80 border-t border-gray-100 flex justify-end">
+                <div className="ec-danger">
+                  <div>
+                    <small>⚠ Zone de danger</small>
+                    <p>La suppression de votre compte effacera définitivement vos données.</p>
+                  </div>
                   <button
                     type="button"
-                    onClick={handleLogoutOtherSessions}
-                    disabled={revokingSessions || sessions.filter((s) => !s.current).length === 0}
-                    className="rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors shadow-sm disabled:opacity-50"
+                    className="ec-btn ec-btn--danger"
+                    onClick={handleDeleteAccount}
+                    disabled={deletingAccount}
                   >
-                    {revokingSessions ? 'Déconnexion…' : 'Se déconnecter des autres appareils'}
+                    {deletingAccount ? 'Suppression…' : 'Supprimer mon compte'}
                   </button>
                 </div>
-              </div>
-
-              {/* 4. Zone de Danger : Suppression du compte */}
-              <div className="bg-red-50/40 rounded-2xl border border-red-100 shadow-sm p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
-                <div className="space-y-1">
-                  <h3 className="text-lg font-semibold text-red-900 flex items-center gap-2">
-                    <FaExclamationTriangle className="text-red-500 text-base" />
-                    Zone de danger
-                  </h3>
-                  <p className="text-sm text-red-700/80">
-                    La suppression de votre compte effacera définitivement vos données dans la base et fermera l&apos;accès à votre espace.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleDeleteAccount}
-                  disabled={deletingAccount}
-                  className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-red-600 hover:bg-red-700 text-white transition-all shadow-sm flex items-center gap-2 flex-shrink-0 disabled:opacity-60"
-                >
-                  <FaTrashAlt className="text-xs" />
-                  {deletingAccount ? 'Suppression…' : 'Supprimer mon compte'}
-                </button>
-              </div>
-
-            </div>
-          )}
-
-        </main>
-      </div>
+              </>
+            )}
+          </div>
+        </div>
+      </section>
 
       <ConfirmDialog
         open={deleteConfirmOpen}

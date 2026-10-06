@@ -1,18 +1,13 @@
 /**
- * Client response to an event schedule change — mirrors the mobile app.
+ * Réponse client à une modification d'événement — refonte « verre sombre »
+ * (logique inchangée)
  */
 'use client'
 
 import { Suspense, useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
-import {
-  FaArrowLeft,
-  FaCheckCircle,
-  FaExchangeAlt,
-  FaSpinner,
-  FaUndo,
-} from 'react-icons/fa'
+import { FaCheckCircle, FaExchangeAlt, FaUndo } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 import { api } from '@/lib/api'
 import { auth } from '@/lib/auth'
@@ -156,77 +151,72 @@ function EventChangeInner() {
 
   if (loading) {
     return (
-      <div className="flex h-48 items-center justify-center text-[#667085]">
-        <FaSpinner className="mr-2 animate-spin" />
-        Chargement de la modification…
-      </div>
+      <section className="ec-dark ec-card-pad">
+        <div className="ec-state">
+          <span className="ec-spin" aria-hidden="true">◌</span>
+          Chargement de la modification…
+        </div>
+      </section>
     )
   }
 
   if (error) {
     return (
-      <div className="space-y-4">
+      <section className="ec-dark ec-card-pad">
         <LoadError onRetry={load} />
         <Link
           href="/espace-client/notifications"
-          className="inline-flex items-center gap-2 text-sm font-semibold text-[#0A89F2]"
+          className="ec-btn ec-btn--line"
+          style={{ marginTop: 20 }}
         >
-          <FaArrowLeft className="text-xs" />
-          Retour aux notifications
+          ← Retour aux notifications
         </Link>
-      </div>
+      </section>
     )
   }
 
   if (step === 'done') {
     return (
-      <div className="rounded-[24px] border border-[#E8EEF5] bg-white p-6 text-center shadow-sm">
-        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-[#0B9B6B]">
+      <section className="ec-dark ec-card-pad" style={{ textAlign: 'center' }}>
+        <div className="ec-empty__ico" aria-hidden="true" style={{ color: '#4ade80' }}>
           <FaCheckCircle />
         </div>
-        <h1 className="text-xl font-extrabold text-[#0B1220]">C’est noté</h1>
-        <p className="mx-auto mt-2 max-w-md text-sm text-[#667085]">{doneMessage}</p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
+        <h1 className="ec-h1" style={{ marginTop: 0, fontSize: 30 }}>C’est noté</h1>
+        <p className="ec-lead" style={{ maxWidth: 440, margin: '12px auto 0' }}>
+          {doneMessage}
+        </p>
+        <div className="ec-form__actions" style={{ justifyContent: 'center', marginTop: 28 }}>
           <button
             type="button"
             onClick={() => router.push('/espace-client/notifications')}
-            className="rounded-2xl border border-[#E8EEF5] px-4 py-2.5 text-sm font-semibold text-[#667085]"
+            className="ec-btn ec-btn--line"
           >
             Notifications
           </button>
           <button
             type="button"
             onClick={() => router.push('/espace-client/tickets')}
-            className="rounded-2xl bg-[#0A89F2] px-4 py-2.5 text-sm font-semibold text-white"
+            className="ec-btn ec-btn--grad"
           >
             Mes tickets
           </button>
         </div>
-      </div>
+      </section>
     )
   }
 
   if (step === 'alternatives') {
     return (
-      <div className="space-y-5">
-        <button
-          type="button"
-          onClick={() => setStep('decide')}
-          className="inline-flex items-center gap-2 text-sm font-semibold text-[#667085]"
-        >
-          <FaArrowLeft className="text-xs" />
-          Retour
+      <section className="ec-dark ec-card-pad">
+        <button type="button" onClick={() => setStep('decide')} className="ec-back" style={{ color: '#cfe3f7' }}>
+          ← Retour
         </button>
-        <div>
-          <h1 className="text-xl font-extrabold text-[#0B1220]">
-            Choisir une alternative
-          </h1>
-          <p className="mt-1 text-sm text-[#667085]">
-            Ou demandez un remboursement si aucune option ne vous convient.
-          </p>
-        </div>
+        <h1 className="ec-h1" style={{ marginTop: 0 }}>Choisir une alternative</h1>
+        <p className="ec-lead">
+          Ou demandez un remboursement si aucune option ne vous convient.
+        </p>
 
-        <div className="flex flex-wrap gap-1.5">
+        <div className="ec-chips">
           {[
             { id: 'all', label: 'Tous' },
             { id: 'category', label: 'Même catégorie' },
@@ -237,11 +227,7 @@ function EventChangeInner() {
               key={f.id}
               type="button"
               onClick={() => loadAlternatives(f.id)}
-              className={`rounded-full px-3 py-1.5 text-xs font-bold ${
-                filter === f.id
-                  ? 'bg-[#0A89F2] text-white'
-                  : 'bg-[#F3F6FA] text-[#667085]'
-              }`}
+              className={filter === f.id ? 'is-active' : ''}
             >
               {f.label}
             </button>
@@ -249,40 +235,39 @@ function EventChangeInner() {
         </div>
 
         {busy ? (
-          <div className="flex h-32 items-center justify-center text-[#667085]">
-            <FaSpinner className="mr-2 animate-spin" />
+          <div className="ec-state">
+            <span className="ec-spin" aria-hidden="true">◌</span>
             Chargement…
           </div>
         ) : alternatives.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-[#D0D5DD] bg-white p-8 text-center text-sm text-[#667085]">
-            Aucune alternative pour ce filtre.
-          </div>
+          <p className="ec-note-dash">Aucune alternative pour ce filtre.</p>
         ) : (
-          <ul className="space-y-3">
+          <ul className="ec-stack" style={{ listStyle: 'none', margin: 0, padding: 0, gap: 14 }}>
             {alternatives.map((event) => (
-              <li
-                key={event.id}
-                className="rounded-[22px] border border-[#E8EEF5] bg-white p-4"
-              >
-                <h3 className="font-bold text-[#0B1220]">{event.title}</h3>
-                <p className="mt-1 text-sm text-[#667085]">
-                  {event.start_date}
-                  {event.start_time ? ` · ${event.start_time}` : ''}
-                  {event.location ? ` · ${event.location}` : ''}
-                </p>
-                <p className="mt-1 text-sm font-semibold text-[#0A89F2]">
-                  {Number(event.price || 0).toLocaleString('fr-FR')}{' '}
-                  {event.currency || 'XAF'}
-                </p>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => swap(event.id)}
-                  className="mt-3 inline-flex items-center gap-2 rounded-xl bg-[#0A89F2] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-                >
-                  <FaExchangeAlt className="text-xs" />
-                  Choisir cet événement
-                </button>
+              <li key={event.id} className="ec-row" style={{ minHeight: 0 }}>
+                <div className="ec-row__body" style={{ padding: '18px 22px' }}>
+                  <p className="ec-row__title ec-row__title--reg">{event.title}</p>
+                  <div className="ec-row__meta">
+                    <span>
+                      {event.start_date}
+                      {event.start_time ? ` · ${event.start_time}` : ''}
+                      {event.location ? ` · ${event.location}` : ''}
+                    </span>
+                  </div>
+                  <p style={{ margin: '4px 0 0', fontSize: 15, fontWeight: 600, color: '#4fb3ff' }}>
+                    {Number(event.price || 0).toLocaleString('fr-FR')} {event.currency || 'XAF'}
+                  </p>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => swap(event.id)}
+                    className="ec-btn ec-btn--grad ec-btn--sm"
+                    style={{ marginTop: 12, alignSelf: 'flex-start' }}
+                  >
+                    <FaExchangeAlt style={{ fontSize: 12 }} />
+                    Choisir cet événement
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
@@ -292,77 +277,59 @@ function EventChangeInner() {
           type="button"
           disabled={busy}
           onClick={refund}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50 py-3 text-sm font-semibold text-red-600 disabled:opacity-50"
+          className="ec-btn ec-btn--soft-danger ec-btn--block"
+          style={{ marginTop: 24 }}
         >
-          <FaUndo className="text-xs" />
+          <FaUndo style={{ fontSize: 12 }} />
           Demander un remboursement
         </button>
-      </div>
+      </section>
     )
   }
 
   return (
-    <div className="space-y-5">
-      <Link
-        href="/espace-client/notifications"
-        className="inline-flex items-center gap-2 text-sm font-semibold text-[#667085]"
-      >
-        <FaArrowLeft className="text-xs" />
-        Notifications
+    <section className="ec-dark ec-card-pad">
+      <Link href="/espace-client/notifications" className="ec-back" style={{ color: '#cfe3f7' }}>
+        ← Notifications
       </Link>
+      <p className="ec-eyebrow" style={{ color: '#ffb020' }}>Modification</p>
+      <h1 className="ec-h1">{change?.event_title || 'Événement modifié'}</h1>
+      <p className="ec-lead">
+        Si vous acceptez, votre agenda sera mis à jour avec la nouvelle date et heure.
+      </p>
 
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#E67E22]">
-          Modification
-        </p>
-        <h1 className="mt-1 text-xl font-extrabold text-[#0B1220]">
-          {change?.event_title || 'Événement modifié'}
-        </h1>
-        <p className="mt-1 text-sm text-[#667085]">
-          Si vous acceptez, votre agenda sera mis à jour avec la nouvelle date et
-          heure.
-        </p>
-      </div>
-
-      <div className="space-y-3 rounded-[24px] border border-[#E8EEF5] bg-white p-5">
+      <div className="ec-ba">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-[#98A2B3]">
-            Avant
-          </p>
-          <p className="mt-1 text-sm font-medium text-[#667085]">
-            {formatLabel(change, 'old')}
-          </p>
+          <small>Avant</small>
+          <p style={{ color: '#cfe3f7' }}>{formatLabel(change, 'old')}</p>
         </div>
-        <div className="border-t border-dashed border-[#E8EEF5] pt-3">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-[#0A89F2]">
-            Après
-          </p>
-          <p className="mt-1 text-sm font-semibold text-[#0B1220]">
-            {formatLabel(change, 'new')}
-          </p>
+        <div>
+          <small className="is-new">Après</small>
+          <p style={{ fontWeight: 600 }}>{formatLabel(change, 'new')}</p>
         </div>
       </div>
 
-      <button
-        type="button"
-        disabled={busy || !ticketId}
-        onClick={accept}
-        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#0B9B6B] py-3.5 text-sm font-bold text-white hover:bg-[#09865c] disabled:opacity-50"
-      >
-        {busy ? <FaSpinner className="animate-spin" /> : <FaCheckCircle />}
-        Accepter la modification
-      </button>
-
-      <button
-        type="button"
-        disabled={busy || !ticketId}
-        onClick={() => loadAlternatives('all')}
-        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#E8EEF5] bg-white py-3.5 text-sm font-bold text-[#0B1220] hover:bg-[#F8FAFC] disabled:opacity-50"
-      >
-        <FaExchangeAlt />
-        Refuser et voir les alternatives
-      </button>
-    </div>
+      <div className="ec-stack" style={{ gap: 12, marginTop: 24 }}>
+        <button
+          type="button"
+          disabled={busy || !ticketId}
+          onClick={accept}
+          className="ec-btn ec-btn--ok ec-btn--block"
+        >
+          {busy ? <span className="ec-spin" aria-hidden="true">◌</span> : <FaCheckCircle />}
+          Accepter la modification
+        </button>
+        <button
+          type="button"
+          disabled={busy || !ticketId}
+          onClick={() => loadAlternatives('all')}
+          className="ec-btn ec-btn--line ec-btn--block"
+        >
+          <FaExchangeAlt />
+          Refuser et voir les alternatives
+        </button>
+      </div>
+    </section>
   )
 }
 
@@ -370,10 +337,12 @@ export default function EventChangeResponsePage() {
   return (
     <Suspense
       fallback={
-        <div className="flex h-48 items-center justify-center text-[#667085]">
-          <FaSpinner className="mr-2 animate-spin" />
-          Chargement…
-        </div>
+        <section className="ec-dark ec-card-pad">
+          <div className="ec-state">
+            <span className="ec-spin" aria-hidden="true">◌</span>
+            Chargement…
+          </div>
+        </section>
       }
     >
       <EventChangeInner />
