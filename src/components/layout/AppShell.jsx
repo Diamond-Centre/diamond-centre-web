@@ -10,6 +10,8 @@ export default function AppShell({ children }) {
   const isAdminPage = pathname?.startsWith('/admin')
   const isAuthPage = pathname?.startsWith('/auth')
   const isLegacyDashboard = pathname?.startsWith('/dashboard')
+  // L'espace client a son propre header (« DiCe · Mon espace ») : pas de Navbar du site
+  const isClientSpace = pathname?.startsWith('/espace-client')
 
   // Auth / admin / old dashboard redirect: no chrome
   if (isAuthPage || isAdminPage || isLegacyDashboard) {
@@ -18,7 +20,7 @@ export default function AppShell({ children }) {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
+      {isClientSpace ? null : <Navbar />}
       <main className="flex-grow">{children}</main>
       <Footer />
     </div>

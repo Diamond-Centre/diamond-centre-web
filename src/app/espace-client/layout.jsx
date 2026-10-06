@@ -1,30 +1,23 @@
 /**
- * Espace client — chrome léger, les pages portent le contenu
+ * Espace client — chrome de la refonte (header 84 px, onglets, fond quadrillé)
+ * Les pages portent le contenu ; le style vit dans ./espace-client.css
  */
 'use client'
 
+import './espace-client.css'
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import {
-  FaHome,
-  FaTicketAlt,
-  FaCertificate,
-  FaCalendarAlt,
-  FaUser,
-  FaSignOutAlt,
-  FaBell,
-} from 'react-icons/fa'
 import { useAuth } from '@/hooks/useAuth'
 import { useNotifications } from '@/hooks/useNotifications'
 
 const tabs = [
-  { href: '/espace-client', label: 'Vue d’ensemble', icon: FaHome, exact: true },
-  { href: '/espace-client/tickets', label: 'Mes tickets', icon: FaTicketAlt },
-  { href: '/espace-client/certificats', label: 'Certificats', icon: FaCertificate },
-  { href: '/espace-client/agenda', label: 'Agenda', icon: FaCalendarAlt },
-  { href: '/espace-client/notifications', label: 'Notifications', icon: FaBell },
-  { href: '/espace-client/profil', label: 'Mon profil', icon: FaUser },
+  { href: '/espace-client', label: 'Vue d’ensemble', glyph: '⌂', exact: true },
+  { href: '/espace-client/tickets', label: 'Mes tickets', glyph: '▣' },
+  { href: '/espace-client/certificats', label: 'Certificats', glyph: '✦' },
+  { href: '/espace-client/agenda', label: 'Agenda', glyph: '▦' },
+  { href: '/espace-client/notifications', label: 'Notifications', glyph: '●' },
+  { href: '/espace-client/profil', label: 'Mon profil', glyph: '●' },
 ]
 
 export default function EspaceClientLayout({ children }) {
@@ -50,78 +43,53 @@ export default function EspaceClientLayout({ children }) {
 
   if (loading || !ready) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center pt-28">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#0A89F2] border-t-transparent" />
+      <div className="ec-root">
+        <div className="ec-loading" style={{ minHeight: '60vh' }}>
+          <div className="ec-spinner" />
+        </div>
       </div>
     )
   }
 
-  const fullBleed =
-    pathname === '/espace-client' ||
-    pathname === '/espace-client/tickets' ||
-    pathname?.startsWith('/espace-client/agenda')
-
   return (
-    <div className="min-h-screen bg-[#F4F7FB] pt-24 pb-16">
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-        <div className="mb-6 mt-16 flex items-center justify-between gap-4">
-          <div className="flex items-baseline gap-2">
-            <span className="text-lg font-extrabold tracking-tight text-[#0B1220]">
-              DiCe
-            </span>
-            <span className="text-sm text-[#98A2B3]">· Mon espace</span>
+    <div className="ec-root">
+      <div className="ec-container">
+        <header className="ec-header">
+          <div className="ec-brand">
+            <b>DiCe</b>
+            <span>· Mon espace</span>
           </div>
-          <button
-            type="button"
-            onClick={logout}
-            className="inline-flex items-center gap-2 text-sm text-[#667085] transition-colors hover:text-red-600"
-          >
-            <FaSignOutAlt className="text-xs" />
+          <button type="button" onClick={logout} className="ec-logout">
+            <span aria-hidden="true">↪</span>
             Déconnexion
           </button>
-        </div>
+        </header>
 
-        <nav className="mb-8 overflow-x-auto">
-          <div className="flex min-w-max gap-1 border-b border-[#E8EEF5]">
-            {tabs.map((tab) => {
-              const active = tab.exact
-                ? pathname === tab.href
-                : pathname === tab.href || pathname?.startsWith(`${tab.href}/`)
-              const Icon = tab.icon
-              return (
-                <Link
-                  key={tab.href}
-                  href={tab.href}
-                  className={`relative inline-flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${active
-                    ? 'text-[#0A89F2]'
-                    : 'text-[#667085] hover:text-[#0B1220]'
-                    }`}
-                >
-                  <Icon className="text-xs opacity-80" />
-                  {tab.label}
-                  {tab.href === '/espace-client/notifications' && unreadCount > 0 ? (
-                    <span className="ml-0.5 rounded-full bg-[#0A89F2] px-1.5 py-0.5 text-[10px] font-bold text-white">
-                      {unreadCount > 9 ? '9+' : unreadCount}
-                    </span>
-                  ) : null}
-                  {active ? (
-                    <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-[#0A89F2]" />
-                  ) : null}
-                </Link>
-              )
-            })}
-          </div>
+        <nav className="ec-nav" aria-label="Espace client">
+          {tabs.map((tab) => {
+            const active = tab.exact
+              ? pathname === tab.href
+              : pathname === tab.href || pathname?.startsWith(`${tab.href}/`)
+            return (
+              <Link
+                key={tab.href}
+                href={tab.href}
+                className="ec-tab"
+                aria-current={active ? 'page' : undefined}
+              >
+                <span className="ec-glyph" aria-hidden="true">
+                  {tab.glyph}
+                </span>
+                {tab.label}
+                {tab.href === '/espace-client/notifications' && unreadCount > 0 ? (
+                  <span className="ec-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
+                ) : null}
+              </Link>
+            )
+          })}
         </nav>
 
-        <div
-          className={
-            fullBleed
-              ? ''
-              : 'rounded-[24px] border border-[#E8EEF5] bg-white p-4 shadow-[0_8px_30px_rgba(11,18,32,0.04)] sm:p-6 md:p-8'
-          }
-        >
-          {children}
-        </div>
+        <main className="ec-main">{children}</main>
       </div>
     </div>
   )
