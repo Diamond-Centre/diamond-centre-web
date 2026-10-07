@@ -165,7 +165,7 @@ export default function EspaceClientHomePage() {
           <LoadError onRetry={() => window.location.reload()} />
         ) : next ? (
           <section className="ec-hero">
-            <TileField cols={14} rows={5} />
+            <TileField cols={15} rows={6} />
             <div className="ec-hero-body">
               <span className={`ec-pill ${nextPhase === 'ongoing' ? 'ec-pill--live' : 'ec-pill--soon'}`}>
                 <span aria-hidden="true">●</span>
@@ -222,7 +222,7 @@ export default function EspaceClientHomePage() {
           </section>
         ) : (
           <section className="ec-hero ec-hero--empty">
-            <TileField cols={14} rows={5} />
+            <TileField cols={15} rows={6} />
             <div className="ec-hero-body">
             <p className="ec-eyebrow">Commencer</p>
             <h2 className="ec-hero-title">Aucune réservation à venir ou en cours</h2>

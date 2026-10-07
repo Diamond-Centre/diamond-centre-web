@@ -157,29 +157,22 @@ function BookingCard({ booking, onOpen }) {
   const phase = bookingPhase(booking)
 
   return (
-    <motion.button
+    <button
       type="button"
-      layout
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
       onClick={() => onOpen(booking)}
-      className="ec-item ec-item--lg"
-      style={{ opacity: phase === 'ended' ? 0.85 : undefined }}
+      className="ec-item ec-booking ec-fadein"
+      style={phase === 'ended' ? { filter: 'saturate(0.8)' } : undefined}
     >
-      <div className="ec-date">
-        <b style={{ fontSize: 15 }}>{booking.start}</b>
-      </div>
-      <div className="ec-item-body">
-        <span className={`ec-pill ${phasePill(phase)}`}>
-          {eventTimingLabel(bookingEvent(booking))}
-        </span>
-        <p className="ec-item-title" style={{ marginTop: 8 }}>{booking.title}</p>
-        <p className="ec-item-meta">
+      <span className="ec-booking-time">{booking.start}</span>
+      <span className="ec-booking-body">
+        <StatusChip status={booking.status} />
+        <span className="ec-booking-title">{booking.title}</span>
+        <span className="ec-booking-loc">
           <span aria-hidden="true">⌖</span> {booking.location}
-        </p>
-      </div>
+        </span>
+      </span>
       <span className="ec-item-arrow" aria-hidden="true">→</span>
-    </motion.button>
+    </button>
   )
 }
 
@@ -437,7 +430,7 @@ export default function AgendaPage() {
                     onClick={() => setSelectedDay(date)}
                   >
                     {date.getDate()}
-                    {hasEvent && !isSelected ? <span className="ec-cal-dot" /> : null}
+                    {hasEvent ? <span className="ec-cal-dot" /> : null}
                   </button>
                 )
               })}
@@ -462,11 +455,9 @@ export default function AgendaPage() {
             </div>
           ) : (
             <div className="ec-list ec-list--loose">
-              <AnimatePresence mode="popLayout">
-                {filtered.map((b) => (
-                  <BookingCard key={b.id} booking={b} onOpen={setDetail} />
-                ))}
-              </AnimatePresence>
+              {filtered.map((b) => (
+                <BookingCard key={`${b.id}-${selectedDay ? toDateKey(selectedDay) : 'all'}`} booking={b} onOpen={setDetail} />
+              ))}
             </div>
           )}
         </>

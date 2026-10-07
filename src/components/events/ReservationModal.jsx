@@ -504,8 +504,10 @@ export default function ReservationModal({
   if (!isOpen) return null
 
   return (
+    <>
+    {/* AnimatePresence n'accepte que des enfants avec une clé unique : le ConfirmDialog est sorti d'ici */}
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div key="reservation-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -1083,6 +1085,7 @@ export default function ReservationModal({
           </div>
         </motion.div>
       </div>
+    </AnimatePresence>
       <ConfirmDialog
         open={duplicatePrompt}
         title="Vous avez déjà des billets"
@@ -1097,6 +1100,6 @@ export default function ReservationModal({
           runReservation({ confirmDuplicate: true })
         }}
       />
-    </AnimatePresence>
+    </>
   )
 }
