@@ -20,7 +20,7 @@
   --ec-green: #0b9b6b;
   --ec-green-bg: #e6fff2;
   --ec-red: #ff5a67;
-  --ec-radius: 32px;
+  --ec-radius: 28px;
 
   position: relative;
   min-height: 100vh;
@@ -210,12 +210,12 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
+  /* grille des cartes : pas de 52 px, trait de 1 px (mesuré sur le Figma) */
   background-image:
-    linear-gradient(to right, rgba(110, 170, 255, 0.055) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(110, 170, 255, 0.055) 1px, transparent 1px);
-  background-size: 84px 68px;
-  -webkit-mask-image: linear-gradient(100deg, rgba(0, 0, 0, 0.35) 0%, #000 70%);
-  mask-image: linear-gradient(100deg, rgba(0, 0, 0, 0.35) 0%, #000 70%);
+    linear-gradient(to left, rgba(60, 165, 255, 0.052) 1px, transparent 1px),
+    linear-gradient(to top, rgba(60, 165, 255, 0.052) 1px, transparent 1px);
+  background-position: 1px 1px;
+  background-size: 52px 52px;
 }
 .ec-card > * {
   position: relative;
@@ -254,7 +254,7 @@
   margin-right: 31px;
   padding: 18px 22px 18px 22px;
   min-width: 143px;
-  border-radius: 24px;
+  border-radius: 16px;
   border: 1px solid rgba(90, 185, 255, 0.75);
   background: rgba(255, 255, 255, 0.08);
   box-shadow: 0 0 0 1px rgba(60, 150, 255, 0.08) inset;
@@ -286,7 +286,7 @@
   margin-top: 0;
   margin-right: 0;
   padding: 16px 22px;
-  border-radius: 22px;
+  border-radius: 16px;
   text-align: center;
 }
 
@@ -298,7 +298,7 @@
   margin-top: 40px;
   padding: 4px;
   height: 60px;
-  border-radius: 20px;
+  border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.045);
 }
@@ -308,7 +308,7 @@
   justify-content: center;
   gap: 8px;
   border: 0;
-  border-radius: 16px;
+  border-radius: 12px;
   background: transparent;
   color: #fff;
   font: inherit;
@@ -346,7 +346,7 @@
   position: absolute !important;
   inset: 0;
   z-index: 0 !important;
-  border-radius: 16px;
+  border-radius: 12px;
   background: linear-gradient(100deg, #6fd2ff 0%, #27a8f5 100%);
   box-shadow: 0 8px 26px -4px rgba(40, 170, 255, 0.55);
 }
@@ -386,7 +386,7 @@
   cursor: pointer;
   font: inherit;
   border: 1px solid rgba(70, 150, 255, 0.34);
-  border-radius: 22px;
+  border-radius: 16px;
   background: linear-gradient(90deg, #072345 0%, #083667 100%);
   transition: border-color 0.3s, box-shadow 0.3s, background 0.3s;
 }
@@ -400,10 +400,10 @@
   opacity: 0;
   transition: opacity 0.35s ease;
   background-image:
-    linear-gradient(to right, rgba(120, 205, 235, 0.32) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(120, 205, 235, 0.32) 1px, transparent 1px),
+    linear-gradient(to left, rgba(120, 205, 235, 0.32) 1px, transparent 1px),
+    linear-gradient(to top, rgba(120, 205, 235, 0.32) 1px, transparent 1px),
     linear-gradient(90deg, rgba(48, 140, 175, 0) 0%, rgba(48, 140, 175, 0.62) 100%);
-  background-size: 74px 31px, 74px 31px, 100% 100%;
+  background-size: 73.2px 31.3px, 73.2px 31.3px, 100% 100%;
   -webkit-backdrop-filter: blur(3px);
   backdrop-filter: blur(3px);
   -webkit-mask-image: linear-gradient(90deg, transparent 12%, #000 52%);
@@ -423,8 +423,8 @@
   z-index: 1;
 }
 .ec-item--lg {
-  min-height: 92px;
-  border-radius: 24px;
+  min-height: 94px;
+  border-radius: 16px;
 }
 .ec-date {
   flex: none;
@@ -625,7 +625,7 @@
   display: grid;
   grid-template-columns: 1fr 120px;
   column-gap: 40px;
-  border-radius: var(--ec-radius);
+  border-radius: 30px;
   color: #fff;
   border: 1px solid transparent;
   background:
@@ -795,8 +795,8 @@
 .ec-panel {
   position: relative;
   overflow: hidden;
-  padding: 26px 16px 25px;
-  border-radius: var(--ec-radius);
+  padding: 26px 16px 26px;
+  border-radius: 26px;
   color: #fff;
   background:
     radial-gradient(520px 260px at 90% 0%, rgba(20, 90, 190, 0.3), transparent 70%),
@@ -817,7 +817,7 @@
   position: relative;
   overflow: hidden;
   padding: 23px 19px 19px;
-  border-radius: 32px;
+  border-radius: 28px;
   color: #fff;
   background:
     radial-gradient(260px 200px at 100% 0%, rgba(20, 90, 190, 0.35), transparent 70%),
@@ -1266,7 +1266,7 @@
 }
 .ec-side {
   padding: 10px;
-  border-radius: 24px;
+  border-radius: 16px;
   border: 1px solid rgba(90, 160, 255, 0.22);
   background: rgba(255, 255, 255, 0.04);
   display: flex;
@@ -1300,7 +1300,7 @@
   box-shadow: 0 8px 22px -6px rgba(40, 170, 255, 0.5);
 }
 .ec-box {
-  border-radius: 26px;
+  border-radius: 18px;
   border: 1px solid rgba(90, 160, 255, 0.22);
   background: linear-gradient(120deg, rgba(8, 38, 76, 0.95), rgba(8, 36, 72, 0.9));
 }
@@ -2124,4 +2124,164 @@ input.ec-input[type='password'] {
 }
 .ec-hero .ec-tiles {
   z-index: 1;
+}
+
+.ec-notif {
+  border-radius: 18px;
+}
+
+/* ---------- Carreaux du héro : taille fixe du Figma (84,43 × 68,8 px), ancrés en haut à gauche ---------- */
+.ec-tiles {
+  overflow: hidden;
+  grid-template-columns: repeat(var(--cols), 84.43px);
+  grid-template-rows: repeat(var(--rows), 68.8px);
+}
+
+/* ---------- Image des certificats : trajectoire relevée image par image sur la vidéo (cycle 6,4 s) ---------- */
+/* entrée (1,5 s) et glissement (1,7 s) = deux courbes continues, sans palier ;
+   puis arrêt -> dernière glissade vers la droite avec balayage depuis la gauche + fondu (≈ 0,5 s) -> pause */
+.ec-folder {
+  width: 482px;
+  opacity: 1;
+  mix-blend-mode: overlay;
+  animation: ec-folder-cycle 6.4s linear 0.25s infinite;
+  will-change: transform, clip-path, opacity;
+}
+.ec-folder img {
+  opacity: 0.55;
+}
+@keyframes ec-folder-cycle {
+  0% { transform: translateX(-482px); clip-path: inset(0 0 0 0px); opacity: 1; animation-timing-function: cubic-bezier(0, 0.94, 0.57, 1); }
+  23.44% { transform: translateX(0); clip-path: inset(0 0 0 0px); opacity: 1; animation-timing-function: cubic-bezier(0.2, 0.54, 0.14, 1); }
+  50.00% { transform: translateX(363px); clip-path: inset(0 0 0 0px); opacity: 1; animation-timing-function: linear; }
+  54.69% { transform: translateX(363px); clip-path: inset(0 0 0 0px); opacity: 1; animation-timing-function: linear; }
+  55.16% { transform: translateX(375px); clip-path: inset(0 0 0 0px); opacity: 1; }
+  55.63% { transform: translateX(401px); clip-path: inset(0 0 0 51px); opacity: 1; }
+  56.25% { transform: translateX(425px); clip-path: inset(0 0 0 111px); opacity: 0.95; }
+  56.72% { transform: translateX(440px); clip-path: inset(0 0 0 162px); opacity: 0.9; }
+  57.19% { transform: translateX(452px); clip-path: inset(0 0 0 222px); opacity: 0.8; }
+  57.81% { transform: translateX(473px); clip-path: inset(0 0 0 264px); opacity: 0.7; }
+  58.28% { transform: translateX(482px); clip-path: inset(0 0 0 303px); opacity: 0.6; }
+  58.75% { transform: translateX(491px); clip-path: inset(0 0 0 366px); opacity: 0.45; }
+  59.38% { transform: translateX(497px); clip-path: inset(0 0 0 395px); opacity: 0.35; }
+  60.31% { transform: translateX(503px); clip-path: inset(0 0 0 430px); opacity: 0.2; }
+  61.41% { transform: translateX(508px); clip-path: inset(0 0 0 470px); opacity: 0.1; }
+  62.50% { transform: translateX(510px); clip-path: inset(0 0 0 482px); opacity: 0; }
+  99.9% { transform: translateX(510px); clip-path: inset(0 0 0 482px); opacity: 0; }
+  100% { transform: translateX(-482px); clip-path: inset(0 0 0 0px); opacity: 0; }
+}
+
+/* ---------- Agenda : apparition douce des réservations ---------- */
+.ec-fadein {
+  animation: ec-fadein 0.35s ease both;
+}
+@keyframes ec-fadein {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+
+/* ---------- Typographie des lignes (mesurée sur le Figma) ---------- */
+.ec-item-title {
+  font-family: var(--font-barlow), 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 400;
+}
+.ec-item-meta {
+  font-size: 16px;
+}
+.ec-date b {
+  font-size: 22px;
+}
+.ec-pill {
+  font-size: 11px;
+}
+
+/* ---------- Agenda : rendu exact du Figma ---------- */
+.ec-planning {
+  min-height: 154px;
+  padding: 37px 31px 31px;
+  border-radius: 26px;
+}
+.ec-planning small {
+  font-size: 12.7px;
+  line-height: 16px;
+}
+.ec-planning h2 {
+  margin: 13px 0 0;
+  font-size: 16px;
+  line-height: 24px;
+}
+.ec-planning p {
+  margin: 9px 0 0;
+  font-size: 16px;
+  line-height: 24px;
+}
+.ec-cal-dot {
+  top: calc(50% + 26.5px);
+  background: #69c8ff;
+}
+.ec-day-head {
+  align-items: baseline;
+  margin: 30px 0 15px;
+  line-height: 28px;
+}
+.ec-day-head h3 {
+  font-size: 20px;
+  line-height: 28px;
+}
+.ec-day-head > span {
+  font-size: 16px;
+  line-height: 22px;
+}
+.ec-booking {
+  min-height: 138px;
+  padding: 0 24px 0 23px;
+  gap: 20px;
+  align-items: center;
+  border-radius: 16px;
+  background: linear-gradient(95deg, #061c3b 0%, #07386a 100%);
+}
+.ec-booking-time {
+  flex: none;
+  min-width: 46px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+}
+.ec-booking-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.ec-booking-title {
+  margin: 11px 0 0;
+  font-family: var(--font-barlow), 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  font-size: 18px;
+  line-height: 22px;
+  font-weight: 400;
+  color: #fff;
+}
+.ec-booking-loc {
+  margin: 10px 0 0;
+  font-size: 16px;
+  line-height: 22px;
+  color: #b9cde6;
+}
+.ec-booking .ec-item-arrow {
+  padding-right: 0;
+}
+
+/* ---------- Carte « Planning DiCe » : sans carreaux ---------- */
+.ec-planning::before {
+  display: none;
 }

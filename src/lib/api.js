@@ -4,6 +4,15 @@
  */
 const API_URL = (process.env.NEXT_PUBLIC_API_URL || '/api').replace(/\/+$/, '')
 
+// Journal développeur des échecs d'API.
+// console.warn et non console.error : Next.js affiche chaque console.error dans son overlay d'erreur,
+// y compris pour des cas attendus (401 session expirée, 404, 409, validation...). L'erreur reste levée
+// vers l'appelant (throw) ; seul le bruit dans l'overlay disparaît. Silencieux en production.
+function logApiIssue(...args) {
+  if (process.env.NODE_ENV === 'production') return
+  console.warn(...args)
+}
+
 const API_MESSAGE_FR = {
   'end_date must be on or after start_date':
     'La date de fin doit être égale ou postérieure à la date de début',
@@ -127,7 +136,7 @@ async function parseJson(response) {
     return JSON.parse(text)
   } catch (error) {
     // Informations utiles uniquement pour le développement
-    console.error("[API] Réponse non JSON reçue", {
+    logApiIssue("[API] Réponse non JSON reçue", {
       url: response.url,
       status: response.status,
       statusText: response.statusText,
@@ -176,7 +185,7 @@ async function request(path, options = {}) {
       )
 
       // Logs développeur
-      console.error("[API]", {
+      logApiIssue("[API]", {
         url: normalizedPath,
         status: response.status,
         response: data,
@@ -195,7 +204,7 @@ async function request(path, options = {}) {
       error.message.includes("fetch") ||
       error.message.includes("Network")
     ) {
-      console.error("NETWORK ERROR :", error)
+      logApiIssue("[API] NETWORK ERROR :", error)
 
       throw new Error("Chargement impossible.")
     }
