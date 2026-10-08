@@ -108,7 +108,7 @@ export function useAdminAuth() {
          * Le hook récupère donc uniquement un message
          * destiné à l'utilisateur.
          */
-        console.error(
+        console.warn(
           'ADMIN_AUTH : Échec de la connexion.',
           error
         )

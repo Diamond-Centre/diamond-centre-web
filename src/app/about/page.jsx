@@ -88,8 +88,19 @@ export default function AboutPage() {
     
     calc()
     window.addEventListener('scroll', calc, { passive: true })
-    
+
+    // Ancre #philosophie : défilement fluide vers « Notre philosophie »
+    const goToHash = () => {
+      if (window.location.hash !== '#philosophie') return
+      const el = document.getElementById('philosophie')
+      if (el) lenis.scrollTo(el, { offset: 0, duration: 1.6 })
+    }
+    const hashTimer = setTimeout(goToHash, 350)
+    window.addEventListener('hashchange', goToHash)
+
     return () => {
+      clearTimeout(hashTimer)
+      window.removeEventListener('hashchange', goToHash)
       window.removeEventListener('scroll', calc)
       lenis.destroy()
     }
@@ -188,7 +199,7 @@ export default function AboutPage() {
           </div>
         </section>
 
-        <section className="life-section" ref={lifeRef}>
+        <section id="philosophie" className="life-section" ref={lifeRef}>
           <div className="about-wrap">
             <div className="center-title light">
               <small>NOTRE PHILOSOPHIE</small>
