@@ -13,7 +13,45 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-const logoSrc = '/images/attachment-2.png'
+const RAW_LOGO_SRC = '/images/attachment-2.png'
+
+/**
+ * Supprime le fond blanc du logo (pixels clairs → transparents, bords adoucis).
+ * Retourne l'URL d'origine tant que le traitement n'est pas terminé / en cas d'échec.
+ */
+function useTransparentLogo(src: string) {
+  const [out, setOut] = useState(src)
+  useEffect(() => {
+    let cancelled = false
+    const img = new window.Image()
+    img.onload = () => {
+      try {
+        const c = document.createElement('canvas')
+        c.width = img.naturalWidth
+        c.height = img.naturalHeight
+        const ctx = c.getContext('2d')
+        if (!ctx) return
+        ctx.drawImage(img, 0, 0)
+        const data = ctx.getImageData(0, 0, c.width, c.height)
+        const d = data.data
+        const HARD = 250 // au-dessus : blanc pur → transparent
+        const SOFT = 205 // en dessous : couleur conservée telle quelle
+        for (let i = 0; i < d.length; i += 4) {
+          const m = Math.min(d[i], d[i + 1], d[i + 2])
+          if (m >= HARD) d[i + 3] = 0
+          else if (m > SOFT) d[i + 3] = Math.round(d[i + 3] * (HARD - m) / (HARD - SOFT))
+        }
+        ctx.putImageData(data, 0, 0)
+        if (!cancelled) setOut(c.toDataURL('image/png'))
+      } catch {
+        /* on garde le logo d'origine */
+      }
+    }
+    img.src = src
+    return () => { cancelled = true }
+  }, [src])
+  return out
+}
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -47,6 +85,8 @@ interface Props {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function IntroSection({ scrollProgress, scrollComplete, onAutoIntroComplete }: Props) {
+
+  const logoSrc = useTransparentLogo(RAW_LOGO_SRC)
 
   const [phase,         setPhase]         = useState<Phase>('videoPlaying')
   const phaseRef                          = useRef<Phase>('videoPlaying')
@@ -316,8 +356,7 @@ export default function IntroSection({ scrollProgress, scrollComplete, onAutoInt
             filter: logoBlur > 0.1 ? `blur(${logoBlur.toFixed(1)}px)` : 'none',
             willChange:'clip-path, opacity, filter',
           }}>
-            {/* TODO: swap for transparent-background PNG/SVG */}
-            <img src={logoSrc} alt="Diamond Centre" draggable={false}
+                        <img src={logoSrc} alt="Diamond Centre" draggable={false}
               style={{ height:INTRO_LOGO_H, width:'auto', display:'block', userSelect:'none' }} />
           </div>
 

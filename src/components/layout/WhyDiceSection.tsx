@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 
 const metrics = [
   { end: 10000, prefix: '+', suffix: '', label: 'personnes formées' },
@@ -87,7 +88,7 @@ export default function WhyDiamond() {
                 <div style={{fontFamily:'Outfit',fontSize:13,color:'rgba(6,22,49,.58)'}}>{m.label}</div>
               </div>)}
             </div>
-            <a href="#about" style={{fontFamily:'Outfit',color:'#0A2D63',textDecoration:'none',letterSpacing:'.06em',textTransform:'uppercase',fontSize:12,borderBottom:'1px solid rgba(0,87,255,.28)',paddingBottom:2}}>Notre histoire →</a>
+            <Link href="/about#philosophie" style={{fontFamily:'Outfit',color:'#0A2D63',textDecoration:'none',letterSpacing:'.06em',textTransform:'uppercase',fontSize:12,borderBottom:'1px solid rgba(0,87,255,.28)',paddingBottom:2}}>Notre histoire →</Link>
           </div>
         </div>
       </div>

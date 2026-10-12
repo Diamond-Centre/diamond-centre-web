@@ -87,7 +87,7 @@ export function useAuth() {
        * api.js doit déjà avoir transformé les erreurs
        * techniques en messages compréhensibles.
        */
-      console.error('[AUTH] Échec de la connexion.', error)
+      console.warn('[AUTH] Échec de la connexion.', error)
 
       setUser(null)
       setIsAuthenticated(false)
@@ -153,7 +153,7 @@ export function useAuth() {
        * L'utilisateur ne reçoit que le message normalisé
        * provenant de api.js.
        */
-      console.error('[AUTH] Échec de l’inscription.', error)
+      console.warn('[AUTH] Échec de l’inscription.', error)
 
       const message =
         error instanceof Error

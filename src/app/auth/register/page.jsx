@@ -72,7 +72,7 @@ export default function RegisterPage() {
       window.location.href = '/espace-client'
 
     } catch (error) {
-      console.error('❌ Erreur inscription:', error)
+      console.warn('❌ Erreur inscription:', error)
       const message = isProfileImageTooLargeError(error)
         ? profileImageTooLargeMessage()
         : error.message || "Erreur lors de l'inscription"

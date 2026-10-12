@@ -4,15 +4,6 @@
  */
 const API_URL = (process.env.NEXT_PUBLIC_API_URL || '/api').replace(/\/+$/, '')
 
-// Journal développeur des échecs d'API.
-// console.warn et non console.error : Next.js affiche chaque console.error dans son overlay d'erreur,
-// y compris pour des cas attendus (401 session expirée, 404, 409, validation...). L'erreur reste levée
-// vers l'appelant (throw) ; seul le bruit dans l'overlay disparaît. Silencieux en production.
-function logApiIssue(...args) {
-  if (process.env.NODE_ENV === 'production') return
-  console.warn(...args)
-}
-
 const API_MESSAGE_FR = {
   'end_date must be on or after start_date':
     'La date de fin doit être égale ou postérieure à la date de début',
@@ -136,7 +127,7 @@ async function parseJson(response) {
     return JSON.parse(text)
   } catch (error) {
     // Informations utiles uniquement pour le développement
-    logApiIssue("[API] Réponse non JSON reçue", {
+    console.warn("[API] Réponse non JSON reçue", {
       url: response.url,
       status: response.status,
       statusText: response.statusText,
@@ -173,45 +164,52 @@ async function parseJson(response) {
 async function request(path, options = {}) {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`
 
+  // 1) Appel réseau : seule cette étape peut produire une « erreur réseau ».
+  let response
   try {
-    const response = await fetch(`${API_URL}${normalizedPath}`, options)
+    response = await fetch(`${API_URL}${normalizedPath}`, options)
+  } catch (networkError) {
+    // console.warn (et non console.error) pour ne pas déclencher
+    // l'overlay d'erreur de Next.js en développement.
+    console.warn("[API] Erreur réseau :", normalizedPath, networkError)
 
-    const data = await parseJson(response)
-
-    if (!response.ok) {
-      const error = createApiError(
-        response.status,
-        data?.message || data?.error
-      )
-
-      // Logs développeur
-      logApiIssue("[API]", {
-        url: normalizedPath,
-        status: response.status,
-        response: data,
-      })
-
-      const err = new Error(error.message)
-      err.status = error.status
-      throw err
-    }
-
-    return data
-  } catch (error) {
-    // erreur réseau
-    if (
-      error instanceof TypeError ||
-      error.message.includes("fetch") ||
-      error.message.includes("Network")
-    ) {
-      logApiIssue("[API] NETWORK ERROR :", error)
-
-      throw new Error("Chargement impossible.")
-    }
-
-    // erreur déjà normalisée
-    throw error
+    const err = new Error("Chargement impossible.")
+    err.status = 0
+    err.isNetworkError = true
+    throw err
   }
+
+  // 2) Lecture / parsing de la réponse
+  let data
+  try {
+    data = await parseJson(response)
+  } catch (parseError) {
+    if (parseError && typeof parseError === "object" && parseError.status == null) {
+      parseError.status = response.status
+    }
+    throw parseError
+  }
+
+  // 3) Réponse HTTP en erreur
+  if (!response.ok) {
+    const error = createApiError(
+      response.status,
+      data?.message || data?.error
+    )
+
+    // Logs développeur
+    console.warn("[API]", {
+      url: normalizedPath,
+      status: response.status,
+      response: data,
+    })
+
+    const err = new Error(error.message)
+    err.status = error.status
+    throw err
+  }
+
+  return data
 }
 
 function authHeaders(token, extra = {}) {

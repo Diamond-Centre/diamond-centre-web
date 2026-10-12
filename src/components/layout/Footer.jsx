@@ -1,19 +1,31 @@
 /**
- * Footer DiCe — refonte (fond sombre, 4 colonnes)
- * Les liens « Ressources » n'ont pas encore de page : ils restent inertes (href="#").
+ * Footer DiCe — fond sombre, marque + 2 colonnes de liens
+ * (Navigation, Programmes), coordonnées et réseaux sociaux.
  */
 'use client'
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { FiMapPin } from 'react-icons/fi'
-import { FaFacebook, FaInstagram, FaLinkedin, FaXTwitter } from 'react-icons/fa6'
+import { FiMapPin, FiMail, FiPhone } from 'react-icons/fi'
+import { FaFacebook, FaInstagram, FaTiktok, FaYoutube } from 'react-icons/fa6'
+
+const EMAIL = 'thediamondcentre1@gmail.com'
+const PHONE_DISPLAY = '688 826 759'
+const PHONE_HREF = 'tel:+237688826759'
 
 const SOCIALS = [
-  { name: 'LinkedIn', icon: FaLinkedin, url: 'https://linkedin.com' },
-  { name: 'X / Twitter', icon: FaXTwitter, url: 'https://x.com' },
-  { name: 'Facebook', icon: FaFacebook, url: 'https://facebook.com' },
-  { name: 'Instagram', icon: FaInstagram, url: 'https://instagram.com' },
+  { name: 'Facebook', icon: FaFacebook, url: 'https://www.facebook.com/share/19sTzF1cYi/' },
+  { name: 'TikTok', icon: FaTiktok, url: 'http://tiktok.com/@dr.t.g.sonffo' },
+  {
+    name: 'Instagram',
+    icon: FaInstagram,
+    url: 'https://www.instagram.com/dr_t.g._sonffo?stkn=MW4waHN2dzRlbG5zbw==',
+  },
+  {
+    name: 'YouTube',
+    icon: FaYoutube,
+    url: 'https://www.youtube.com/channel/UCH9RgzFwgxeu67pPbuWcZ7w',
+  },
 ]
 
 const COLUMNS = [
@@ -24,7 +36,6 @@ const COLUMNS = [
       { label: 'Événements', href: '/events' },
       { label: 'Formations', href: '/events?type=formation' },
       { label: 'À propos', href: '/about' },
-      { label: 'Contact', href: '/about' },
     ],
   },
   {
@@ -37,36 +48,14 @@ const COLUMNS = [
       { label: 'Finance', href: '/events' },
     ],
   },
-  {
-    title: 'Ressources',
-    links: [
-      { label: 'Blog', href: '#' },
-      { label: 'Podcasts', href: '#' },
-      { label: 'Webinaires', href: '#' },
-      { label: 'Témoignages', href: '#' },
-      { label: 'Presse', href: '#' },
-    ],
-  },
-]
-
-const LEGAL = [
-  { label: 'Confidentialité', href: '#' },
-  { label: 'Conditions', href: '#' },
-  { label: 'Cookies', href: '#' },
 ]
 
 function FooterLink({ href, children }) {
-  const cls =
-    'text-[14px] text-white/40 transition-colors duration-200 hover:text-white'
-  if (href === '#') {
-    return (
-      <a href="#" onClick={(e) => e.preventDefault()} className={cls}>
-        {children}
-      </a>
-    )
-  }
   return (
-    <Link href={href} className={cls}>
+    <Link
+      href={href}
+      className="text-[14px] text-white/40 transition-colors duration-200 hover:text-white"
+    >
       {children}
     </Link>
   )
@@ -76,7 +65,7 @@ export default function Footer() {
   return (
     <footer className="border-t border-white/[0.06] bg-[#030816] font-outfit text-white">
       <div className="mx-auto w-full max-w-[1280px] px-6 pt-20">
-        <div className="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-[427px_282px_281px_1fr] lg:gap-0">
+        <div className="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr] lg:gap-16">
           {/* Marque */}
           <div>
             <Link
@@ -98,10 +87,27 @@ export default function Footer() {
               conférences et ateliers pour les leaders d&apos;Afrique et du monde.
             </p>
 
-            <p className="mt-6 flex max-w-[280px] items-start gap-3 text-[13px] leading-5 text-white/85">
-              <FiMapPin className="mt-[3px] shrink-0 text-[14px] text-[#9aa4ba]" />
-              <span>Yaoundé, Carrefour Emombo dernier étage immeuble Boulangerie Kelvis</span>
-            </p>
+            <ul className="mt-6 max-w-[320px] space-y-3 text-[13px] leading-5 text-white/85">
+              <li className="flex items-start gap-3">
+                <FiMapPin className="mt-[3px] shrink-0 text-[14px] text-[#9aa4ba]" />
+                <span>Yaoundé, Carrefour Emombo dernier étage immeuble Boulangerie Kelvis</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <FiMail className="mt-[3px] shrink-0 text-[14px] text-[#9aa4ba]" />
+                <a
+                  href={`mailto:${EMAIL}`}
+                  className="break-all transition-colors hover:text-white"
+                >
+                  {EMAIL}
+                </a>
+              </li>
+              <li className="flex items-start gap-3">
+                <FiPhone className="mt-[3px] shrink-0 text-[14px] text-[#9aa4ba]" />
+                <a href={PHONE_HREF} className="transition-colors hover:text-white">
+                  {PHONE_DISPLAY}
+                </a>
+              </li>
+            </ul>
 
             <div className="mt-6 flex items-center gap-3">
               {SOCIALS.map(({ name, icon: Icon, url }) => (
@@ -137,22 +143,10 @@ export default function Footer() {
         </div>
 
         {/* Bas de page */}
-        <div className="mt-[62px] flex flex-col items-start justify-between gap-4 border-t border-white/[0.07] pb-12 pt-8 sm:flex-row sm:items-center">
+        <div className="mt-[62px] border-t border-white/[0.07] pb-12 pt-8">
           <p className="text-[12.5px] text-[#4c566c]">
             © {new Date().getFullYear()} Diamond Centre — DiCe. Tous droits réservés.
           </p>
-          <div className="flex items-center gap-6">
-            {LEGAL.map((l) => (
-              <a
-                key={l.label}
-                href={l.href}
-                onClick={(e) => e.preventDefault()}
-                className="text-[12.5px] text-[#4c566c] transition-colors hover:text-white"
-              >
-                {l.label}
-              </a>
-            ))}
-          </div>
         </div>
       </div>
     </footer>
